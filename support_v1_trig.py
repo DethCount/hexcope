@@ -1,5 +1,4 @@
 import bpy
-import mathutils
 import math
 
 n = 3 # max distance (in r unit)
