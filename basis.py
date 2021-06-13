@@ -362,15 +362,6 @@ def create_basis_wheel_bottom_mesh(e, t, h, r, p, wr, mr, hex_thickness, hex_wal
     nb_verts_mid2 = len(vertices)
 
     faces.extend([
-        #(nb_verts + 4, nb_verts_mid, nb_verts + 8),
-        #(nb_verts + 5, nb_verts_mid + 1, nb_verts + 9),
-        #(nb_verts + 6, nb_verts_mid2 - 1, nb_verts + 10),
-        #(nb_verts + 7, nb_verts_mid2 - 2, nb_verts + 11),
-        #(nb_verts + 5, mid_v1_l, 10),
-        #(nb_verts + 8, mid_v1_r, 11),
-        #(nb_verts + 6, mid_v2_l, 10),
-        #(nb_verts + 7, mid_v2_r, 11),
-
         (mid_v1_r, 5, 22),
         (mid_v1_l, 4, 23),
         (mid_v2_r, 2, 22),
