@@ -139,6 +139,7 @@ def create_basis_wheel_mesh(e, t, h, r, p, wr, mr, hex_thickness, hex_walls_heig
         (-hex_thickness, hr + zo, -wr), (-e, hr + zo, -wr), (-e, -hr - zo, -wr),(-hex_thickness, -hr - zo, -wr),
         (-hex_thickness, hr - zo, -wr + zow), (-e, hr - zo, -wr + zow), (-e, -hr + zo, -wr + zow),(-hex_thickness, -hr + zo, -wr + zow),
         (-hex_thickness, hr - zo + zop, -wr), (-e, hr - zo + zop, -wr), (-e, -hr + zo - zop, -wr),(-hex_thickness, -hr + zo - zop, -wr),
+        (-hex_thickness, mr, -wr),(-e, mr, -wr),(-hex_thickness, -mr, -wr), (-e, -mr, -wr),
     ])
 
     print(str(vertices[up_rv]) + ' ' + str(vertices[up_lv]) + ' ' + str(vertices[down_rv]) + ' ' + str(vertices[down_lv]))
@@ -151,7 +152,7 @@ def create_basis_wheel_mesh(e, t, h, r, p, wr, mr, hex_thickness, hex_walls_heig
         (13, 12), (14, 15),(nb_verts + 4, nb_verts + 5), (nb_verts + 6, nb_verts + 7),
         (nb_verts + 8, nb_verts + 9), (nb_verts + 10, nb_verts + 11),
         (nb_verts + 4, nb_verts + 8), (nb_verts + 5, nb_verts + 9), (nb_verts + 6, nb_verts + 10), (nb_verts + 7, nb_verts + 11),
-        (nb_verts + 8, 9), (nb_verts + 9, 8), (nb_verts + 10, 8), (nb_verts + 11, 9),
+        (nb_verts + 8, nb_verts + 12), (nb_verts + 9, nb_verts + 13), (nb_verts + 10, nb_verts + 15), (nb_verts + 11, nb_verts + 14),
     ])
 
     faces.extend([
@@ -163,10 +164,7 @@ def create_basis_wheel_mesh(e, t, h, r, p, wr, mr, hex_thickness, hex_walls_heig
         (13, 12, nb_verts + 5, nb_verts + 4), (14, 15, nb_verts + 6, nb_verts + 7),
         (13, nb_verts + 4, 11), (12, nb_verts + 5, 10),(14, nb_verts + 7, 11), (15, nb_verts + 6, 10),
         (nb_verts + 4, nb_verts + 8, nb_verts + 9, nb_verts + 5), (nb_verts + 6, nb_verts + 10, nb_verts + 11, nb_verts + 7),
-        (nb_verts + 8, 9, 8, nb_verts + 9), (nb_verts + 10, 8, 9, nb_verts + 11),
-        #(nb_verts + 4, nb_verts + 8, 9), (nb_verts + 5, nb_verts + 9, 8),(nb_verts + 7, nb_verts + 11, 9), (nb_verts + 6, nb_verts + 10, 8),
-        #(9, nb_verts + 4, 11), (8, nb_verts + 5, 10),(9, nb_verts + 7, 11), (8, nb_verts + 6, 10),
-        (-hex_thickness, 0, -wr), (-e, 0, -wr),
+        (nb_verts + 8, nb_verts + 12, nb_verts + 13, nb_verts + 9), (nb_verts + 10, nb_verts + 15, nb_verts + 14, nb_verts + 11),
     ])
 
     nb_verts_mid = len(vertices)
@@ -260,6 +258,8 @@ def create_basis_wheel_bottom_mesh(e, t, h, r, p, wr, mr, hex_thickness, hex_wal
         (-hex_thickness, hr + zo + zop, -wr + zow),(-e, hr + zo + zop, -wr + zow), (-e, -hr - zo - zop, -wr + zow), (-hex_thickness, -hr - zo - zop, -wr + zow),
         (-hex_thickness, hr - zo, -wr + zow), (-e, hr - zo, -wr + zow), (-e, -hr + zo, -wr + zow),(-hex_thickness, -hr + zo, -wr + zow),
         (-hex_thickness, hr - zo + zop, -wr), (-e, hr - zo + zop, -wr), (-e, -hr + zo - zop, -wr),(-hex_thickness, -hr + zo - zop, -wr),
+        (-hex_thickness, 0, -1.5 * wr), (-e, 0, -1.5 * wr),
+        (-hex_thickness, mr, -wr), (-e, mr, -wr), (-hex_thickness, -mr, -wr), (-e, -mr, -wr),
     ]
     edges = [
         (2, 3), (4, 5),
@@ -270,6 +270,8 @@ def create_basis_wheel_bottom_mesh(e, t, h, r, p, wr, mr, hex_thickness, hex_wal
         (12, 16), (13, 17), (16, 17),
         (14, 18), (15, 19), (18, 19),
         (16, 20), (17, 21), (20, 21),
+        (24, 25), (26, 27),
+        (24, 18), (25, 19), (26, 21), (27, 20),
     ]
     faces = [
         (2, 3, 7, 6), (4, 5, 9, 8),
@@ -278,11 +280,11 @@ def create_basis_wheel_bottom_mesh(e, t, h, r, p, wr, mr, hex_thickness, hex_wal
         (12, 16, 17, 13),
         (14, 18, 19, 15),
         (16, 20, 21, 17),
-        (18, 19, 20, 21),
         (6, 10, 14, 18),
         (7, 11, 15, 19),
         (8, 12, 16, 20),
         (9, 13, 17, 21),
+        (24, 25, 19, 18), (26, 27, 20, 21),
     ]
 
     nb_verts = len(vertices)
@@ -301,11 +303,79 @@ def create_basis_wheel_bottom_mesh(e, t, h, r, p, wr, mr, hex_thickness, hex_wal
             edges.append((rv - 2, rv))
             edges.append((lv - 2, lv))
             faces.append((rv, lv, lv - 2, rv - 2))
-            faces.append((0, rv - 2, rv))
-            faces.append((1, lv - 2, lv))
+            faces.append((22, rv - 2, rv))
+            faces.append((23, lv - 2, lv))
         else:
             edges.extend([(lv, 3), (2, rv)])
             faces.append((3, 2, rv, lv))
+
+    nb_verts_mid = len(vertices)
+
+    mid_v1_r = None
+    mid_v1_l = None
+    mid_v2_r = None
+    mid_v2_l = None
+
+    for i in range(0, p + 1):
+        alpha = i * (math.pi / p)
+        beta = math.pi + alpha
+        vertices.extend([
+            (-hex_thickness, mr * math.cos(beta), -wr + mr * math.sin(beta)),
+            (-e, mr * math.cos(beta), -wr + mr * math.sin(beta)),
+        ])
+        rv = nb_verts_mid + 2 * i
+        lv = nb_verts_mid + 2 * i + 1
+
+        edges.append((rv, lv))
+
+        if i > 0:
+            edges.extend([
+                (rv - 2, rv), (lv - 2, lv),
+            ])
+            faces.extend([
+                (rv - 2, rv, lv, lv - 2),
+            ])
+
+            if alpha < math.pi / 3:
+                faces.extend([
+                    (rv - 2, rv, 5),
+                    (lv - 2, lv, 4),
+                ])
+            elif alpha < 2 * (math.pi / 3):
+                faces.extend([
+                    (rv - 2, rv, 22),
+                    (lv - 2, lv, 23),
+                ])
+
+                if mid_v1_r == None:
+                    mid_v1_r = rv - 2
+                    mid_v1_l = lv - 2
+            else:
+                faces.extend([
+                    (rv - 2, rv, 2),
+                    (lv - 2, lv, 3),
+                ])
+                if mid_v2_r == None:
+                    mid_v2_r = rv - 2
+                    mid_v2_l = lv - 2
+
+    nb_verts_mid2 = len(vertices)
+
+    faces.extend([
+        #(nb_verts + 4, nb_verts_mid, nb_verts + 8),
+        #(nb_verts + 5, nb_verts_mid + 1, nb_verts + 9),
+        #(nb_verts + 6, nb_verts_mid2 - 1, nb_verts + 10),
+        #(nb_verts + 7, nb_verts_mid2 - 2, nb_verts + 11),
+        #(nb_verts + 5, mid_v1_l, 10),
+        #(nb_verts + 8, mid_v1_r, 11),
+        #(nb_verts + 6, mid_v2_l, 10),
+        #(nb_verts + 7, mid_v2_r, 11),
+
+        (mid_v1_r, 5, 22),
+        (mid_v1_l, 4, 23),
+        (mid_v2_r, 2, 22),
+        (mid_v2_l, 3, 23),
+    ])
 
     mesh.from_pydata(vertices, edges, faces)
     mesh.update()
