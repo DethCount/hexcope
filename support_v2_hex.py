@@ -258,9 +258,9 @@ def create_triangle_mesh(f, d, t, h, fw, fd, p, x, y, z):
     ])
 
     edges.extend([
-        (nb_verts, nb_verts + 1), (nb_verts, nb_verts + 2), (nb_verts, nb_verts + 3),
-        (nb_verts + 4, nb_verts + 5), (nb_verts + 4, nb_verts + 6), (nb_verts + 4, nb_verts + 7),
-        (nb_verts + 8, nb_verts + 9), (nb_verts + 8, nb_verts + 10), (nb_verts + 8, nb_verts + 11),
+        #(nb_verts, nb_verts + 1), (nb_verts, nb_verts + 2), (nb_verts, nb_verts + 3),
+        #(nb_verts + 4, nb_verts + 5), (nb_verts + 4, nb_verts + 6), (nb_verts + 4, nb_verts + 7),
+        #(nb_verts + 8, nb_verts + 9), (nb_verts + 8, nb_verts + 10), (nb_verts + 8, nb_verts + 11),
     ])
 
     nb_verts = len(vertices)
