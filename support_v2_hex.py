@@ -10,6 +10,9 @@ r = 1.0 # hex side
 h = 0.04 # hex thickness
 f = 5 # focal length
 d = 1.0 # parabola height
+fw = 0.05 * r # fixation half width
+fd = 0.03 # fixation hole diameter
+p = 25 # precision in parts of 1
 
 trig_h = 0.1 # triangle walls height
 
@@ -59,14 +62,18 @@ def hex2xyz(f, d, x, y, z, w):
 # d : parabola height
 # t : triangle thickness
 # h : walls height
+# fw : fixation half width
+# fd : fixation hole diameter
+# p : precision in parts of 1
 # x : cartesian (1, 0)
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
 # z : hex triangle index ccw
-def create_triangle_mesh(f, d, t, h, x, y, z):
+def create_triangle_mesh(f, d, t, h, fw, fd, p, x, y, z):
     mesh = bpy.data.meshes.new('trig_mesh' + str((f,d,t,x,y,z)))
 
     c = r * math.cos(math.pi / 3)
     s = r * math.sin(math.pi / 3)
+    fr = 0.5 * fd
 
     vertices = []
 
@@ -84,6 +91,22 @@ def create_triangle_mesh(f, d, t, h, x, y, z):
         (v0[1] + v1[1] + v2[1]) / 3,
         (v0[2] + v1[2] + v2[2]) / 3
     )
+
+    vmid01 = (v0[0] + (v1[0] - v0[0]) / 2, v0[1] + (v1[1] - v0[1]) / 2, v0[2] + (v1[2] - v0[2]) / 2)
+    vmid12 = (v1[0] + (v2[0] - v1[0]) / 2, v1[1] + (v2[1] - v1[1]) / 2, v1[2] + (v2[2] - v1[2]) / 2)
+    vmid20 = (v2[0] + (v0[0] - v2[0]) / 2, v2[1] + (v0[1] - v2[1]) / 2, v2[2] + (v0[2] - v2[2]) / 2)
+
+    dxvmid01mid = vmid[0] - vmid01[0]
+    dyvmid01mid = vmid[1] - vmid01[1]
+    dzvmid01mid = vmid[2] - vmid01[2]
+    dvmid01mid = math.sqrt(dxvmid01mid * dxvmid01mid + dyvmid01mid * dyvmid01mid + dzvmid01mid * dzvmid01mid)
+    vmid01mid = (dxvmid01mid / dvmid01mid, dyvmid01mid / dvmid01mid, dzvmid01mid / dvmid01mid)
+    vmid12mid = ((vmid[0] - vmid12[0]) / dvmid01mid, (vmid[1] - vmid12[1]) / dvmid01mid, (vmid[2] - vmid12[2]) / dvmid01mid)
+    vmid20mid = ((vmid[0] - vmid20[0]) / dvmid01mid, (vmid[1] - vmid20[1]) / dvmid01mid, (vmid[2] - vmid20[2]) / dvmid01mid)
+
+    v01 = ((v1[0] - v0[0]) / r, (v1[1] - v0[1]) / r, (v1[2] - v0[2]) / r)
+    v12 = ((v2[0] - v1[0]) / r, (v2[1] - v1[1]) / r, (v2[2] - v1[2]) / r)
+    v20 = ((v0[0] - v2[0]) / r, (v0[1] - v2[1]) / r, (v0[2] - v2[2]) / r)
 
     ri = r * (math.sqrt(3) / 6) # rayon cercle inscrit
 
@@ -105,6 +128,44 @@ def create_triangle_mesh(f, d, t, h, x, y, z):
         (v0[0] + t * (vmid[0] - v0[0]) / ri, v0[1] + t * (vmid[1] - v0[1]) / ri, v0[2] - t + t * (vmid[2] - v0[2]) / ri),
         (v1[0] + t * (vmid[0] - v1[0]) / ri, v1[1] + t * (vmid[1] - v1[1]) / ri, v1[2] - t + t * (vmid[2] - v1[2]) / ri),
         (v2[0] + t * (vmid[0] - v2[0]) / ri, v2[1] + t * (vmid[1] - v2[1]) / ri, v2[2] - t + t * (vmid[2] - v2[2]) / ri),
+
+        (vmid01[0] + v01[0] * fw, vmid01[1] + v01[1] * fw, vmid01[2] + v01[2] * fw - t - h),
+        (vmid01[0] - v01[0] * fw, vmid01[1] - v01[1] * fw, vmid01[2] - v01[2] * fw - t - h),
+
+        (vmid01[0] + v01[0] * fw + vmid01mid[0] * t, vmid01[1] + v01[1] * fw + vmid01mid[1] * t, vmid01[2] + v01[2] * fw + vmid01mid[2] * t - t - h),
+        (vmid01[0] - v01[0] * fw + vmid01mid[0] * t, vmid01[1] - v01[1] * fw + vmid01mid[1] * t, vmid01[2] - v01[2] * fw + vmid01mid[2] * t - t - h),
+
+        (vmid01[0] + v01[0] * fw, vmid01[1] + v01[1] * fw, vmid01[2] + v01[2] * fw - t - h - 2 * fw),
+        (vmid01[0] - v01[0] * fw, vmid01[1] - v01[1] * fw, vmid01[2] - v01[2] * fw - t - h - 2 * fw),
+
+        (vmid01[0] + v01[0] * fw + vmid01mid[0] * t, vmid01[1] + v01[1] * fw + vmid01mid[1] * t, vmid01[2] + v01[2] * fw + vmid01mid[2] * t - t - h - 2 * fw),
+        (vmid01[0] - v01[0] * fw + vmid01mid[0] * t, vmid01[1] - v01[1] * fw + vmid01mid[1] * t, vmid01[2] - v01[2] * fw + vmid01mid[2] * t - t - h - 2* fw),
+
+        (vmid12[0] + v12[0] * fw, vmid12[1] + v12[1] * fw, vmid12[2] + v12[2] * fw - t - h),
+        (vmid12[0] - v12[0] * fw, vmid12[1] - v12[1] * fw, vmid12[2] - v12[2] * fw - t - h),
+
+        (vmid12[0] + v12[0] * fw + vmid12mid[0] * t, vmid12[1] + v12[1] * fw + vmid12mid[1] * t, vmid12[2] + v12[2] * fw + vmid12mid[2] * t - t - h),
+        (vmid12[0] - v12[0] * fw + vmid12mid[0] * t, vmid12[1] - v12[1] * fw + vmid12mid[1] * t, vmid12[2] - v12[2] * fw + vmid12mid[2] * t - t - h),
+
+
+        (vmid12[0] + v12[0] * fw, vmid12[1] + v12[1] * fw, vmid12[2] + v12[2] * fw - t - h - 2 * fw),
+        (vmid12[0] - v12[0] * fw, vmid12[1] - v12[1] * fw, vmid12[2] - v12[2] * fw - t - h - 2 * fw),
+
+        (vmid12[0] + v12[0] * fw + vmid12mid[0] * t, vmid12[1] + v12[1] * fw + vmid12mid[1] * t, vmid12[2] + v12[2] * fw + vmid12mid[2] * t - t - h - 2 * fw),
+        (vmid12[0] - v12[0] * fw + vmid12mid[0] * t, vmid12[1] - v12[1] * fw + vmid12mid[1] * t, vmid12[2] - v12[2] * fw + vmid12mid[2] * t - t - h - 2* fw),
+
+        (vmid20[0] + v20[0] * fw, vmid20[1] + v20[1] * fw, vmid20[2] + v20[2] * fw - t - h),
+        (vmid20[0] - v20[0] * fw, vmid20[1] - v20[1] * fw, vmid20[2] - v20[2] * fw - t - h),
+
+        (vmid20[0] + v20[0] * fw + vmid20mid[0] * t, vmid20[1] + v20[1] * fw + vmid20mid[1] * t, vmid20[2] + v20[2] * fw + vmid20mid[2] * t - t - h),
+        (vmid20[0] - v20[0] * fw + vmid20mid[0] * t, vmid20[1] - v20[1] * fw + vmid20mid[1] * t, vmid20[2] - v20[2] * fw + vmid20mid[2] * t - t - h),
+
+
+        (vmid20[0] + v20[0] * fw, vmid20[1] + v20[1] * fw, vmid20[2] + v20[2] * fw - t - h - 2 * fw),
+        (vmid20[0] - v20[0] * fw, vmid20[1] - v20[1] * fw, vmid20[2] - v20[2] * fw - t - h - 2 * fw),
+
+        (vmid20[0] + v20[0] * fw + vmid20mid[0] * t, vmid20[1] + v20[1] * fw + vmid20mid[1] * t, vmid20[2] + v20[2] * fw + vmid20mid[2] * t - t - h - 2 * fw),
+        (vmid20[0] - v20[0] * fw + vmid20mid[0] * t, vmid20[1] - v20[1] * fw + vmid20mid[1] * t, vmid20[2] - v20[2] * fw + vmid20mid[2] * t - t - h - 2* fw),
     ])
 
     edges = [
@@ -120,6 +181,21 @@ def create_triangle_mesh(f, d, t, h, x, y, z):
 
         (12, 13), (13, 14), (14, 12),
         (9, 12), (10, 13), (11, 14),
+
+        # 01
+        (15, 17), (16, 18),
+        (19, 20), (20, 22),(21, 19),(21, 22),
+        (15, 19), (16, 20), (17, 21), (18, 22),
+
+        # 12
+        (23, 25), (24, 26),
+        (27, 28), (28, 30),(29, 27),(29, 30),
+        (23, 27), (24, 28), (25, 29), (26, 30),
+
+        # 20
+        (31, 33), (32, 34),
+        (35, 36), (36, 38),(37, 35),(37, 38),
+        (31, 35), (32, 36), (33, 37), (34, 38),
     ]
     faces = [
         (0, 1, 2),
@@ -128,7 +204,220 @@ def create_triangle_mesh(f, d, t, h, x, y, z):
         (9, 10, 7, 6), (10, 11, 8, 7), (11, 9, 6, 8),
         (10, 9, 12, 13), (11, 10, 13, 14), (11, 9, 12, 14),
         (12, 13, 14),
+        (15, 16, 18, 17),
+        (19, 21, 22, 20), (16, 18, 22, 20), (15, 17, 21, 19),
+        (23, 24, 26, 25),
+        (27, 29, 30, 28), (24, 26, 30, 28), (23, 25, 29, 27),
+        (31, 32, 34, 33),
+        (35, 37, 38, 36), (32, 34, 38, 36), (31, 33, 37, 35),
     ]
+
+    trig_h = (math.sqrt(3) / 6) * r
+    trig_ih = trig_h - t
+
+    c01 = (vmid01[0], vmid01[1], vmid01[2] - t - h - fw)
+    lc01 = math.sqrt(c01[0] ** 2 + c01[1] ** 2 + c01[2] ** 2)
+    c01n = (c01[0] / lc01, c01[1] / lc01, c01[2] / lc01)
+
+    c12 = (vmid12[0], vmid12[1], vmid12[2] - t - h - fw)
+    lc12 = math.sqrt(c12[0] ** 2 + c12[1] ** 2 + c12[2] ** 2)
+    c12n = (c12[0] / lc12, c12[1] / lc12, c12[2] / lc12)
+
+    c20 = (vmid20[0], vmid20[1], vmid20[2] - t - h - fw)
+    lc20 = math.sqrt(c20[0] ** 2 + c20[1] ** 2 + c20[2] ** 2)
+    c20n = (c20[0] / lc20, c20[1] / lc20, c20[2] / lc20)
+
+    ltemp = math.sqrt(vmid01mid[0] ** 2 + vmid01mid[1] ** 2)
+    nu01 = (
+        vmid01mid[1] * v01[2] - vmid01mid[2] * v01[1],
+        vmid01mid[2] * v01[0] - vmid01mid[0] * v01[2],
+        vmid01mid[0] * v01[1] - vmid01mid[1] * v01[0],
+    )
+
+    nu12 = (
+        vmid12mid[1] * v12[2] - vmid12mid[2] * v12[1],
+        vmid12mid[2] * v12[0] - vmid12mid[0] * v12[2],
+        vmid12mid[0] * v12[1] - vmid12mid[1] * v12[0],
+    )
+
+    nu20 = (
+        vmid20mid[1] * v20[2] - vmid20mid[2] * v20[1],
+        vmid20mid[2] * v20[0] - vmid20mid[0] * v20[2],
+        vmid20mid[0] * v20[1] - vmid20mid[1] * v20[0],
+    )
+
+    print('01 : n : ' + str(vmid01mid) + ' u: ' + str(v01) + ' n x u:' + str(nu01))
+    print('12 : n : ' + str(vmid12mid) + ' u: ' + str(v12) + ' n x u:' + str(nu12))
+    print('20 : n : ' + str(vmid20mid) + ' u: ' + str(v20) + ' n x u:' + str(nu20))
+
+    nb_verts = len(vertices)
+    vertices.extend([
+        c01, (c01[0] + v01[0], c01[1] + v01[1], c01[2] + v01[2]), (c01[0] + nu01[0], c01[1] + nu01[1], c01[2] + nu01[2]), (c01[0] + vmid01mid[0], c01[1] + vmid01mid[1], c01[2] + vmid01mid[2]),
+        c12, (c12[0] + v12[0], c12[1] + v12[1], c12[2] + v12[2]), (c12[0] + nu12[0], c12[1] + nu12[1], c12[2] + nu12[2]), (c12[0] + vmid12mid[0], c12[1] + vmid12mid[1], c12[2] + vmid12mid[2]),
+        c20, (c20[0] + v20[0], c20[1] + v20[1], c20[2] + v20[2]), (c20[0] + nu20[0], c20[1] + nu20[1], c20[2] + nu20[2]), (c20[0] + vmid20mid[0], c20[1] + vmid20mid[1], c20[2] + vmid20mid[2]),
+    ])
+
+    edges.extend([
+        (nb_verts, nb_verts + 1), (nb_verts, nb_verts + 2), (nb_verts, nb_verts + 3),
+        (nb_verts + 4, nb_verts + 5), (nb_verts + 4, nb_verts + 6), (nb_verts + 4, nb_verts + 7),
+        (nb_verts + 8, nb_verts + 9), (nb_verts + 8, nb_verts + 10), (nb_verts + 8, nb_verts + 11),
+    ])
+
+    nb_verts = len(vertices)
+
+    vfw0 = None
+    vfw1 = None
+    vfw2 = None
+    vfw3 = None
+
+    for i in range(0, p + 1):
+        alpha = i * (2 * math.pi) / p
+
+        rx01 = fr * math.cos(alpha) * v01[0] + fr * math.sin(alpha) * nu01[0]
+        ry01 = fr * math.cos(alpha) * v01[1] + fr * math.sin(alpha) * nu01[1]
+        rz01 = fr * math.cos(alpha) * v01[2] + fr * math.sin(alpha) * nu01[2]
+
+        rx12 = fr * math.cos(alpha) * v12[0] + fr * math.sin(alpha) * nu12[0]
+        ry12 = fr * math.cos(alpha) * v12[1] + fr * math.sin(alpha) * nu12[1]
+        rz12 = fr * math.cos(alpha) * v12[2] + fr * math.sin(alpha) * nu12[2]
+
+        rx20 = fr * math.cos(alpha) * v20[0] + fr * math.sin(alpha) * nu20[0]
+        ry20 = fr * math.cos(alpha) * v20[1] + fr * math.sin(alpha) * nu20[1]
+        rz20 = fr * math.cos(alpha) * v20[2] + fr * math.sin(alpha) * nu20[2]
+
+        l01 = (
+            c01[0] + rx01,
+            c01[1] + ry01,
+            c01[2] + rz01
+        )
+
+        r01 = (
+            c01[0] + vmid01mid[0] * t + rx01,
+            c01[1] + vmid01mid[1] * t + ry01,
+            c01[2] + vmid01mid[2] * t + rz01
+        )
+
+        l12 = (
+            c12[0] + rx12,
+            c12[1] + ry12,
+            c12[2] + rz12
+        )
+
+        r12 = (
+            c12[0] + vmid12mid[0] * t + rx12,
+            c12[1] + vmid12mid[1] * t + ry12,
+            c12[2] + vmid12mid[2] * t + rz12
+        )
+
+        l20 = (
+            c20[0] + rx20,
+            c20[1] + ry20,
+            c20[2] + rz20
+        )
+
+        r20 = (
+            c20[0] + vmid20mid[0] * t + rx20,
+            c20[1] + vmid20mid[1] * t + ry20,
+            c20[2] + vmid20mid[2] * t + rz20
+        )
+
+        idx = nb_verts + i * 6
+
+        vertices.extend([l01, r01, l12, r12, l20, r20])
+        edges.extend([
+            (idx, idx + 1),
+            (idx + 2, idx + 3),
+            (idx + 4, idx + 5),
+        ])
+
+        if i > 0:
+            edges.extend([
+                (idx - 6, idx),
+                (idx - 5, idx + 1),
+                (idx - 4, idx + 2),
+                (idx - 3, idx + 3),
+                (idx - 2, idx + 4),
+                (idx - 1, idx + 5),
+            ])
+
+            faces.extend([
+                (idx - 6, idx, idx + 1, idx - 5),
+                (idx - 4, idx + 2, idx + 3, idx - 3),
+                (idx - 2, idx + 4, idx + 5, idx - 1),
+            ])
+
+            if alpha < math.pi / 2:
+                faces.extend([
+                    (19, idx - 6, idx),
+                    (21, idx - 5, idx + 1),
+                    (27, idx - 4, idx + 2),
+                    (29, idx - 3, idx + 3),
+                    (35, idx - 2, idx + 4),
+                    (37, idx - 1, idx + 5),
+                ])
+                if vfw0 == None:
+                    vfw0 = idx - 6
+            elif alpha < math.pi:
+                faces.extend([
+                    (20, idx - 6, idx),
+                    (22, idx - 5, idx + 1),
+                    (28, idx - 4, idx + 2),
+                    (30, idx - 3, idx + 3),
+                    (36, idx - 2, idx + 4),
+                    (38, idx - 1, idx + 5),
+                ])
+                if vfw1 == None:
+                    vfw1 = idx - 6
+            elif alpha < 3 * (math.pi / 2):
+                faces.extend([
+                    (16, idx - 6, idx),
+                    (18, idx - 5, idx + 1),
+                    (24, idx - 4, idx + 2),
+                    (26, idx - 3, idx + 3),
+                    (32, idx - 2, idx + 4),
+                    (34, idx - 1, idx + 5),
+                ])
+                if vfw2 == None:
+                    vfw2 = idx - 6
+            else:
+                faces.extend([
+                    (15, idx - 6, idx),
+                    (17, idx - 5, idx + 1),
+                    (23, idx - 4, idx + 2),
+                    (25, idx - 3, idx + 3),
+                    (31, idx - 2, idx + 4),
+                    (33, idx - 1, idx + 5),
+                ])
+                if vfw3 == None:
+                    vfw3 = idx - 6
+    faces.extend([
+        (19, vfw1, 20),
+        (21, vfw1 + 1, 22),
+        (27, vfw1 + 2, 28),
+        (29, vfw1 + 3, 30),
+        (35, vfw1 + 4, 36),
+        (37, vfw1 + 5, 38),
+        (20, vfw2, 16),
+        (22, vfw2 + 1, 18),
+        (28, vfw2 + 2, 24),
+        (30, vfw2 + 3, 26),
+        (36, vfw2 + 4, 32),
+        (38, vfw2 + 5, 34),
+        (16, vfw3, 15),
+        (18, vfw3 + 1, 17),
+        (24, vfw3 + 2, 23),
+        (26, vfw3 + 3, 25),
+        (32, vfw3 + 4, 31),
+        (34, vfw3 + 5, 33),
+        (15, vfw0, 19),
+        (17, vfw0 + 1, 21),
+        (23, vfw0 + 2, 27),
+        (25, vfw0 + 3, 29),
+        (31, vfw0 + 4, 35),
+        (33, vfw0 + 5, 37),
+    ])
+
+    print(vfw1)
 
     # print('trig mesh' + str(vertices) + ' ' + str(edges) + ' ' + str(faces))
 
@@ -156,7 +445,7 @@ for i in range(0, n + 1):
 
             # print(str((x, y)) + ' not found')
             for z in range(0, 6):
-                mesh = create_triangle_mesh(f, d, h,trig_h, x, y, z)
+                mesh = create_triangle_mesh(f, d, h, trig_h, fw, fd, p, x, y, z)
 
                 # print('mesh created z: ' + str((x, y, z)) + str(mesh))
                 triangle_object = bpy.data.objects.new(trig_name + '_0', mesh)
