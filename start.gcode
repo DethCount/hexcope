@@ -1,0 +1,16 @@
+;Gcode by Cura
+G90
+G28
+M107
+M109 R100
+G30
+M109 S{material_print_temperature_layer_0} U-55 X55 V-85 Y-85 W0.26 Z0.26
+M82
+G92 E0
+G1 F200 E6
+G92 E0
+G1 F200 E-3.5
+G0 Z0.15
+G0 X10
+G0 Z3
+G1 F6000
