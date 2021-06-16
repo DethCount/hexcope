@@ -6,14 +6,27 @@ n = 1 # max distance (in r unit)
 r = 1.0 # hex side
 h = 0.04 # hex thickness
 trig_h = 0.1 # triangle walls height
+p = 100
 
-basis_wheel_t = 0.1
+basis_wheel_t = h
 basis_wheel_h = 1.7
 basis_wheel_r = r
-basis_wheel_p = 100 # wheel precision
+basis_wheel_p = p # wheel precision
 basis_wheel_wr = 0.8 * r # wheel radius
 basis_wheel_mr = 0.2 * r
 basis_wheel_e = 0.005
+
+basis_arm_e = basis_wheel_e
+basis_arm_t = 0.1
+basis_arm_h = basis_wheel_h
+basis_arm_w = 1.2 * r
+basis_arm_p = 20
+basis_arm_wheel_thickness = basis_wheel_t
+basis_arm_wheel_radius = basis_wheel_wr
+basis_arm_middle_bar_radius = basis_wheel_mr
+basis_arm_teeth_width = r
+basis_arm_teeth_height = 0.25
+basis_arm_teeth_thickness = 0.6 * basis_arm_t
 
 # x : cartesian (1, 0)
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
@@ -238,8 +251,12 @@ def create_basis_wheel_mesh(e, t, h, r, p, wr, mr, hex_thickness, hex_walls_heig
 # e: epsilon, smallest change in position
 # t: thickness
 # h: height
-# ht: teeth height
+# r: hex side length
+# p: precision in number of parts of 1
+# wr: wheel radius
+# mr: middle bar radius
 # hex_thickness: mirror hex thickness
+# hex_walls_height: mirror hex walls height
 def create_basis_wheel_bottom_mesh(e, t, h, r, p, wr, mr, hex_thickness, hex_walls_height):
     mesh = bpy.data.meshes.new('basis_wheel_mesh_bottom' + str((e,t,h,r,hex_thickness,hex_walls_height)))
 
@@ -373,6 +390,357 @@ def create_basis_wheel_bottom_mesh(e, t, h, r, p, wr, mr, hex_thickness, hex_wal
 
     return mesh
 
+# e: epsilon, smallest change in position
+# t: thickness
+# h: height
+# w: width
+# p: precision in number of parts of 1
+# wheel_thickness: wheel thickness
+# wheel_radius: wheel radius
+# middle_bar_radius: middle bar radius
+# teeth_width: bottom teeth width
+# teeth_height: bottom teeth height
+# teeth_thickness: bottom teeth thickness
+def create_basis_arm_mesh(e, t, h, w, p, wheel_thickness, wheel_radius, middle_bar_radius, teeth_width, teeth_height, teeth_thickness):
+    mesh = bpy.data.meshes.new('basis_arm_' + str((e, t, h, w, p, wheel_thickness, wheel_radius, middle_bar_radius, teeth_width, teeth_height, teeth_thickness)))
+
+    lr = t + middle_bar_radius # large radius
+    hw = 0.5 * w
+
+    vertices = [
+        (-wheel_thickness - e, 0, -wheel_radius + middle_bar_radius + t),
+        (-wheel_thickness - e - t, 0, -wheel_radius + middle_bar_radius + t),
+        (-wheel_thickness - e - t, 0, -wheel_radius),
+        (-wheel_thickness - e, 0, -wheel_radius),
+    ]
+    edges = [(0, 1)]
+    faces = []
+
+    nb_verts = len(vertices)
+
+    for i in range(0, p + 1):
+        alpha = i * (math.pi / 2) / p
+        beta = alpha
+
+        vertices.extend([
+            (-wheel_thickness - e - t, lr * math.sin(beta), -wheel_radius + lr * math.cos(beta)),
+            (-wheel_thickness - e, lr * math.sin(beta), -wheel_radius + lr * math.cos(beta)),
+
+            (-wheel_thickness - e - t, middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+            (-wheel_thickness - e, middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+
+            (-wheel_thickness - e - t, -lr * math.sin(beta), -wheel_radius + lr * math.cos(beta)),
+            (-wheel_thickness - e, -lr * math.sin(beta), -wheel_radius + lr * math.cos(beta)),
+
+            (-wheel_thickness - e - t, -middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+            (-wheel_thickness - e, -middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+
+            (e + t, lr * math.sin(beta), -wheel_radius + lr * math.cos(beta)),
+            (e, lr * math.sin(beta), -wheel_radius + lr * math.cos(beta)),
+
+            (e + t, middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+            (e, middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+
+            (e + t, -lr * math.sin(beta), -wheel_radius + lr * math.cos(beta)),
+            (e, -lr * math.sin(beta), -wheel_radius + lr * math.cos(beta)),
+
+            (e + t, -middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+            (e, -middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+        ])
+
+        llllv = nb_verts + 16 * i
+        lllrv = nb_verts + 16 * i + 1
+
+        llslv = nb_verts + 16 * i + 2
+        llsrv = nb_verts + 16 * i + 3
+
+        lrllv = nb_verts + 16 * i + 4
+        lrlrv = nb_verts + 16 * i + 5
+
+        lrslv = nb_verts + 16 * i + 6
+        lrsrv = nb_verts + 16 * i + 7
+
+        rlllv = nb_verts + 16 * i + 8
+        rllrv = nb_verts + 16 * i + 9
+
+        rlslv = nb_verts + 16 * i + 10
+        rlsrv = nb_verts + 16 * i + 11
+
+        rrllv = nb_verts + 16 * i + 12
+        rrlrv = nb_verts + 16 * i + 13
+
+        rrslv = nb_verts + 16 * i + 14
+        rrsrv = nb_verts + 16 * i + 15
+
+        edges.extend([
+            (llllv, lllrv),
+            (llslv, llsrv),
+
+            (lrllv, lrlrv),
+            (lrslv, lrsrv),
+
+            (rlllv, rllrv),
+            (rlslv, rlsrv),
+
+            (rrllv, rrlrv),
+            (rrslv, rrsrv),
+        ])
+
+        if i > 0:
+            faces.extend([
+                (llllv - 16, llllv, lllrv, lllrv - 16),
+                (llllv - 16, llllv, llslv, llslv - 16),
+                (lllrv - 16, lllrv, llsrv, llsrv - 16),
+                (llslv - 16, llslv, llsrv, llsrv - 16),
+
+                (lrllv - 16, lrllv, lrlrv, lrlrv - 16),
+                (lrllv - 16, lrllv, lrslv, lrslv - 16),
+                (lrlrv - 16, lrlrv, lrsrv, lrsrv - 16),
+                (lrslv - 16, lrslv, lrsrv, lrsrv - 16),
+
+                (rlllv - 16, rlllv, rllrv, rllrv - 16),
+                (rlllv - 16, rlllv, rlslv, rlslv - 16),
+                (rllrv - 16, rllrv, rlsrv, rlsrv - 16),
+                (rlslv - 16, rlslv, rlsrv, rlsrv - 16),
+
+                (rrllv - 16, rrllv, rrlrv, rrlrv - 16),
+                (rrllv - 16, rrllv, rrslv, rrslv - 16),
+                (rrlrv - 16, rrlrv, rrsrv, rrsrv - 16),
+                (rrslv - 16, rrslv, rrsrv, rrsrv - 16),
+            ])
+
+    nb_verts = len(vertices)
+
+    vertices.extend([
+        (-wheel_thickness - e - t, hw, -1.5 * wheel_radius),
+        (-wheel_thickness - e, hw, -1.5 * wheel_radius),
+
+        (-wheel_thickness - e - t, -hw, -1.5 * wheel_radius),
+        (-wheel_thickness - e, -hw, -1.5 * wheel_radius),
+
+        (e + t, hw, -1.5 * wheel_radius),
+        (e, hw, -1.5 * wheel_radius),
+
+        (e + t, -hw, -1.5 * wheel_radius),
+        (e, -hw, -1.5 * wheel_radius),
+    ])
+
+    edges.extend([
+        (llllv, nb_verts),
+        (lllrv, nb_verts + 1),
+
+        (lrllv, nb_verts + 2),
+        (lrlrv, nb_verts + 3),
+
+        (rlllv, nb_verts + 4),
+        (rllrv, nb_verts + 5),
+
+        (rrllv, nb_verts + 6),
+        (rrlrv, nb_verts + 7),
+    ])
+
+    faces.extend([
+        (llllv, nb_verts, nb_verts + 1, lllrv),
+        (lrllv, nb_verts + 2, nb_verts + 3, lrlrv),
+        (rlllv, nb_verts + 4, nb_verts + 5, rllrv),
+        (rrllv, nb_verts + 6, nb_verts + 7, rrlrv),
+        (llllv, llslv, nb_verts),
+        (lllrv, llsrv, nb_verts + 1),
+        (lrllv, lrslv, nb_verts + 2),
+        (lrlrv, lrsrv, nb_verts + 3),
+        (rlllv, rlslv, nb_verts + 4),
+        (rllrv, rlsrv, nb_verts + 5),
+        (rrllv, rrslv, nb_verts + 6),
+        (rrlrv, rrsrv, nb_verts + 7),
+    ])
+
+    nb_verts2 = len(vertices)
+
+    for i in range(0, p + 1):
+        alpha = i * (math.pi / 2) / p
+        beta = math.pi / 2 + alpha
+
+        vertices.extend([
+            (-wheel_thickness - e - t, middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+            (-wheel_thickness - e, middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+
+            (-wheel_thickness - e - t, -middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+            (-wheel_thickness - e, -middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+
+            (e + t, middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+            (e, middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+
+            (e + t, -middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+            (e, -middle_bar_radius * math.sin(beta), -wheel_radius + middle_bar_radius * math.cos(beta)),
+        ])
+
+        lllv = nb_verts2 + 8 * i
+        llrv = lllv + 1
+        lrlv = lllv + 2
+        lrrv = lllv + 3
+        rllv = lllv + 4
+        rlrv = lllv + 5
+        rrlv = lllv + 6
+        rrrv = lllv + 7
+
+        edges.extend([
+            (lllv, llrv),
+            (lrlv, lrrv),
+            (rllv, rlrv),
+            (rrlv, rrrv),
+        ])
+
+        if i > 0:
+            faces.extend([
+                (lllv - 8, lllv, llrv, llrv - 8),
+                (lrlv - 8, lrlv, lrrv, lrrv - 8),
+                (rllv - 8, rllv, rlrv, rlrv - 8),
+                (rrlv - 8, rrlv, rrrv, rrrv - 8),
+
+                (lllv - 8, lllv, nb_verts),
+                (llrv - 8, llrv, nb_verts + 1),
+
+                (lrlv - 8, lrlv, nb_verts + 2),
+                (lrrv - 8, lrrv, nb_verts + 3),
+
+                (rllv - 8, rllv, nb_verts + 4),
+                (rlrv - 8, rlrv, nb_verts + 5),
+
+                (rrlv - 8, rrlv, nb_verts + 6),
+                (rrrv - 8, rrrv, nb_verts + 7),
+            ])
+
+    faces.extend([
+        (nb_verts, nb_verts + 2, lllv),
+        (nb_verts + 1, nb_verts + 3, llrv),
+        (nb_verts + 4, nb_verts + 6, rllv),
+        (nb_verts + 5, nb_verts + 7, rlrv),
+    ])
+
+    nb_verts3 = len(vertices)
+
+    vertices.extend([
+        (-wheel_thickness - e - t, hw, -2 * wheel_radius - e),
+        (-wheel_thickness - e, hw, -2 * wheel_radius - e),
+
+        (-wheel_thickness - e - t, -hw, -2 * wheel_radius - e),
+        (-wheel_thickness - e, -hw, -2 * wheel_radius - e),
+
+        (e + t, hw, -2 * wheel_radius - e),
+        (e, hw, -2 * wheel_radius - e),
+
+        (e + t, -hw, -2 * wheel_radius - e),
+        (e, -hw, -2 * wheel_radius - e),
+    ])
+
+    edges.extend([
+        (nb_verts, nb_verts3),
+        (nb_verts + 1, nb_verts3 + 1),
+        (nb_verts + 2, nb_verts3 + 2),
+        (nb_verts + 3, nb_verts3 + 3),
+        (nb_verts + 4, nb_verts3 + 4),
+        (nb_verts + 5, nb_verts3 + 5),
+        (nb_verts + 6, nb_verts3 + 6),
+        (nb_verts + 7, nb_verts3 + 7),
+        (nb_verts3, nb_verts3 + 1), (nb_verts3 + 1, nb_verts3 + 3),  (nb_verts3 + 3, nb_verts3 + 2), (nb_verts3 + 2, nb_verts3),
+        (nb_verts3 + 5, nb_verts3 + 4), (nb_verts3 + 4, nb_verts3 + 6), (nb_verts3 + 6, nb_verts3 + 7), (nb_verts3 + 7, nb_verts3 + 5),
+        (nb_verts3 + 1, nb_verts3 + 5),
+        (nb_verts3 + 3, nb_verts3 + 7),
+    ])
+
+    faces.extend([
+        (nb_verts, nb_verts3, nb_verts3 + 2, nb_verts + 2),
+        (nb_verts + 1, nb_verts3 + 1, nb_verts3 + 3, nb_verts + 3),
+        (nb_verts + 4, nb_verts3 + 4, nb_verts3 + 6, nb_verts + 6),
+        (nb_verts + 5, nb_verts3 + 5, nb_verts3 + 7, nb_verts + 7),
+        (nb_verts, nb_verts3, nb_verts3 + 1, nb_verts + 1),
+        (nb_verts + 2, nb_verts3 + 2, nb_verts3 + 3, nb_verts + 3),
+        (nb_verts + 4, nb_verts3 + 4, nb_verts3 + 5, nb_verts + 5),
+        (nb_verts + 6, nb_verts3 + 6, nb_verts3 + 7, nb_verts + 7),
+        (nb_verts3 + 1, nb_verts3 + 5, nb_verts3 + 7, nb_verts3 + 3),
+    ])
+
+    nb_verts4 = len(vertices)
+    h1 = h - wheel_radius - e - middle_bar_radius - t - teeth_height
+    print('h1: ' + str(h1))
+
+    h2 = -2 * wheel_radius - e - h1
+
+    h3 = h2 - teeth_height
+
+    vertices.extend([
+        (-wheel_thickness - e - t, hw, h2),
+        (-wheel_thickness - e - t, -hw, h2),
+
+        (e + t, hw, h2),
+        (e + t, -hw, h2),
+
+        (-0.5 * wheel_thickness - 0.5 * teeth_thickness, 0.5 * teeth_width, h2),
+        (-0.5 * wheel_thickness - 0.5 * teeth_thickness, -0.5 * teeth_width, h2),
+
+        (0.5 * teeth_thickness, 0.5 * teeth_width, h2),
+        (0.5 * teeth_thickness, -0.5 * teeth_width, h2),
+
+        (-0.5 * wheel_thickness - 0.5 * teeth_thickness, 0.5 * teeth_width, h3),
+        (-0.5 * wheel_thickness - 0.5 * teeth_thickness, -0.5 * teeth_width, h3),
+
+        (0.5 * teeth_thickness, 0.5 * teeth_width, h3),
+        (0.5 * teeth_thickness, -0.5 * teeth_width, h3),
+    ])
+
+    edges.extend([
+        (nb_verts4, nb_verts4 + 1),
+        (nb_verts4 + 1, nb_verts4 + 3),
+        (nb_verts4 + 3, nb_verts4 + 2),
+        (nb_verts4 + 2, nb_verts4),
+
+        (nb_verts3, nb_verts4),
+        (nb_verts3 + 4, nb_verts4 + 2),
+        (nb_verts3 + 6, nb_verts4 + 3),
+        (nb_verts3 + 2, nb_verts4 + 1),
+
+        (nb_verts4 + 4, nb_verts4 + 6),
+        (nb_verts4 + 6, nb_verts4 + 7),
+        (nb_verts4 + 7, nb_verts4 + 5),
+        (nb_verts4 + 5, nb_verts4 + 4),
+
+        (nb_verts4 + 8, nb_verts4 + 10),
+        (nb_verts4 + 10, nb_verts4 + 11),
+        (nb_verts4 + 11, nb_verts4 + 9),
+        (nb_verts4 + 9, nb_verts4 + 8),
+
+        (nb_verts4 + 4, nb_verts4 + 8),
+        (nb_verts4 + 5, nb_verts4 + 9),
+        (nb_verts4 + 6, nb_verts4 + 10),
+        (nb_verts4 + 7, nb_verts4 + 11),
+    ])
+
+    faces.extend([
+        (nb_verts3, nb_verts4, nb_verts4 + 1, nb_verts3 + 2),
+        (nb_verts3 + 6, nb_verts4 + 3, nb_verts4 + 2, nb_verts3 + 4),
+
+        (nb_verts3 + 2, nb_verts4 + 1, nb_verts4 + 3, nb_verts3 + 6),
+        (nb_verts3, nb_verts4, nb_verts4 + 2, nb_verts3 + 4),
+
+        (nb_verts4, nb_verts4 + 1, nb_verts4 + 5, nb_verts4 + 4),
+        (nb_verts4 + 2, nb_verts4 + 3, nb_verts4 + 7, nb_verts4 + 6),
+
+        (nb_verts4 + 1, nb_verts4 + 3, nb_verts4 + 7, nb_verts4 + 5),
+        (nb_verts4, nb_verts4 + 2, nb_verts4 + 6, nb_verts4 + 4),
+
+        (nb_verts4 + 4, nb_verts4 + 5, nb_verts4 + 9, nb_verts4 + 8),
+        (nb_verts4 + 5, nb_verts4 + 7, nb_verts4 + 11, nb_verts4 + 9),
+        (nb_verts4 + 7, nb_verts4 + 11, nb_verts4 + 10, nb_verts4 + 6),
+        (nb_verts4 + 8, nb_verts4 + 10, nb_verts4 + 6, nb_verts4 + 4),
+
+        (nb_verts4 + 8, nb_verts4 + 9, nb_verts4 + 11, nb_verts4 + 10),
+    ])
+
+    mesh.from_pydata(vertices, edges, faces)
+    mesh.update()
+
+    return mesh
+
 def move_basis_to(obj, hex):
     hex_1 = hex2xy(0, 0, hex, 1)
     hex_2 = hex2xy(0, 0, hex, 2)
@@ -416,6 +784,20 @@ basis_wheel_bottom_mesh = create_basis_wheel_bottom_mesh(
     trig_h
 )
 
+basis_arm_mesh = create_basis_arm_mesh(
+    basis_arm_e,
+    basis_arm_t,
+    basis_arm_h,
+    basis_arm_w,
+    basis_arm_p,
+    basis_arm_wheel_thickness,
+    basis_arm_wheel_radius,
+    basis_arm_middle_bar_radius,
+    basis_arm_teeth_width,
+    basis_arm_teeth_height,
+    basis_arm_teeth_thickness
+)
+
 # print('basis wheel mesh created: ' + str(basis_wheel_mesh))
 basis_wheel_object_r = bpy.data.objects.new('basis_wheel_r', basis_wheel_mesh)
 basis_collection.objects.link(basis_wheel_object_r)
@@ -425,6 +807,10 @@ basis_wheel_object_r_bottom = bpy.data.objects.new('basis_wheel_r_bottom', basis
 basis_collection.objects.link(basis_wheel_object_r_bottom)
 move_basis_to(basis_wheel_object_r_bottom, 0)
 
+basis_arm_r = bpy.data.objects.new('basis_arm_r', basis_arm_mesh)
+basis_collection.objects.link(basis_arm_r)
+move_basis_to(basis_arm_r, 0)
+
 basis_wheel_object_l = bpy.data.objects.new('basis_wheel_l', basis_wheel_mesh)
 basis_collection.objects.link(basis_wheel_object_l)
 move_basis_to(basis_wheel_object_l, 3)
@@ -432,6 +818,10 @@ move_basis_to(basis_wheel_object_l, 3)
 basis_wheel_object_l_bottom = bpy.data.objects.new('basis_wheel_l_bottom', basis_wheel_bottom_mesh)
 basis_collection.objects.link(basis_wheel_object_l_bottom)
 move_basis_to(basis_wheel_object_l_bottom, 3)
+
+basis_arm_l = bpy.data.objects.new('basis_arm_l', basis_arm_mesh)
+basis_collection.objects.link(basis_arm_l)
+move_basis_to(basis_arm_l, 3)
 
 print('done')
 # bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\basis_", check_existing=True, filter_glob='*.stl', use_selection=False, global_scale=100.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z')
