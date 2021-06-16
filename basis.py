@@ -28,6 +28,16 @@ basis_arm_teeth_width = r
 basis_arm_teeth_height = 0.25
 basis_arm_teeth_thickness = 0.6 * basis_arm_t
 
+basis_leg_e = basis_arm_e
+basis_leg_t = 2 * basis_arm_t + basis_arm_wheel_thickness + 2 * basis_arm_e
+basis_leg_h = basis_arm_h
+basis_leg_w = basis_arm_w
+basis_leg_x = -0.5 * basis_arm_wheel_thickness
+basis_leg_z = -basis_arm_wheel_radius - basis_arm_h + basis_arm_middle_bar_radius + basis_arm_t
+basis_leg_teeth_width = basis_arm_teeth_width
+basis_leg_teeth_height = basis_arm_teeth_height
+basis_leg_teeth_thickness = basis_arm_teeth_thickness
+
 # x : cartesian (1, 0)
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
 # z : hex triangle index ccw
@@ -662,7 +672,6 @@ def create_basis_arm_mesh(e, t, h, w, p, wheel_thickness, wheel_radius, middle_b
 
     nb_verts4 = len(vertices)
     h1 = h - wheel_radius - e - middle_bar_radius - t - teeth_height
-    print('h1: ' + str(h1))
 
     h2 = -2 * wheel_radius - e - h1
 
@@ -678,14 +687,14 @@ def create_basis_arm_mesh(e, t, h, w, p, wheel_thickness, wheel_radius, middle_b
         (-0.5 * wheel_thickness - 0.5 * teeth_thickness, 0.5 * teeth_width, h2),
         (-0.5 * wheel_thickness - 0.5 * teeth_thickness, -0.5 * teeth_width, h2),
 
-        (0.5 * teeth_thickness, 0.5 * teeth_width, h2),
-        (0.5 * teeth_thickness, -0.5 * teeth_width, h2),
+        (-0.5 * wheel_thickness + 0.5 * teeth_thickness, 0.5 * teeth_width, h2),
+        (-0.5 * wheel_thickness + 0.5 * teeth_thickness, -0.5 * teeth_width, h2),
 
         (-0.5 * wheel_thickness - 0.5 * teeth_thickness, 0.5 * teeth_width, h3),
         (-0.5 * wheel_thickness - 0.5 * teeth_thickness, -0.5 * teeth_width, h3),
 
-        (0.5 * teeth_thickness, 0.5 * teeth_width, h3),
-        (0.5 * teeth_thickness, -0.5 * teeth_width, h3),
+        (-0.5 * wheel_thickness + 0.5 * teeth_thickness, 0.5 * teeth_width, h3),
+        (-0.5 * wheel_thickness + 0.5 * teeth_thickness, -0.5 * teeth_width, h3),
     ])
 
     edges.extend([
@@ -741,6 +750,104 @@ def create_basis_arm_mesh(e, t, h, w, p, wheel_thickness, wheel_radius, middle_b
 
     return mesh
 
+def create_basis_leg_mesh(e, t, h, w, x, z, teeth_width, teeth_height, teeth_thickness):
+    mesh = bpy.data.meshes.new('basis_leg_' + str((e, t, h, w, x, z, teeth_width, teeth_height, teeth_thickness)))
+
+    hw = 0.5 * w
+    ht = 0.5 * t
+    htt = 0.5 * teeth_thickness
+    htw = 0.5 * teeth_width
+
+    vertices = [
+        (x + -ht, hw, z + teeth_height - e),
+        (x + -ht, -hw, z + teeth_height - e),
+        (x + ht, hw, z + teeth_height - e),
+        (x + ht, -hw, z + teeth_height - e),
+
+        (x + -htt - e, htw + e, z + teeth_height - e),
+        (x + -htt - e, -htw - e, z + teeth_height - e),
+        (x + htt + e, htw + e, z + teeth_height - e),
+        (x + htt + e, -htw - e, z + teeth_height - e),
+
+        (x + -ht, hw, z - e),
+        (x + -ht, -hw, z - e),
+        (x + ht, hw, z - e),
+        (x + ht, -hw, z - e),
+
+        (x + -htt - e, htw + e, z - e),
+        (x + -htt - e, -htw - e, z - e),
+        (x + htt + e, htw + e, z - e),
+        (x + htt + e, -htw - e, z - e),
+
+        (x + -ht, hw, z - e - h + teeth_height),
+        (x + -ht, -hw, z - e - h + teeth_height),
+        (x + ht, hw, z - e - h + teeth_height),
+        (x + ht, -hw, z - e - h + teeth_height),
+
+        (x + -htt - e, htw + e, z - e - h + teeth_height),
+        (x + -htt - e, -htw - e, z - e - h + teeth_height),
+        (x + htt + e, htw + e, z - e - h + teeth_height),
+        (x + htt + e, -htw - e, z - e - h + teeth_height),
+
+        (x + -htt - e, htw + e, z - e - h),
+        (x + -htt - e, -htw - e, z - e - h),
+        (x + htt + e, htw + e, z - e - h),
+        (x + htt + e, -htw - e, z - e - h),
+    ]
+    edges = [
+        (0, 1), (1, 3), (3, 2), (2, 0),
+        (4, 5), (5, 7), (7, 6), (6, 4),
+        (8, 9), (9, 11), (11, 10), (10, 8),
+        (12, 13), (13, 15), (15, 14), (14, 12),
+        (4, 12),(5, 13), (6, 14), (7, 15),
+        (0, 8), (1, 9), (2, 10), (3, 11),
+        (16, 17), (17, 19), (19, 18), (18, 16),
+        (8, 16), (9, 17), (10, 18), (11, 19),
+        (20, 21), (21, 23), (23, 22), (22, 20),
+        (24, 25), (25, 27), (27, 26), (26, 24),
+        (20, 24), (21, 25), (22, 26), (23, 27),
+    ]
+    faces = [
+        (0, 1, 5, 4),
+        (1, 3, 7, 5),
+        (3, 2, 6, 7),
+        (2, 0, 4, 6),
+
+        (12, 13, 15, 14),
+
+        (4, 12, 13, 5),
+        (6, 14, 15, 7),
+        (4, 12, 14, 6),
+        (7, 15, 13, 5),
+
+        (0, 1, 9, 8),
+        (1, 3, 11, 9),
+        (3, 2, 10, 11),
+        (2, 0, 8, 10),
+
+        (8, 16, 17, 9),
+        (10, 18, 19, 11),
+        (8, 16, 18, 10),
+        (9, 17, 19, 11),
+
+        (16, 20, 21, 17),
+        (18, 22, 23, 19),
+        (16, 20, 22, 18),
+        (17, 21, 23, 19),
+
+        (20, 24, 25, 21),
+        (22, 26, 27, 23),
+        (20, 24, 26, 22),
+        (21, 25, 27, 23),
+
+        (24, 25, 27, 26),
+    ]
+
+    mesh.from_pydata(vertices, edges, faces)
+    mesh.update()
+
+    return mesh
+
 def move_basis_to(obj, hex):
     hex_1 = hex2xy(0, 0, hex, 1)
     hex_2 = hex2xy(0, 0, hex, 2)
@@ -772,6 +879,7 @@ basis_wheel_mesh = create_basis_wheel_mesh(
     h,
     trig_h
 )
+
 basis_wheel_bottom_mesh = create_basis_wheel_bottom_mesh(
     basis_wheel_e,
     basis_wheel_t,
@@ -798,6 +906,18 @@ basis_arm_mesh = create_basis_arm_mesh(
     basis_arm_teeth_thickness
 )
 
+basis_leg_mesh = create_basis_leg_mesh(
+    basis_leg_e,
+    basis_leg_t,
+    basis_leg_h,
+    basis_leg_w,
+    basis_leg_x,
+    basis_leg_z,
+    basis_leg_teeth_width,
+    basis_leg_teeth_height,
+    basis_leg_teeth_thickness
+)
+
 # print('basis wheel mesh created: ' + str(basis_wheel_mesh))
 basis_wheel_object_r = bpy.data.objects.new('basis_wheel_r', basis_wheel_mesh)
 basis_collection.objects.link(basis_wheel_object_r)
@@ -811,6 +931,10 @@ basis_arm_r = bpy.data.objects.new('basis_arm_r', basis_arm_mesh)
 basis_collection.objects.link(basis_arm_r)
 move_basis_to(basis_arm_r, 0)
 
+basis_leg_r = bpy.data.objects.new('basis_leg_r', basis_leg_mesh)
+basis_collection.objects.link(basis_leg_r)
+move_basis_to(basis_leg_r, 0)
+
 basis_wheel_object_l = bpy.data.objects.new('basis_wheel_l', basis_wheel_mesh)
 basis_collection.objects.link(basis_wheel_object_l)
 move_basis_to(basis_wheel_object_l, 3)
@@ -822,6 +946,10 @@ move_basis_to(basis_wheel_object_l_bottom, 3)
 basis_arm_l = bpy.data.objects.new('basis_arm_l', basis_arm_mesh)
 basis_collection.objects.link(basis_arm_l)
 move_basis_to(basis_arm_l, 3)
+
+basis_leg_l = bpy.data.objects.new('basis_leg_l', basis_leg_mesh)
+basis_collection.objects.link(basis_leg_l)
+move_basis_to(basis_leg_l, 3)
 
 print('done')
 # bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\basis_", check_existing=True, filter_glob='*.stl', use_selection=False, global_scale=100.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z')
