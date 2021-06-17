@@ -42,6 +42,21 @@ basis_leg_side_teeth_height = 0.15
 basis_leg_side_teeth_thickness = 0.6 * basis_leg_t
 basis_leg_side_teeth_z = 0.5 * (2 * 0.04 + basis_leg_side_teeth_width)
 
+basis_foot_e = basis_leg_e
+basis_foot_t = basis_leg_t
+basis_foot_h = 2 * basis_leg_side_teeth_z
+basis_foot_w1 = 0.1
+basis_foot_w2 = 0.4 * basis_leg_w
+basis_foot_x = basis_leg_x
+basis_foot_y = -0.5 * basis_leg_w
+basis_foot_z = basis_leg_z - basis_leg_e - basis_leg_h + 0.5 * basis_foot_h + basis_leg_teeth_height
+basis_foot_horizontal_tooth_width = basis_leg_side_teeth_width
+basis_foot_horizontal_tooth_height = basis_leg_side_teeth_height
+basis_foot_horizontal_tooth_thickness = basis_leg_side_teeth_thickness
+basis_foot_vertical_tooth_width = 0.5 * basis_foot_w2
+basis_foot_vertical_tooth_height = 0.5 * basis_leg_teeth_height
+basis_foot_vertical_tooth_thickness = basis_leg_teeth_thickness
+
 # x : cartesian (1, 0)
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
 # z : hex triangle index ccw
@@ -909,6 +924,146 @@ def create_basis_leg_mesh(e, t, h, w, x, z, teeth_width, teeth_height, teeth_thi
 
     return mesh
 
+def create_foot_mesh(e, t, h, w1, w2, x, y, z, horizontal_tooth_width, horizontal_tooth_height, horizontal_tooth_thickness, vertical_tooth_width, vertical_tooth_height, vertical_tooth_thickness, yscale):
+    mesh = bpy.data.meshes.new('basis_foot_' + str((e, t, h, w1, w2, x, y, z, horizontal_tooth_width, horizontal_tooth_height, horizontal_tooth_thickness, vertical_tooth_width, vertical_tooth_height, vertical_tooth_thickness, yscale)))
+
+    ht = 0.5 * t
+    hh = 0.5 * h
+    hhtw = 0.5 * horizontal_tooth_width
+    hhtt = 0.5 * horizontal_tooth_thickness
+    hvtw = 0.5 * vertical_tooth_width
+    hvtt = 0.5 * vertical_tooth_thickness
+
+    pi3 = math.pi / 3
+    pi6 = math.pi / 6
+    cpi3 = math.cos(pi3)
+    spi3 = math.sin(pi3)
+    cpi6 = math.cos(pi6)
+    spi6 = math.sin(pi6)
+
+    w3 = spi3 * t
+    h1 = spi6 * w3
+
+    h2 = spi3 * w2
+    w4 = cpi3 * w2
+
+    h3 = (0.5 * w2 - hvtw) * cpi6
+    w5 = (0.5 * w2 - hvtw) * spi6
+
+    p1 = (x - ht, yscale * (y - e - w1), z + hh)
+    p2 = (x + ht, yscale * (y - e - w1), z + hh)
+
+    p3 = (p1[0] - h2, p1[1] - yscale * w4, z)
+    p4 = (p2[0] - h2, p2[1] - yscale * w4, z)
+
+    p5 = (x - hvtt - h3, yscale * (y - e - w1 - w5), z - hh)
+    p6 = (x + hvtt - h3, yscale * (y - e - w1 - w5), z - hh)
+
+    p7 = (p5[0] - vertical_tooth_width * cpi6, p5[1] - yscale * vertical_tooth_width * spi6, p5[2])
+    p8 = (p6[0] - vertical_tooth_width * cpi6, p6[1] - yscale * vertical_tooth_width * spi6, p6[2])
+
+    vertices = [
+        (x - hhtt + e, yscale * (y - e + horizontal_tooth_height), z + hhtw - e),
+        (x + hhtt - e, yscale * (y - e + horizontal_tooth_height), z + hhtw - e),
+
+        (x - hhtt + e, yscale * (y - e + horizontal_tooth_height), z - hhtw + e),
+        (x + hhtt - e, yscale * (y - e + horizontal_tooth_height), z - hhtw + e),
+
+        (x - hhtt + e, yscale * (y - e), z + hhtw - e),
+        (x + hhtt - e, yscale * (y - e), z + hhtw - e),
+
+        (x - hhtt + e, yscale * (y - e), z - hhtw + e),
+        (x + hhtt - e, yscale * (y - e), z - hhtw + e),
+
+        (x - ht, yscale * (y - e), z + hh),
+        (x + ht, yscale * (y - e), z + hh),
+
+        (x - ht, yscale * (y - e), z - hh),
+        (x + ht, yscale * (y - e), z - hh),
+
+        p1,
+        p2,
+
+        (p1[0], p1[1], z - hh),
+        (p2[0], p2[1], z - hh),
+
+        p3,
+        p4,
+
+        (p3[0], p3[1], z - hh),
+        (p4[0], p4[1], z - hh),
+
+        p5,
+        p6,
+
+        p7,
+        p8,
+
+        (p5[0], p5[1], p5[2] - vertical_tooth_height),
+        (p6[0], p6[1], p6[2] - vertical_tooth_height),
+
+        (p7[0], p7[1], p7[2] - vertical_tooth_height),
+        (p8[0], p8[1], p8[2] - vertical_tooth_height),
+    ]
+    edges = [
+        (0, 1), (1, 3), (3, 2), (2, 0),
+        (4, 5), (5, 7), (7, 6), (6, 4),
+        (0, 4), (1, 5), (2, 6), (3, 7),
+
+        (8, 9), (9, 11), (11, 10), (10, 8),
+
+        (12, 13), (13, 15), (15, 14), (14, 12),
+        (8, 12), (9, 13), (10, 14), (11, 15),
+
+        (16, 17), (17, 19), (19, 18), (18, 16),
+
+        (12, 16), (13, 17), (14, 18), (15, 19),
+
+        (20, 21), (21, 23), (23, 22), (22, 20),
+
+        (24, 25), (25, 27), (27, 26), (26, 24),
+        (20, 24), (21, 25), (22, 26), (23, 27),
+    ]
+    faces = [
+        (0, 1, 3, 2),
+        (1, 0, 4, 5),
+        (2, 3, 7, 6),
+        (0, 2, 6, 4),
+        (3, 1, 5, 7),
+
+        (8, 9, 5, 4),
+        (11, 10, 6, 7),
+        (10, 8, 4, 6),
+        (9, 11, 7, 5),
+
+        (9, 8, 12, 13),
+        (10, 11, 15, 14),
+        (8, 10, 14, 12),
+        (11, 9, 13, 15),
+
+        (16, 17, 13, 12),
+        (17, 19, 15, 13),
+        (12, 14, 18, 16),
+        (17, 16, 18, 19),
+
+        (14, 15, 21, 20),
+        (15, 19, 23, 21),
+        (19, 18, 22, 23),
+        (18, 14, 20, 22),
+
+        (20, 21, 25, 24),
+        (23, 22, 26, 27),
+        (27, 25, 21, 23),
+        (22, 20, 24, 26),
+
+        (24, 25, 27, 26),
+    ]
+
+    mesh.from_pydata(vertices, edges, faces)
+    mesh.update()
+
+    return mesh
+
 def move_basis_to(obj, hex):
     hex_1 = hex2xy(0, 0, hex, 1)
     hex_2 = hex2xy(0, 0, hex, 2)
@@ -983,6 +1138,42 @@ basis_leg_mesh = create_basis_leg_mesh(
     basis_leg_side_teeth_z
 )
 
+basis_foot_mesh_r = create_foot_mesh(
+    basis_foot_e,
+    basis_foot_t,
+    basis_foot_h,
+    basis_foot_w1,
+    basis_foot_w2,
+    basis_foot_x,
+    basis_foot_y,
+    basis_foot_z,
+    basis_foot_horizontal_tooth_width,
+    basis_foot_horizontal_tooth_height,
+    basis_foot_horizontal_tooth_thickness,
+    basis_foot_vertical_tooth_width,
+    basis_foot_vertical_tooth_height,
+    basis_foot_vertical_tooth_thickness,
+    1 # yscale
+)
+
+basis_foot_mesh_l = create_foot_mesh(
+    basis_foot_e,
+    basis_foot_t,
+    basis_foot_h,
+    basis_foot_w1,
+    basis_foot_w2,
+    basis_foot_x,
+    basis_foot_y,
+    basis_foot_z,
+    basis_foot_horizontal_tooth_width,
+    basis_foot_horizontal_tooth_height,
+    basis_foot_horizontal_tooth_thickness,
+    basis_foot_vertical_tooth_width,
+    basis_foot_vertical_tooth_height,
+    basis_foot_vertical_tooth_thickness,
+    -1 # yscale
+)
+
 # print('basis wheel mesh created: ' + str(basis_wheel_mesh))
 basis_wheel_object_r = bpy.data.objects.new('basis_wheel_r', basis_wheel_mesh)
 basis_collection.objects.link(basis_wheel_object_r)
@@ -1000,6 +1191,16 @@ basis_leg_r = bpy.data.objects.new('basis_leg_r', basis_leg_mesh)
 basis_collection.objects.link(basis_leg_r)
 move_basis_to(basis_leg_r, 0)
 
+basis_foot_rr = bpy.data.objects.new('basis_foot_rr', basis_foot_mesh_r)
+basis_collection.objects.link(basis_foot_rr)
+move_basis_to(basis_foot_rr, 0)
+
+basis_foot_rl = bpy.data.objects.new('basis_foot_rl', basis_foot_mesh_l)
+basis_collection.objects.link(basis_foot_rl)
+move_basis_to(basis_foot_rl, 0)
+
+
+
 basis_wheel_object_l = bpy.data.objects.new('basis_wheel_l', basis_wheel_mesh)
 basis_collection.objects.link(basis_wheel_object_l)
 move_basis_to(basis_wheel_object_l, 3)
@@ -1015,6 +1216,14 @@ move_basis_to(basis_arm_l, 3)
 basis_leg_l = bpy.data.objects.new('basis_leg_l', basis_leg_mesh)
 basis_collection.objects.link(basis_leg_l)
 move_basis_to(basis_leg_l, 3)
+
+basis_foot_lr = bpy.data.objects.new('basis_foot_lr', basis_foot_mesh_r)
+basis_collection.objects.link(basis_foot_lr)
+move_basis_to(basis_foot_lr, 3)
+
+basis_foot_ll = bpy.data.objects.new('basis_foot_ll', basis_foot_mesh_l)
+basis_collection.objects.link(basis_foot_ll)
+move_basis_to(basis_foot_ll, 3)
 
 print('done')
 # bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\basis_", check_existing=True, filter_glob='*.stl', use_selection=False, global_scale=100.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z')
