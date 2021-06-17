@@ -37,6 +37,10 @@ basis_leg_z = -basis_arm_wheel_radius - basis_arm_h + basis_arm_middle_bar_radiu
 basis_leg_teeth_width = basis_arm_teeth_width
 basis_leg_teeth_height = basis_arm_teeth_height
 basis_leg_teeth_thickness = basis_arm_teeth_thickness
+basis_leg_side_teeth_width = 0.1
+basis_leg_side_teeth_height = 0.15
+basis_leg_side_teeth_thickness = 0.6 * basis_leg_t
+basis_leg_side_teeth_z = 0.5 * (2 * 0.04 + basis_leg_side_teeth_width)
 
 # x : cartesian (1, 0)
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
@@ -750,49 +754,78 @@ def create_basis_arm_mesh(e, t, h, w, p, wheel_thickness, wheel_radius, middle_b
 
     return mesh
 
-def create_basis_leg_mesh(e, t, h, w, x, z, teeth_width, teeth_height, teeth_thickness):
-    mesh = bpy.data.meshes.new('basis_leg_' + str((e, t, h, w, x, z, teeth_width, teeth_height, teeth_thickness)))
+def create_basis_leg_mesh(e, t, h, w, x, z, teeth_width, teeth_height, teeth_thickness, side_teeth_width, side_teeth_height, side_teeth_thickness, side_teeth_z):
+    mesh = bpy.data.meshes.new('basis_leg_' + str((e, t, h, w, x, z, teeth_width, teeth_height, teeth_thickness, side_teeth_width, side_teeth_height, side_teeth_thickness, side_teeth_z)))
 
     hw = 0.5 * w
     ht = 0.5 * t
     htt = 0.5 * teeth_thickness
     htw = 0.5 * teeth_width
+    hstt = 0.5 * side_teeth_thickness
+    hstw = 0.5 * side_teeth_width
+
+    sth = z - e - h + teeth_height + side_teeth_z # total side teeth z
 
     vertices = [
-        (x + -ht, hw, z + teeth_height - e),
-        (x + -ht, -hw, z + teeth_height - e),
+        (x - ht, hw, z + teeth_height - e),
+        (x - ht, -hw, z + teeth_height - e),
         (x + ht, hw, z + teeth_height - e),
         (x + ht, -hw, z + teeth_height - e),
 
-        (x + -htt - e, htw + e, z + teeth_height - e),
-        (x + -htt - e, -htw - e, z + teeth_height - e),
+        (x - htt - e, htw + e, z + teeth_height - e),
+        (x - htt - e, -htw - e, z + teeth_height - e),
         (x + htt + e, htw + e, z + teeth_height - e),
         (x + htt + e, -htw - e, z + teeth_height - e),
 
-        (x + -ht, hw, z - e),
-        (x + -ht, -hw, z - e),
+        # 8
+        (x - ht, hw, z - e),
+        (x - ht, -hw, z - e),
         (x + ht, hw, z - e),
         (x + ht, -hw, z - e),
 
-        (x + -htt - e, htw + e, z - e),
-        (x + -htt - e, -htw - e, z - e),
+        (x - htt - e, htw + e, z - e),
+        (x - htt - e, -htw - e, z - e),
         (x + htt + e, htw + e, z - e),
         (x + htt + e, -htw - e, z - e),
 
-        (x + -ht, hw, z - e - h + teeth_height),
-        (x + -ht, -hw, z - e - h + teeth_height),
+        # 16
+        (x - ht, hw, z - e - h + teeth_height),
+        (x - ht, -hw, z - e - h + teeth_height),
         (x + ht, hw, z - e - h + teeth_height),
         (x + ht, -hw, z - e - h + teeth_height),
 
-        (x + -htt - e, htw + e, z - e - h + teeth_height),
-        (x + -htt - e, -htw - e, z - e - h + teeth_height),
+        (x - htt - e, htw + e, z - e - h + teeth_height),
+        (x - htt - e, -htw - e, z - e - h + teeth_height),
         (x + htt + e, htw + e, z - e - h + teeth_height),
         (x + htt + e, -htw - e, z - e - h + teeth_height),
 
-        (x + -htt - e, htw + e, z - e - h),
-        (x + -htt - e, -htw - e, z - e - h),
+        # 24
+        (x - htt - e, htw + e, z - e - h),
+        (x - htt - e, -htw - e, z - e - h),
         (x + htt + e, htw + e, z - e - h),
         (x + htt + e, -htw - e, z - e - h),
+
+        (x - hstt, hw, sth + hstw),
+        (x - hstt, -hw, sth + hstw),
+        (x + hstt, hw, sth + hstw),
+        (x + hstt, -hw, sth + hstw),
+
+        # 32
+        (x - hstt, hw, sth - hstw),
+        (x - hstt, -hw, sth - hstw),
+        (x + hstt, hw, sth - hstw),
+        (x + hstt, -hw, sth - hstw),
+
+        (x - hstt, hw - side_teeth_height, sth + hstw),
+        (x - hstt, -hw + side_teeth_height, sth + hstw),
+        (x + hstt, hw - side_teeth_height, sth + hstw),
+        (x + hstt, -hw + side_teeth_height, sth + hstw),
+
+        #40
+        (x - hstt, hw - side_teeth_height, sth - hstw),
+        (x - hstt, -hw + side_teeth_height, sth - hstw),
+        (x + hstt, hw - side_teeth_height, sth - hstw),
+        (x + hstt, -hw + side_teeth_height, sth - hstw),
     ]
     edges = [
         (0, 1), (1, 3), (3, 2), (2, 0),
@@ -806,6 +839,14 @@ def create_basis_leg_mesh(e, t, h, w, x, z, teeth_width, teeth_height, teeth_thi
         (20, 21), (21, 23), (23, 22), (22, 20),
         (24, 25), (25, 27), (27, 26), (26, 24),
         (20, 24), (21, 25), (22, 26), (23, 27),
+
+        (28, 30), (30, 34), (34, 32), (32, 28),
+        (36, 38), (38, 42), (42, 40), (40, 36),
+        (28, 36), (30, 38), (32, 40), (34, 42),
+
+        (29, 31), (31, 35), (35, 33), (33, 29),
+        (37, 39), (39, 43), (43, 41), (41, 37),
+        (29, 37), (31, 39), (33, 41), (35, 43),
     ]
     faces = [
         (0, 1, 5, 4),
@@ -827,8 +868,6 @@ def create_basis_leg_mesh(e, t, h, w, x, z, teeth_width, teeth_height, teeth_thi
 
         (8, 16, 17, 9),
         (18, 10, 11, 19),
-        (16, 8, 10, 18),
-        (9, 17, 19, 11),
 
         (16, 20, 21, 17),
         (22, 18, 19, 23),
@@ -841,6 +880,28 @@ def create_basis_leg_mesh(e, t, h, w, x, z, teeth_width, teeth_height, teeth_thi
         (21, 25, 27, 23),
 
         (25, 24, 26, 27),
+
+        (36, 38, 42, 40),
+        (38, 36, 28, 30),
+        (40, 42, 34, 32),
+        (36, 40, 32, 28),
+        (42, 38, 30, 34),
+
+        (39, 37, 41, 43),
+        (37, 39, 31, 29),
+        (43, 41, 33, 35),
+        (41, 37, 29, 33),
+        (39, 43, 35, 31),
+
+        (8, 10, 30, 28),
+        (32, 34, 18, 16),
+        (8, 28, 32, 16),
+        (30, 10, 18, 34),
+
+        (11, 9, 29, 31),
+        (35, 33, 17, 19),
+        (29, 9, 17, 33),
+        (11, 31, 35, 19),
     ]
 
     mesh.from_pydata(vertices, edges, faces)
@@ -915,7 +976,11 @@ basis_leg_mesh = create_basis_leg_mesh(
     basis_leg_z,
     basis_leg_teeth_width,
     basis_leg_teeth_height,
-    basis_leg_teeth_thickness
+    basis_leg_teeth_thickness,
+    basis_leg_side_teeth_width,
+    basis_leg_side_teeth_height,
+    basis_leg_side_teeth_thickness,
+    basis_leg_side_teeth_z
 )
 
 # print('basis wheel mesh created: ' + str(basis_wheel_mesh))
