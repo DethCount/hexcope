@@ -8,8 +8,7 @@ n = 1 # max distance (in r unit)
 trig_name = 'tri'
 r = 1.0 # hex side
 h = 0.04 # hex thickness
-f = 5 # focal length
-d = 1.0 # parabola height
+f = 12.5 # focal length
 fw = 0.05 * r # fixation half width
 fd = 0.03 # fixation hole diameter
 p = 25 # precision in parts of 1
@@ -19,16 +18,15 @@ trig_h = 0.1 # triangle walls height
 # f : focal length
 # d : parabola height
 # r : distance from parabola center
-def dist2z(f, d, r):
+def dist2z(f, r):
     return (r * r) / (4 * f)
 
 # f : focal length
-# d : parabola height
 # x : cartesian (1, 0)
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
 # z : hex triangle index ccw
 # w : hex triangle vertex index cw from center
-def hex2xyz(f, d, x, y, z, w):
+def hex2xyz(f, x, y, z, w):
     ytheta = math.pi / 6
     x2 = x * (3 * r)
     ytemp = y * (math.sqrt(3) * r)
@@ -43,7 +41,7 @@ def hex2xyz(f, d, x, y, z, w):
         points.append((
             x3,
             y3,
-            dist2z(f, d, math.sqrt(x3 * x3 + y3 * y3))
+            dist2z(f, math.sqrt(x3 * x3 + y3 * y3))
         ))
 
     if w != 0:
@@ -57,9 +55,135 @@ def hex2xyz(f, d, x, y, z, w):
 
     return (x2, y2, z2)
 
+def create_rays(f, x, y, z):
+    mesh = bpy.data.meshes.new('rays_mesh' + str((f, x, y, z)))
+
+    e = 0.05
+    p0 = (10, 10, 10)
+    lp0 = math.sqrt(p0[0] ** 2 + p0[1] ** 2 + p0[2] ** 2)
+
+    p1w0 = hex2xyz(f, x, y, z, 0)
+    p1w1 = hex2xyz(f, x, y, z, 1)
+    p1w2 = hex2xyz(f, x, y, z, 2)
+
+    u = (p1w1[0] - p1w0[0], p1w1[1] - p1w0[1], p1w1[2] - p1w0[2])
+    v = (p1w2[0] - p1w0[0], p1w2[1] - p1w0[1], p1w2[2] - p1w0[2])
+
+    n = (
+        u[1] * v[2] - u[2] * v[1],
+        u[2] * v[0] - u[0] * v[2],
+        u[0] * v[1] - u[1] * v[0]
+    )
+
+    np = (
+        v[1] * u[2] - v[2] * u[1],
+        v[2] * u[0] - v[0] * u[2],
+        v[0] * u[1] - v[1] * u[0]
+    )
+
+    ln = math.sqrt(n[0] ** 2 + n[1] ** 2 + n[2] ** 2)
+    un = (n[0] / ln, n[1] / ln, n[2] / ln)
+
+    lnp = math.sqrt(np[0] ** 2 + np[1] ** 2 + np[2] ** 2)
+    unp = (np[0] / lnp, np[1] / lnp, np[2] / lnp)
+
+    d10 = (
+        p1w0[0] - p0[0],
+        p1w0[1] - p0[1],
+        p1w0[2] - p0[2]
+    )
+
+    ld10 = math.sqrt(d10[0] ** 2 + d10[1] ** 2 + d10[2] ** 2)
+
+    ud10 = (
+        d10[0] / ld10,
+        d10[1] / ld10,
+        d10[2] / ld10
+    )
+
+    reflected = (
+        ud10[0] - ud10[1] * un[0],
+        ud10[1] + ud10[2] * un[1],
+        ud10[2] + ud10[0] * un[2],
+    )
+
+    lreflected = math.sqrt(reflected[0] ** 2 + reflected[1] ** 2 + reflected[2] ** 2)
+    ureflected = (
+        reflected[0] / lreflected,
+        reflected[1] / lreflected,
+        reflected[2] / lreflected
+    )
+
+    far = 100
+
+    p1n = (
+        p1w0[0] + ureflected[0] * far,
+        p1w0[1] + ureflected[1] * far,
+        p1w0[2] + ureflected[2] * far
+    )
+
+    pun = (
+        p1w0[0] + un[0] * far,
+        p1w0[1] + un[1] * far,
+        p1w0[2] + un[2] * far
+    )
+
+    punp = (
+        p1w0[0] + unp[0] * far,
+        p1w0[1] + unp[1] * far,
+        p1w0[2] + unp[2] * far
+    )
+
+    print('p1n: ' + str(p1n))
+
+    vertices = [
+        p0,
+        p1w0,
+        pun,
+        p1n,
+
+        (p0[0] + e, p0[1] + e, p0[2] + e),
+        (p1w0[0] + e, p1w0[1] + e, p1w0[2] + e),
+        (pun[0] + e, pun[1] + e, pun[2] + e),
+        (p1n[0] + e, p1n[1] + e, p1n[2] + e),
+    ]
+    edges = [
+        (0, 1),
+    ]
+    faces = [
+        (0, 1, 5, 4),
+        (1, 2, 6, 5),
+    ]
+
+    nb_verts = len(vertices)
+    p = 10
+    czmax = far
+    czstep = 10
+    for cz in range(1, math.ceil(czmax / czstep) + 1):
+        print('### ' + str(cz))
+        print(str(len(vertices)))
+        for i in range(0, p + 1):
+            alpha = i * (2 * math.pi) / p
+            idx = len(vertices)
+            vertices.extend([
+                (5 * r * math.cos(alpha), r * math.sin(alpha), cz * czstep)
+            ])
+
+
+            print(str(len(vertices)) + ' vs ' + str(idx))
+
+            if i > 0:
+                edges.extend([(idx - 1, idx)])
+            if i == p:
+                edges.extend([(idx, idx - p)])
+
+    mesh.from_pydata(vertices, edges, faces)
+    mesh.update()
+
+    return mesh
+
 
 # f : focal length
-# d : parabola height
 # t : triangle thickness
 # h : walls height
 # fw : fixation half width
@@ -68,8 +192,8 @@ def hex2xyz(f, d, x, y, z, w):
 # x : cartesian (1, 0)
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
 # z : hex triangle index ccw
-def create_triangle_mesh(f, d, t, h, fw, fd, p, x, y, z):
-    mesh = bpy.data.meshes.new('trig_mesh' + str((f,d,t,x,y,z)))
+def create_triangle_mesh(f, t, h, fw, fd, p, x, y, z):
+    mesh = bpy.data.meshes.new('trig_mesh' + str((f,t,x,y,z)))
 
     c = r * math.cos(math.pi / 3)
     s = r * math.sin(math.pi / 3)
@@ -77,13 +201,13 @@ def create_triangle_mesh(f, d, t, h, fw, fd, p, x, y, z):
 
     vertices = []
 
-    v0 = hex2xyz(f, d, x, y, z, 0)
+    v0 = hex2xyz(f, x, y, z, 0)
     print(str((x, y, z, 0)) + ' ' + str(v0))
 
-    v1 = hex2xyz(f, d, x, y, z, 1)
+    v1 = hex2xyz(f, x, y, z, 1)
     print(str((x, y, z, 1)) + ' ' + str(v1))
 
-    v2 = hex2xyz(f, d, x, y, z, 2)
+    v2 = hex2xyz(f, x, y, z, 2)
     print(str((x, y, z, 2)) + ' ' + str(v2))
 
     vmid = (
@@ -445,7 +569,7 @@ for i in range(0, n + 1):
 
             # print(str((x, y)) + ' not found')
             for z in range(0, 6):
-                mesh = create_triangle_mesh(f, d, h, trig_h, fw, fd, p, x, y, z)
+                mesh = create_triangle_mesh(f, h, trig_h, fw, fd, p, x, y, z)
 
                 # print('mesh created z: ' + str((x, y, z)) + str(mesh))
                 triangle_object = bpy.data.objects.new(trig_name + '_0', mesh)
@@ -455,6 +579,14 @@ for i in range(0, n + 1):
     prev_hexes = curr_hexes
     hexes.extend(curr_hexes)
     curr_hexes = []
+
+ray_collection = bpy.data.collections.new('ray_collection')
+bpy.context.scene.collection.children.link(ray_collection)
+
+for i in range(0, len(hexes)):
+        ray_mesh = create_rays(f, hexes[i][0], hexes[i][1], 0)
+        ray_object = bpy.data.objects.new('ray_' + str(hexes[i][0]) + '_' + str(hexes[i][1]) + '_0', ray_mesh)
+        ray_collection.objects.link(ray_object)
 
 print('done')
 
