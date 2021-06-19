@@ -806,10 +806,10 @@ def create_basis_leg_mesh(e, t, h, w, x, z, teeth_width, teeth_height, teeth_thi
         (x + ht, hw, z + teeth_height - e),
         (x + ht, -hw, z + teeth_height - e),
 
-        (x - htt - e, htw + e, z + teeth_height - e),
-        (x - htt - e, -htw - e, z + teeth_height - e),
-        (x + htt + e, htw + e, z + teeth_height - e),
-        (x + htt + e, -htw - e, z + teeth_height - e),
+        (x - htt, htw + e, z + teeth_height - e),
+        (x - htt, -htw - e, z + teeth_height - e),
+        (x + htt, htw + e, z + teeth_height - e),
+        (x + htt, -htw - e, z + teeth_height - e),
 
         # 8
         (x - ht, hw, z - e),
@@ -817,10 +817,10 @@ def create_basis_leg_mesh(e, t, h, w, x, z, teeth_width, teeth_height, teeth_thi
         (x + ht, hw, z - e),
         (x + ht, -hw, z - e),
 
-        (x - htt - e, htw + e, z - e),
-        (x - htt - e, -htw - e, z - e),
-        (x + htt + e, htw + e, z - e),
-        (x + htt + e, -htw - e, z - e),
+        (x - htt, htw + e, z - e),
+        (x - htt, -htw - e, z - e),
+        (x + htt, htw + e, z - e),
+        (x + htt, -htw - e, z - e),
 
         # 16
         (x - ht, hw, z - e - h + teeth_height),
