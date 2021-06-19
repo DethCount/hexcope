@@ -1214,20 +1214,20 @@ def create_plate_top_mesh(
     nb_verts2 = len(vertices)
 
     vertices.extend([
-        (cx, sr + zo, z),
-        (cx - zow, sr + zo - zop, z),
-        (cx - zow, sr + rz + zo + zop, z),
-        (cx, sr + rz + zo, z),
+        (cx, sr + zo + e, z),
+        (cx - zow + e, sr + zo + e - zop, z),
+        (cx - zow + e, sr + rz - e + zo + zop, z),
+        (cx, sr + rz - e + zo, z),
 
         (cx, -sr - zo, z),
         (cx + zow, -sr - zo + zop, z),
         (cx + zow, -sr - rz - zo - zop, z),
         (cx, -sr - rz - zo, z),
 
-        (cx, sr + zo, z - t),
-        (cx - zow, sr + zo - zop, z - t),
-        (cx - zow, sr + rz + zo + zop, z - t),
-        (cx, sr + rz + zo, z - t),
+        (cx, sr + zo + e, z - t),
+        (cx - zow + e, sr + zo + e - zop, z - t),
+        (cx - zow + e, sr + rz - e + zo + zop, z - t),
+        (cx, sr + rz - e + zo, z - t),
 
         (cx, -sr - zo, z - t),
         (cx + zow, -sr - zo + zop, z - t),
