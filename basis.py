@@ -801,21 +801,21 @@ def create_basis_leg_mesh(e, t, h, w, x, z, teeth_width, teeth_height, teeth_thi
     sth = z - e - h + teeth_height + side_teeth_z # total side teeth z
 
     vertices = [
-        (x - ht, hw, z + teeth_height - e),
-        (x - ht, -hw, z + teeth_height - e),
-        (x + ht, hw, z + teeth_height - e),
-        (x + ht, -hw, z + teeth_height - e),
+        (x - ht - e, hw + e, z + teeth_height - e),
+        (x - ht - e, -hw - e, z + teeth_height - e),
+        (x + ht + e, hw + e, z + teeth_height - e),
+        (x + ht + e, -hw - e, z + teeth_height - e),
 
-        (x - htt, htw + e, z + teeth_height - e),
-        (x - htt, -htw - e, z + teeth_height - e),
-        (x + htt, htw + e, z + teeth_height - e),
-        (x + htt, -htw - e, z + teeth_height - e),
+        (x - htt - e, htw + e, z + teeth_height - e),
+        (x - htt - e, -htw - e, z + teeth_height - e),
+        (x + htt + e, htw + e, z + teeth_height - e),
+        (x + htt + e, -htw - e, z + teeth_height - e),
 
         # 8
-        (x - ht, hw, z - e),
-        (x - ht, -hw, z - e),
-        (x + ht, hw, z - e),
-        (x + ht, -hw, z - e),
+        (x - ht - e, hw + e, z - e),
+        (x - ht - e, -hw - e, z - e),
+        (x + ht + e, hw + e, z - e),
+        (x + ht + e, -hw - e, z - e),
 
         (x - htt - e, htw + e, z - e),
         (x - htt - e, -htw - e, z - e),
