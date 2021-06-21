@@ -76,15 +76,28 @@ basis_plate_top_foot_w1 = basis_foot_w1
 basis_plate_top_foot_w2 = basis_foot_w2
 basis_plate_top_foot_thickness = basis_foot_t
 
+basis_plate_axis_e = basis_plate_top_e
+basis_plate_axis_t = h
+basis_plate_axis_r = 0.5 * r
+basis_plate_axis_p = basis_plate_top_p
+basis_plate_axis_x = basis_plate_top_x - (math.sqrt(3) / 2) * r + 0.5 * h
+basis_plate_axis_z = basis_plate_top_z - basis_plate_top_t - basis_plate_axis_e
+basis_plate_axis_top_t = basis_plate_top_t
+basis_plate_axis_top_r = basis_plate_top_sr
+basis_plate_axis_bottom_t = basis_plate_top_t
+basis_plate_axis_bottom_r = basis_plate_top_sr
+
 basis_plate_bottom_e = basis_plate_top_e
-basis_plate_bottom_t = 0.25 * basis_plate_top_t
+basis_plate_bottom_t = basis_plate_axis_bottom_t
 basis_plate_bottom_r = basis_plate_top_r
-basis_plate_bottom_sr = basis_plate_top_sr
+basis_plate_bottom_sr = basis_plate_axis_bottom_r
 basis_plate_bottom_p = basis_plate_top_p
 basis_plate_bottom_x = basis_plate_top_x
-basis_plate_bottom_z = basis_plate_top_z - basis_plate_top_t - basis_plate_bottom_e
+basis_plate_bottom_z = basis_plate_axis_z - basis_plate_axis_t - basis_plate_bottom_e
 basis_plate_bottom_hex_side = basis_plate_top_hex_side
 basis_plate_bottom_top_plate_thickness = basis_plate_top_t
+
+
 
 # x : cartesian (1, 0)
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
@@ -1730,6 +1743,81 @@ def create_plate_bottom_mesh(
 
     return mesh
 
+def create_plate_axis_mesh(e, t, r, p, x, z, top_t, top_r, bottom_t, bottom_r):
+
+    mesh = bpy.data.meshes.new('basis_plate_axis_' + str((
+        e, t, r, p, x, z,
+        top_t, top_r,
+        bottom_t, bottom_r
+    )))
+
+    tr = top_r - e
+    br = bottom_r - e
+
+    vertices = [
+        (x, 0, z + top_t + e),
+        (x, 0, z),
+        (x, 0, z - t),
+        (x, 0, z - t - bottom_t),
+    ]
+    edges = []
+    faces = []
+
+    nb_verts = len(vertices)
+
+    for i in range(0, p + 1):
+        alpha = i * (2 * math.pi) / p
+        beta = 0 + alpha
+
+        nbidx = 6
+        ttv = nb_verts + i * nbidx
+        tbv = ttv + 1
+        wtv = ttv + 2
+        wbv = ttv + 3
+        btv = ttv + 4
+        bbv = ttv + 5
+
+        vertices.extend([
+            (x + tr * math.cos(beta), tr * math.sin(beta), z + top_t + e),
+            (x + tr * math.cos(beta), tr * math.sin(beta), z),
+            (x + r * math.cos(beta), r * math.sin(beta), z),
+            (x + r * math.cos(beta), r * math.sin(beta), z - t),
+            (x + br * math.cos(beta), br * math.sin(beta), z - t),
+            (x + br * math.cos(beta), br * math.sin(beta), z - t - bottom_t),
+        ])
+
+        edges.extend([
+            (ttv, tbv),
+            (wtv, wbv),
+            (btv, bbv),
+        ])
+
+        if i > 0:
+            edges.extend([
+                (ttv - nbidx, ttv),
+                (tbv - nbidx, tbv),
+                (wtv - nbidx, wtv),
+                (wbv - nbidx, wbv),
+                (btv - nbidx, btv),
+                (bbv - nbidx, bbv),
+            ])
+
+            faces.extend([
+                (ttv - nbidx, ttv, 0),
+                (ttv - nbidx, ttv, tbv, tbv - nbidx),
+                (tbv - nbidx, tbv, wtv, wtv - nbidx),
+                (wtv - nbidx, wtv, wbv, wbv - nbidx),
+                (wbv - nbidx, wbv, btv, btv - nbidx),
+                (btv - nbidx, btv, bbv, bbv - nbidx),
+                (bbv - nbidx, bbv, 3),
+            ])
+
+
+    mesh.from_pydata(vertices, edges, faces)
+    mesh.update()
+
+    return mesh
+
 def move_basis_to(obj, hex):
     hex_1 = hex2xy(0, 0, hex, 1)
     hex_2 = hex2xy(0, 0, hex, 2)
@@ -1861,6 +1949,19 @@ basis_plate_top_mesh = create_plate_top_mesh(
     basis_plate_top_foot_thickness
 )
 
+basis_plate_axis_mesh = create_plate_axis_mesh(
+    basis_plate_axis_e,
+    basis_plate_axis_t,
+    basis_plate_axis_r,
+    basis_plate_axis_p,
+    basis_plate_axis_x,
+    basis_plate_axis_z,
+    basis_plate_axis_top_t,
+    basis_plate_axis_top_r,
+    basis_plate_axis_bottom_t,
+    basis_plate_axis_bottom_r
+)
+
 basis_plate_bottom_mesh = create_plate_bottom_mesh(
     basis_plate_bottom_e,
     basis_plate_bottom_t,
@@ -1906,6 +2007,9 @@ basis_plate_bottom_r = bpy.data.objects.new('basis_plate_bottom_r', basis_plate_
 basis_collection.objects.link(basis_plate_bottom_r)
 move_basis_to(basis_plate_bottom_r, 0)
 
+basis_plate_axis = bpy.data.objects.new('basis_plate_axis', basis_plate_axis_mesh)
+basis_collection.objects.link(basis_plate_axis)
+move_basis_to(basis_plate_axis, 0)
 
 
 basis_wheel_object_l = bpy.data.objects.new('basis_wheel_l', basis_wheel_mesh)
