@@ -76,6 +76,16 @@ basis_plate_top_foot_w1 = basis_foot_w1
 basis_plate_top_foot_w2 = basis_foot_w2
 basis_plate_top_foot_thickness = basis_foot_t
 
+basis_plate_bottom_e = basis_plate_top_e
+basis_plate_bottom_t = 0.25 * basis_plate_top_t
+basis_plate_bottom_r = basis_plate_top_r
+basis_plate_bottom_sr = basis_plate_top_sr
+basis_plate_bottom_p = basis_plate_top_p
+basis_plate_bottom_x = basis_plate_top_x
+basis_plate_bottom_z = basis_plate_top_z - basis_plate_top_t - basis_plate_bottom_e
+basis_plate_bottom_hex_side = basis_plate_top_hex_side
+basis_plate_bottom_top_plate_thickness = basis_plate_top_t
+
 # x : cartesian (1, 0)
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
 # z : hex triangle index ccw
@@ -317,14 +327,41 @@ def create_basis_wheel_bottom_mesh(e, t, h, r, p, wr, mr, hex_thickness, hex_wal
     zop = 0.5 * zow
 
     vertices = [
-        (-hex_thickness, 0, -wr), (-e, 0, -wr),
-        (-hex_thickness, wr, -wr), (-e, wr, -wr), (-e, -wr, -wr),(-hex_thickness, -wr, -wr),
-        (-hex_thickness, hr + zo, -wr), (-e, hr + zo, -wr), (-e, -hr - zo, -wr),(-hex_thickness, -hr - zo, -wr),
-        (-hex_thickness, hr + zo + zop, -wr + zow),(-e, hr + zo + zop, -wr + zow), (-e, -hr - zo - zop, -wr + zow), (-hex_thickness, -hr - zo - zop, -wr + zow),
-        (-hex_thickness, hr - zo, -wr + zow), (-e, hr - zo, -wr + zow), (-e, -hr + zo, -wr + zow),(-hex_thickness, -hr + zo, -wr + zow),
-        (-hex_thickness, hr - zo + zop, -wr), (-e, hr - zo + zop, -wr), (-e, -hr + zo - zop, -wr),(-hex_thickness, -hr + zo - zop, -wr),
-        (-hex_thickness, 0, -1.5 * wr), (-e, 0, -1.5 * wr),
-        (-hex_thickness, mr, -wr), (-e, mr, -wr), (-hex_thickness, -mr, -wr), (-e, -mr, -wr),
+        (-hex_thickness, 0, -wr),
+        (-e, 0, -wr),
+
+        (-hex_thickness, wr, -wr),
+        (-e, wr, -wr),
+        (-e, -wr, -wr),
+        (-hex_thickness, -wr, -wr),
+
+        (-hex_thickness, hr + zo - e, -wr),
+        (-e, hr + zo - e, -wr),
+        (-e, -hr - zo + e, -wr),
+        (-hex_thickness, -hr - zo + e, -wr),
+
+        (-hex_thickness, hr + zo + zop - e, -wr + zow - e),
+        (-e, hr + zo + zop - e, -wr + zow - e),
+        (-e, -hr - zo - zop + e, -wr + zow - e),
+        (-hex_thickness, -hr - zo - zop + e, -wr + zow - e),
+
+        (-hex_thickness, hr - zo + e, -wr + zow - e),
+        (-e, hr - zo + e, -wr + zow - e),
+        (-e, -hr + zo - e, -wr + zow - e),
+        (-hex_thickness, -hr + zo - e, -wr + zow - e),
+
+        (-hex_thickness, hr - zo + zop + e, -wr),
+        (-e, hr - zo + zop + e, -wr),
+        (-e, -hr + zo - zop - e, -wr),
+        (-hex_thickness, -hr + zo - zop - e, -wr),
+
+        (-hex_thickness, 0, -1.5 * wr),
+        (-e, 0, -1.5 * wr),
+
+        (-hex_thickness, mr, -wr),
+        (-e, mr, -wr),
+        (-hex_thickness, -mr, -wr),
+        (-e, -mr, -wr),
     ]
     edges = [
         (2, 3), (4, 5),
@@ -1100,7 +1137,6 @@ def create_plate_top_mesh(
     )))
 
     hw = 0.5 * leg_width
-    hhs = 0.5 * hex_side
     hltt = 0.5 * large_tooth_thickness
     hltw = 0.5 * large_tooth_width
 
@@ -1471,6 +1507,229 @@ def create_plate_top_mesh(
 
     return mesh
 
+def create_plate_bottom_mesh(
+    e, t, r, sr, p, x, z,
+    hex_side,
+    top_plate_thickness
+):
+    mesh = bpy.data.meshes.new('basis_plate_bottom_' + str((
+        e, t, r, sr, p, x, z,
+        hex_side,
+        top_plate_thickness
+    )))
+
+    cx = -(math.sqrt(3) / 2) * hex_side
+    sre = sr - e
+
+    pi2 = math.pi / 2
+    pi3 = math.pi / 3
+    pi6 = math.pi / 6
+
+    b0 = None
+    b1 = None
+    for i in range(0, p + 1):
+        alpha = i * (math.pi) / p
+        beta = -pi2 + alpha
+        if b0 == None and alpha >= pi6:
+            b0 = beta - math.pi / p
+        elif b1 == None and alpha >= 5 * pi6:
+            b1 = beta - math.pi / p
+            break
+
+    vertices = [
+        (cx, 0, z),
+        (cx, 0, z - t),
+        (cx, sr, z),
+        (cx, sr, z - t),
+        (cx, -sr, z),
+        (cx, -sr, z - t),
+        (cx + r * math.cos(b0), r * math.sin(b0), z),
+        (cx + r * math.cos(b0), r * math.sin(b0), z - t),
+        (cx + r * math.cos(b1), r * math.sin(b1), z),
+        (cx + r * math.cos(b1), r * math.sin(b1), z - t),
+    ]
+    edges = []
+    faces = []
+
+    nb_verts = len(vertices)
+
+    i0 = None
+    i1 = None
+    for i in range(0, p + 1):
+        alpha = i * (math.pi) / p
+        beta = -pi2 + alpha
+
+        nbidx = 4
+        stv = nb_verts + nbidx * i
+        sbv = stv + 1
+        tv = stv + 2
+        bv = stv + 3
+
+        vertices.extend([
+            (cx + sr * math.cos(beta), sr * math.sin(beta), z),
+            (cx + sr * math.cos(beta), sr * math.sin(beta), z - t),
+            (cx + r * math.cos(beta), r * math.sin(beta), z),
+            (cx + r * math.cos(beta), r * math.sin(beta), z - t),
+        ])
+
+
+        edges.extend([
+            (stv, sbv),
+        ])
+
+        if alpha >= pi6 and alpha < 5 * pi6:
+            edges.extend([
+                (tv, bv),
+                (stv, tv),
+                (sbv, bv),
+            ])
+
+            if i0 == None:
+                i0 = stv - nbidx
+
+        if i1 == None and alpha > 5 * pi6:
+            i1 = stv - nbidx
+
+        if i > 0:
+            edges.extend([
+                (stv - nbidx, stv),
+                (sbv - nbidx, sbv),
+            ])
+
+            faces.extend([
+                (sbv, sbv - nbidx, stv - nbidx, stv),
+            ])
+
+            if alpha >= pi6 and alpha < 5 * pi6:
+                edges.extend([
+                    (tv - nbidx, tv),
+                    (bv - nbidx, bv),
+                ])
+
+                faces.extend([
+                    (bv - nbidx, bv, tv, tv - nbidx),
+                    (stv, stv - nbidx, tv - nbidx, tv),
+                    (sbv - nbidx, sbv, bv, bv - nbidx),
+                ])
+
+            if alpha < pi6:
+                faces.extend([
+                    (6, stv - nbidx, stv),
+                    (7, sbv, sbv - nbidx),
+                ])
+            elif alpha >= 5 * pi6:
+                faces.extend([
+                    (8, stv - nbidx, stv),
+                    (9, sbv, sbv - nbidx),
+                ])
+
+    nb_verts2 = len(vertices)
+
+    lr = r - r * math.sin(-pi2 + 5 * pi6)
+    rz = 0.5 * (r - sr - lr)
+    zo = 0.5 * rz
+    zow = 0.5 * zo
+    zop = 0.5 * zow
+
+    vertices.extend([
+        (cx, r * math.sin(-pi2 + pi6), z),
+        (cx, r * math.sin(-pi2 + pi6), z - t),
+
+        (cx, r * math.sin(-pi2 + 5 * pi6), z),
+        (cx, r * math.sin(-pi2 + 5 * pi6), z - t),
+
+        # outer tooth
+        (cx, sr + rz - zo + e, z),
+        (cx, sr + rz - zo + e, z - t),
+
+        (cx - zow + e, sr + rz - zo + e - zop, z),
+        (cx - zow + e, sr + rz - zo + e - zop, z - t),
+
+        (cx - zow + e, sr + rz + zo - e + zop, z),
+        (cx - zow + e, sr + rz + zo - e + zop, z - t),
+
+        (cx, sr + rz + zo - e, z),
+        (cx, sr + rz + zo - e, z - t),
+
+        # inner tooth
+        (cx, -sr - rz + zo, z),
+        (cx, -sr - rz + zo, z - t),
+
+        (cx + zow, -sr - rz + zo + zop, z),
+        (cx + zow, -sr - rz + zo + zop, z - t),
+
+        (cx + zow, -sr - rz - zo - zop, z),
+        (cx + zow, -sr - rz - zo - zop, z - t),
+
+        (cx, -sr - rz - zo, z),
+        (cx, -sr - rz - zo, z - t),
+    ])
+
+    edges.extend([
+        (i0 + 2, nb_verts2),
+        (i0 + 3, nb_verts2 + 1),
+        (i0 + 2, i0 + 3),
+        (nb_verts2, nb_verts2 + 1),
+
+        (nb_verts2 + 4, nb_verts2 + 6),
+        (nb_verts2 + 6, nb_verts2 + 8),
+        (nb_verts2 + 8, nb_verts2 + 10),
+
+        (nb_verts2 + 5, nb_verts2 + 7),
+        (nb_verts2 + 7, nb_verts2 + 9),
+        (nb_verts2 + 9, nb_verts2 + 11),
+
+        (nb_verts2 + 12, nb_verts2 + 14),
+        (nb_verts2 + 14, nb_verts2 + 16),
+        (nb_verts2 + 16, nb_verts2 + 18),
+
+        (nb_verts2 + 13, nb_verts2 + 15),
+        (nb_verts2 + 15, nb_verts2 + 17),
+        (nb_verts2 + 17, nb_verts2 + 19),
+
+        (4, nb_verts2 + 12),
+        (5, nb_verts2 + 13),
+        (nb_verts2 + 18, nb_verts2),
+        (nb_verts2 + 19, nb_verts2 + 1),
+    ])
+
+    faces.extend([
+        (nb_verts2 + 1, i0 + 3, i0 + 2, nb_verts2),
+        (nb_verts2 + 6, nb_verts2 + 4, nb_verts2 + 10, nb_verts2 + 8),
+        (nb_verts2 + 5, nb_verts2 + 7, nb_verts2 + 9, nb_verts2 + 11),
+        (nb_verts2 + 2, i1 + 2, nb_verts2 + 2),
+        (2, i1 + 2, nb_verts2 + 2),
+        (i1 + 3, 3, nb_verts2 + 3),
+        (2, nb_verts2 + 4, nb_verts2 + 5, 3),
+        (nb_verts2 + 4, nb_verts2 + 6, nb_verts2 + 7, nb_verts2 + 5),
+        (nb_verts2 + 6, nb_verts2 + 8, nb_verts2 + 9, nb_verts2 + 7),
+        (nb_verts2 + 8, nb_verts2 + 10, nb_verts2 + 11, nb_verts2 + 9),
+        (nb_verts2 + 10, nb_verts2 + 2, nb_verts2 + 3, nb_verts2 + 11),
+        (nb_verts2 + 2, i1 + 2, i1 + 3, nb_verts2 + 3),
+
+        (nb_verts2 + 12, 4, 5, nb_verts2 + 13),
+        (nb_verts2 + 14, nb_verts2 + 12, nb_verts2 + 13, nb_verts2 + 15),
+        (nb_verts2 + 16, nb_verts2 + 14, nb_verts2 + 15, nb_verts2 + 17),
+        (nb_verts2 + 18, nb_verts2 + 16, nb_verts2 + 17, nb_verts2 + 19),
+        (nb_verts2, nb_verts2 + 18, nb_verts2 + 19, nb_verts2 + 1),
+
+        (4, nb_verts2 + 12, nb_verts2 + 14),
+        (5, nb_verts2 + 15, nb_verts2 + 13),
+        (nb_verts2 + 16, i0 + 2, nb_verts2 + 14),
+        (nb_verts2 + 15, i0 + 3, nb_verts2 + 17),
+        (nb_verts2 + 16, nb_verts2 + 18, nb_verts2),
+        (nb_verts2 + 19, nb_verts2 + 17, nb_verts2 + 1),
+        (nb_verts2 + 16, nb_verts2, i0 + 2),
+        (nb_verts2 + 1, nb_verts2 + 17, i0 + 3),
+        (4, nb_verts2 + 14, i0 + 2),
+        (5, i0 + 3, nb_verts2 + 15),
+    ])
+
+    mesh.from_pydata(vertices, edges, faces)
+    mesh.update()
+
+    return mesh
+
 def move_basis_to(obj, hex):
     hex_1 = hex2xy(0, 0, hex, 1)
     hex_2 = hex2xy(0, 0, hex, 2)
@@ -1602,6 +1861,18 @@ basis_plate_top_mesh = create_plate_top_mesh(
     basis_plate_top_foot_thickness
 )
 
+basis_plate_bottom_mesh = create_plate_bottom_mesh(
+    basis_plate_bottom_e,
+    basis_plate_bottom_t,
+    basis_plate_bottom_r,
+    basis_plate_bottom_sr,
+    basis_plate_bottom_p,
+    basis_plate_bottom_x,
+    basis_plate_bottom_z,
+    basis_plate_bottom_hex_side,
+    basis_plate_bottom_top_plate_thickness
+)
+
 # print('basis wheel mesh created: ' + str(basis_wheel_mesh))
 basis_wheel_object_r = bpy.data.objects.new('basis_wheel_r', basis_wheel_mesh)
 basis_collection.objects.link(basis_wheel_object_r)
@@ -1630,6 +1901,10 @@ move_basis_to(basis_foot_rl, 0)
 basis_plate_top_r = bpy.data.objects.new('basis_plate_top_r', basis_plate_top_mesh)
 basis_collection.objects.link(basis_plate_top_r)
 move_basis_to(basis_plate_top_r, 0)
+
+basis_plate_bottom_r = bpy.data.objects.new('basis_plate_bottom_r', basis_plate_bottom_mesh)
+basis_collection.objects.link(basis_plate_bottom_r)
+move_basis_to(basis_plate_bottom_r, 0)
 
 
 
@@ -1660,6 +1935,10 @@ move_basis_to(basis_foot_ll, 3)
 basis_plate_top_l = bpy.data.objects.new('basis_plate_top_l', basis_plate_top_mesh)
 basis_collection.objects.link(basis_plate_top_l)
 move_basis_to(basis_plate_top_l, 3)
+
+basis_plate_bottom_l = bpy.data.objects.new('basis_plate_bottom_l', basis_plate_bottom_mesh)
+basis_collection.objects.link(basis_plate_bottom_l)
+move_basis_to(basis_plate_bottom_l, 3)
 
 print('done')
 # bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\basis_", check_existing=True, filter_glob='*.stl', use_selection=False, global_scale=100.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z')
