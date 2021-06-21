@@ -14,7 +14,7 @@ basis_wheel_r = r
 basis_wheel_p = p # wheel precision
 basis_wheel_wr = 0.8 * r # wheel radius
 basis_wheel_mr = 0.2 * r
-basis_wheel_e = 0.005
+basis_wheel_e = 0.008
 
 basis_arm_e = basis_wheel_e
 basis_arm_t = 0.1
@@ -25,8 +25,8 @@ basis_arm_wheel_thickness = basis_wheel_t
 basis_arm_wheel_radius = basis_wheel_wr
 basis_arm_middle_bar_radius = basis_wheel_mr
 basis_arm_teeth_width = r
-basis_arm_teeth_height = 0.25
-basis_arm_teeth_thickness = 0.6 * basis_arm_t
+basis_arm_teeth_height = 0.2
+basis_arm_teeth_thickness = 0.8 * basis_arm_t
 
 basis_leg_e = basis_arm_e
 basis_leg_t = 2 * basis_arm_t + basis_arm_wheel_thickness + 2 * basis_arm_e
@@ -54,8 +54,8 @@ basis_foot_horizontal_tooth_width = basis_leg_side_teeth_width
 basis_foot_horizontal_tooth_height = basis_leg_side_teeth_height
 basis_foot_horizontal_tooth_thickness = basis_leg_side_teeth_thickness
 basis_foot_vertical_tooth_width = 0.5 * basis_foot_w2
-basis_foot_vertical_tooth_height = 0.5 * basis_leg_teeth_height
-basis_foot_vertical_tooth_thickness = basis_leg_teeth_thickness
+basis_foot_vertical_tooth_height = 0.6 * basis_leg_teeth_height
+basis_foot_vertical_tooth_thickness = 1.5 * basis_leg_teeth_thickness
 
 basis_plate_top_e = basis_foot_e
 basis_plate_top_t = basis_leg_teeth_height
