@@ -1,6 +1,6 @@
 ;Gcode by Cura
 G90
-G28
+G29
 M107
 M109 R100
 G30

@@ -8,7 +8,7 @@ n = 1 # max distance (in r unit)
 trig_name = 'tri'
 r = 1.0 # hex side
 h = 0.04 # hex thickness
-f = 12.5 # focal length
+f = 6 # focal length
 fw = 0.05 * r # fixation half width
 fd = 0.03 # fixation hole diameter
 p = 25 # precision in parts of 1
@@ -60,7 +60,9 @@ def create_rays(f, x, y, z):
 
     e = 0.05
     p0 = (10, 10, 10)
-    lp0 = math.sqrt(p0[0] ** 2 + p0[1] ** 2 + p0[2] ** 2)
+    secondary_h = 10
+    secondary_r = r
+    secondary_f = 10.0 * r
 
     p1w0 = hex2xyz(f, x, y, z, 0)
     p1w1 = hex2xyz(f, x, y, z, 1)
@@ -75,17 +77,8 @@ def create_rays(f, x, y, z):
         u[0] * v[1] - u[1] * v[0]
     )
 
-    np = (
-        v[1] * u[2] - v[2] * u[1],
-        v[2] * u[0] - v[0] * u[2],
-        v[0] * u[1] - v[1] * u[0]
-    )
-
     ln = math.sqrt(n[0] ** 2 + n[1] ** 2 + n[2] ** 2)
     un = (n[0] / ln, n[1] / ln, n[2] / ln)
-
-    lnp = math.sqrt(np[0] ** 2 + np[1] ** 2 + np[2] ** 2)
-    unp = (np[0] / lnp, np[1] / lnp, np[2] / lnp)
 
     d10 = (
         p1w0[0] - p0[0],
@@ -116,22 +109,36 @@ def create_rays(f, x, y, z):
 
     far = 100
 
+    h = secondary_f - math.sqrt(secondary_f ** 2 - secondary_r ** 2)
+
+    dunxy = math.sqrt(un[0] ** 2 + un[1] ** 2)
+    maxd0 = 0
+    maxd = 0
+    h0 = 0
+    if dunxy > 0:
+        maxd0 = math.sqrt(p1w0[0] ** 2 + p1w0[1] ** 2) / math.sqrt(un[0] ** 2 + un[1] ** 2)
+        h0 = maxd0 * un[2]
+        #maxd = (secondary_h + h - secondary_f) / un[2]
+    #maxd0z = (secondary_h + h - p1w0[2]) / un[2]
+    maxd = secondary_h + secondary_f / math.sqrt(p1w0[0] ** 2 + p1w0[1] ** 2 + (un[2] * maxd0 - p1w0[2]) ** 2)
+    print('h: ' + str(h) + ' maxd: ' + str(maxd) + ' h0: ' + str(h0))
+
     p1n = (
-        p1w0[0] + ureflected[0] * far,
-        p1w0[1] + ureflected[1] * far,
-        p1w0[2] + ureflected[2] * far
+        p1w0[0] + ureflected[0] * maxd0,
+        p1w0[1] + ureflected[1] * maxd0,
+        p1w0[2] + ureflected[2] * maxd0
+    )
+
+    pun0 = (
+        p1w0[0] + un[0] * maxd0,
+        p1w0[1] + un[1] * maxd0,
+        p1w0[2] + un[2] * maxd0
     )
 
     pun = (
-        p1w0[0] + un[0] * far,
-        p1w0[1] + un[1] * far,
-        p1w0[2] + un[2] * far
-    )
-
-    punp = (
-        p1w0[0] + unp[0] * far,
-        p1w0[1] + unp[1] * far,
-        p1w0[2] + unp[2] * far
+        p1w0[0] + un[0] * maxd,
+        p1w0[1] + un[1] * maxd,
+        p1w0[2] + un[2] * maxd
     )
 
     print('p1n: ' + str(p1n))
@@ -146,6 +153,12 @@ def create_rays(f, x, y, z):
         (p1w0[0] + e, p1w0[1] + e, p1w0[2] + e),
         (pun[0] + e, pun[1] + e, pun[2] + e),
         (p1n[0] + e, p1n[1] + e, p1n[2] + e),
+
+        (pun[0], pun[1], -2.0),
+        (pun[0] + e, pun[1] + e, -2.0 + e),
+
+        pun0,
+        (pun0[0] + e, pun0[1] + e, pun0[2] + e),
     ]
     edges = [
         (0, 1),
@@ -153,6 +166,7 @@ def create_rays(f, x, y, z):
     faces = [
         (0, 1, 5, 4),
         (1, 2, 6, 5),
+        (2, 6, 9, 8),
     ]
 
     nb_verts = len(vertices)
@@ -160,8 +174,8 @@ def create_rays(f, x, y, z):
     czmax = far
     czstep = 10
     for cz in range(1, math.ceil(czmax / czstep) + 1):
-        print('### ' + str(cz))
-        print(str(len(vertices)))
+        # print('### ' + str(cz))
+        # print(str(len(vertices)))
         for i in range(0, p + 1):
             alpha = i * (2 * math.pi) / p
             idx = len(vertices)
@@ -170,7 +184,7 @@ def create_rays(f, x, y, z):
             ])
 
 
-            print(str(len(vertices)) + ' vs ' + str(idx))
+            # print(str(len(vertices)) + ' vs ' + str(idx))
 
             if i > 0:
                 edges.extend([(idx - 1, idx)])
@@ -323,17 +337,22 @@ def create_triangle_mesh(f, t, h, fw, fd, p, x, y, z):
     ]
     faces = [
         (0, 1, 2),
-        (3, 4, 1, 0), (4, 5, 2, 1),(5, 3, 0, 2),
+        (3, 4, 1, 0), (4, 5, 2, 1), (5, 3, 0, 2),
         (6, 7, 4, 3), (7, 8, 5, 4), (8, 6, 3, 5),
-        (9, 10, 7, 6), (10, 11, 8, 7), (11, 9, 6, 8),
-        (10, 9, 12, 13), (11, 10, 13, 14), (11, 9, 12, 14),
-        (12, 13, 14),
-        (15, 16, 18, 17),
-        (19, 21, 22, 20), (16, 18, 22, 20), (15, 17, 21, 19),
-        (23, 24, 26, 25),
-        (27, 29, 30, 28), (24, 26, 30, 28), (23, 25, 29, 27),
-        (31, 32, 34, 33),
-        (35, 37, 38, 36), (32, 34, 38, 36), (31, 33, 37, 35),
+        (10, 9, 12, 13), (11, 10, 13, 14), (9, 11, 14, 12),
+        (12, 14, 13),
+
+        (6, 20, 16), (9, 18, 22), (6, 9, 22, 20),
+        (19, 20, 22, 21),
+        (7, 15, 19), (10, 21, 17),(10, 7, 19, 21),
+
+        (7, 28, 24), (10, 26, 30), (7, 10, 30, 28),
+        (27, 28, 30, 29),
+        (8, 23, 27), (11, 29, 25), (11, 8, 27, 29),
+
+        (8, 36, 32), (11, 34, 38), (8, 11, 38, 36),
+        (35, 36, 38, 37),
+        (6, 31, 35), (9, 37, 33), (9, 6, 35, 37),
     ]
 
     trig_h = (math.sqrt(3) / 6) * r
@@ -465,80 +484,80 @@ def create_triangle_mesh(f, t, h, fw, fd, p, x, y, z):
             ])
 
             faces.extend([
-                (idx - 6, idx, idx + 1, idx - 5),
-                (idx - 4, idx + 2, idx + 3, idx - 3),
-                (idx - 2, idx + 4, idx + 5, idx - 1),
+                (idx, idx - 6, idx - 5, idx + 1),
+                (idx + 2, idx - 4, idx - 3, idx + 3),
+                (idx + 4, idx - 2, idx - 1, idx + 5),
             ])
 
             if alpha < math.pi / 2:
                 faces.extend([
                     (19, idx - 6, idx),
-                    (21, idx - 5, idx + 1),
+                    (21, idx + 1, idx - 5),
                     (27, idx - 4, idx + 2),
-                    (29, idx - 3, idx + 3),
+                    (29, idx + 3, idx - 3),
                     (35, idx - 2, idx + 4),
-                    (37, idx - 1, idx + 5),
+                    (37, idx + 5, idx - 1),
                 ])
                 if vfw0 == None:
                     vfw0 = idx - 6
             elif alpha < math.pi:
                 faces.extend([
                     (20, idx - 6, idx),
-                    (22, idx - 5, idx + 1),
+                    (22, idx + 1, idx - 5),
                     (28, idx - 4, idx + 2),
-                    (30, idx - 3, idx + 3),
+                    (30, idx + 3, idx - 3),
                     (36, idx - 2, idx + 4),
-                    (38, idx - 1, idx + 5),
+                    (38, idx + 5, idx - 1),
                 ])
                 if vfw1 == None:
                     vfw1 = idx - 6
             elif alpha < 3 * (math.pi / 2):
                 faces.extend([
                     (16, idx - 6, idx),
-                    (18, idx - 5, idx + 1),
+                    (18, idx + 1, idx - 5),
                     (24, idx - 4, idx + 2),
-                    (26, idx - 3, idx + 3),
+                    (26, idx + 3, idx - 3),
                     (32, idx - 2, idx + 4),
-                    (34, idx - 1, idx + 5),
+                    (34, idx + 5, idx - 1),
                 ])
                 if vfw2 == None:
                     vfw2 = idx - 6
             else:
                 faces.extend([
                     (15, idx - 6, idx),
-                    (17, idx - 5, idx + 1),
+                    (17, idx + 1, idx - 5),
                     (23, idx - 4, idx + 2),
-                    (25, idx - 3, idx + 3),
+                    (25, idx + 3, idx - 3),
                     (31, idx - 2, idx + 4),
-                    (33, idx - 1, idx + 5),
+                    (33, idx + 5, idx - 1),
                 ])
                 if vfw3 == None:
                     vfw3 = idx - 6
     faces.extend([
         (19, vfw1, 20),
-        (21, vfw1 + 1, 22),
+        (22, vfw1 + 1, 21),
         (27, vfw1 + 2, 28),
-        (29, vfw1 + 3, 30),
+        (30, vfw1 + 3, 29),
         (35, vfw1 + 4, 36),
-        (37, vfw1 + 5, 38),
+        (38, vfw1 + 5, 37),
         (20, vfw2, 16),
-        (22, vfw2 + 1, 18),
+        (18, vfw2 + 1, 22),
         (28, vfw2 + 2, 24),
-        (30, vfw2 + 3, 26),
+        (26, vfw2 + 3, 30),
         (36, vfw2 + 4, 32),
-        (38, vfw2 + 5, 34),
+        (34, vfw2 + 5, 38),
         (16, vfw3, 15),
-        (18, vfw3 + 1, 17),
+        (17, vfw3 + 1, 18),
         (24, vfw3 + 2, 23),
-        (26, vfw3 + 3, 25),
+        (25, vfw3 + 3, 26),
         (32, vfw3 + 4, 31),
-        (34, vfw3 + 5, 33),
+        (33, vfw3 + 5, 34),
         (15, vfw0, 19),
-        (17, vfw0 + 1, 21),
+        (21, vfw0 + 1, 17),
         (23, vfw0 + 2, 27),
-        (25, vfw0 + 3, 29),
+        (29, vfw0 + 3, 25),
         (31, vfw0 + 4, 35),
-        (33, vfw0 + 5, 37),
+        (37, vfw0 + 5, 33),
     ])
 
     print(vfw1)
