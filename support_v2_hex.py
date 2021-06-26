@@ -1,6 +1,13 @@
 import sys
 import bpy
 import math
+from mathutils import Euler
+
+# f : focal length
+# d : parabola height
+# r : distance from parabola center
+def dist2z(f, r):
+    return (r * r) / (4 * f)
 
 n = 1 # max distance (in r unit)
 # f = 2.0 # focal length
@@ -20,18 +27,30 @@ support_secondary_h = 10
 support_secondary_r = r
 support_secondary_f = 10.0 * r
 
-support_arm_e = support_secondary_e
-support_arm_r = 0.05
+support_arm_e = 0.008
+support_arm_r = 0.1
 support_arm_t = 0.03
 support_arm_h = 2
-support_arm_rp = 50
+support_arm_rp = 25
 support_arm_hp = 18
+support_arm_n = 3
+support_arm_alpha_step = math.tau / support_arm_n
+support_arm_omega = 0
+support_arm_xr = 3.75 * r
+support_arm_yr = (math.sqrt(3) / 2) * r
+support_arm_xl = support_arm_xr
+support_arm_yl = -support_arm_yr
+support_arm_d = math.sqrt(support_arm_xr ** 2 + support_arm_yr ** 2)
+support_arm_rld = math.sqrt((support_arm_xr - support_arm_xl) ** 2 + (support_arm_yr - support_arm_yl) ** 2)
+support_arm_z = dist2z(f, support_arm_d) - h
+support_arm_nz = math.ceil(support_secondary_h / support_arm_h)
 
-# f : focal length
-# d : parabola height
-# r : distance from parabola center
-def dist2z(f, r):
-    return (r * r) / (4 * f)
+support_arm_head_e = support_arm_e
+support_arm_head_t = 0.05
+support_arm_head_h = 0.1
+support_arm_head_arm_d = support_arm_rld
+support_arm_head_arm_r = support_arm_r
+support_arm_head_arm_rp = support_arm_rp
 
 # f : focal length
 # x : cartesian (1, 0)
@@ -619,7 +638,7 @@ def create_arm_mesh(r, t, h, rp, hp):
 
             if i == 0 or i == hp + 1:
                 edges.extend([
-                    (trv, trvi),
+                    #(trv, trvi),
                 ])
 
                 if j > 0:
@@ -635,14 +654,14 @@ def create_arm_mesh(r, t, h, rp, hp):
 
             if j > 0:
                 edges.extend([
-                    (trv, tlv),
-                    (trvi, tlvi),
+                    #(trv, tlv),
+                    #(trvi, tlvi),
                 ])
 
                 if i > 0:
                     edges.extend([
-                        (trv, brv),
-                        (trvi, brvi),
+                        #(trv, brv),
+                        #(trvi, brvi),
                     ])
 
                     print('verts: ' + str(len(vertices)) + ' i:' + str(i) + ' j:' + str(j))
@@ -652,6 +671,180 @@ def create_arm_mesh(r, t, h, rp, hp):
                         (blv, brv, trv, tlv),
                         (brvi, blvi, tlvi, trvi),
                     ])
+
+    mesh.from_pydata(vertices, edges, faces)
+    mesh.update()
+
+    return mesh
+
+# e: margin
+# t: head thickness arround arms
+# h: head height
+# d: distance between arms
+# arm_r: arm radius
+# arm_rp: arm circles precision
+def create_arm_head_mesh(e, t, h, arm_d, arm_r, arm_rp):
+    mesh = bpy.data.meshes.new('arm_head_' + str((e, t, h, arm_d, arm_r, arm_rp)))
+
+    print('args:' + str((e, t, h, arm_d, arm_r, arm_rp)))
+
+    pi2 = math.pi / 2
+    pi3 = math.pi / 3
+    pi4 = math.pi / 4
+
+    hd = 0.5 * arm_d
+    ri = arm_r + e
+    re = ri + t
+
+    vertices = [
+        (0, -hd + re, 0),
+        (0, hd - re, 0),
+
+        (re, -hd, 0),
+        (re, hd, 0),
+
+        (-re, hd, 0),
+        (-re, -hd, 0),
+
+        (0, -hd + re, -h),
+        (0, hd - re, -h),
+
+        (re, -hd, -h),
+        (re, hd, -h),
+
+        (-re, hd, -h),
+        (-re, -hd, -h),
+
+        (ri * math.cos(pi4), -hd + ri * math.sin(pi4), 0),
+        (ri * math.cos(pi4), hd - ri * math.sin(pi4), 0),
+
+        (ri * math.cos(pi4), -hd + ri * math.sin(pi4), -h),
+        (ri * math.cos(pi4), hd - ri * math.sin(pi4), -h),
+
+        (ri * math.cos(3 * pi4), -hd + ri * math.sin(3 * pi4), 0),
+        (ri * math.cos(3 * pi4), hd - ri * math.sin(3 * pi4), 0),
+
+        (ri * math.cos(3 * pi4), -hd + ri * math.sin(3 * pi4), -h),
+        (ri * math.cos(3 * pi4), hd - ri * math.sin(3 * pi4), -h),
+    ]
+
+    edges = []
+
+    faces = [
+        (0, 2, 3, 1),
+        (5, 0, 1, 4),
+
+        (8, 6, 7, 9),
+        (6, 11, 10, 7),
+
+        #(11, 5, 4, 10),
+        (9, 3, 2, 8),
+
+        (0, 12, 2),
+        (3, 13, 1),
+        (8, 14, 6),
+        (7, 15, 9),
+
+        (5, 16, 0),
+        (1, 17, 4),
+        (6, 18, 11),
+        (10, 19, 7),
+    ]
+
+    nb_verts = len(vertices)
+
+    for i in range(0, arm_rp + 1):
+        alpha = i * math.pi / arm_rp
+        beta = 0 + alpha
+
+        cb = math.cos(beta)
+        sb = math.sin(beta)
+
+        recb = re * cb
+        resb = re * sb
+
+        ricb = ri * cb
+        risb = ri * sb
+
+        nbidx = 12
+
+        trv = nb_verts + i * nbidx
+        tlv = trv + 1
+        brv = trv + 2
+        blv = trv + 3
+
+        trvi = trv + 4
+        tlvi = trv + 5
+        brvi = trv + 6
+        blvi = trv + 7
+
+        trvii = trv + 8
+        tlvii = trv + 9
+        brvii = trv + 10
+        blvii = trv + 11
+
+        vertices.extend([
+            (recb, -hd - resb, 0),
+            (recb, hd + resb, 0),
+
+            (recb, -hd - resb, -h),
+            (recb, hd + resb, -h),
+
+            (ricb, -hd - risb, 0),
+            (ricb, hd + risb, 0),
+
+            (ricb, -hd - risb, -h),
+            (ricb, hd + risb, -h),
+
+            (ricb, -hd + risb, 0),
+            (ricb, hd - risb, 0),
+
+            (ricb, -hd + risb, -h),
+            (ricb, hd - risb, -h),
+        ])
+
+        if i > 0:
+            faces.extend([
+                (trv - nbidx, trv, brv, brv - nbidx),
+                (tlv, tlv - nbidx, blv - nbidx, blv),
+
+                (trvi, trvi - nbidx, brvi - nbidx, brvi),
+                (tlvi - nbidx, tlvi, blvi, blvi - nbidx),
+
+                (trvi, trv, trv - nbidx, trvi - nbidx),
+                (tlv, tlvi, tlvi - nbidx, tlv - nbidx),
+
+                (brv, brvi, brvi - nbidx, brv - nbidx),
+                (blvi, blv, blv - nbidx, blvi - nbidx),
+
+                (trvii - nbidx, trvii, brvii, brvii - nbidx),
+                (tlvii, tlvii - nbidx, blvii - nbidx, blvii),
+            ])
+
+            if alpha < pi4:
+                faces.extend([
+                    (trvii - nbidx, 2, trvii),
+                    (tlvii - nbidx, tlvii, 3),
+
+                    (brvii - nbidx, brvii, 8),
+                    (blvii - nbidx, 9, blvii),
+                ])
+            elif alpha < 3 * pi4:
+                faces.extend([
+                    (trvii - nbidx, 0, trvii),
+                    (tlvii - nbidx, tlvii, 1),
+
+                    (brvii - nbidx, brvii, 6),
+                    (blvii - nbidx, 7, blvii),
+                ])
+            else:
+                faces.extend([
+                    (trvii - nbidx, 5, trvii),
+                    (tlvii - nbidx, tlvii, 4),
+
+                    (brvii - nbidx, brvii, 11),
+                    (blvii - nbidx, 10, blvii),
+                ])
 
     mesh.from_pydata(vertices, edges, faces)
     mesh.update()
@@ -704,8 +897,6 @@ for i in range(0, len(hexes)):
         ray_object = bpy.data.objects.new('ray_' + str(hexes[i][0]) + '_' + str(hexes[i][1]) + '_0', ray_mesh)
         ray_collection.objects.link(ray_object)
 
-print('done')
-
 arm_mesh = create_arm_mesh(
     support_arm_r,
     support_arm_t,
@@ -714,37 +905,53 @@ arm_mesh = create_arm_mesh(
     support_arm_hp
 )
 
+arm_head_mesh = create_arm_head_mesh(
+    support_arm_head_e,
+    support_arm_head_t,
+    support_arm_head_h,
+    support_arm_head_arm_d,
+    support_arm_head_arm_r,
+    support_arm_head_arm_rp
+)
+
 arm_collection = bpy.data.collections.new('arm_collection')
 bpy.context.scene.collection.children.link(arm_collection)
 
-arm_n = 6
-arm_alpha_step = math.tau / arm_n
-arm_omega = 0
-arm_xr = 3.75 * r
-arm_yr = (math.sqrt(3) / 2) * r
-arm_xl = arm_xr
-arm_yl = -arm_yr
-arm_d = math.sqrt(arm_xr ** 2 + arm_yr ** 2)
-arm_z = dist2z(f, arm_d) - h
-arm_nz = math.ceil(support_secondary_h / support_arm_h)
+for z in range(0, support_arm_nz):
+    for i in range(0, support_arm_n):
+        alpha = i * support_arm_alpha_step
+        beta = support_arm_omega + alpha
 
-for z in range(0, arm_nz):
-    for i in range(0, arm_n):
-        alpha = i * arm_alpha_step
-        beta = arm_omega + alpha
+        sz = support_arm_z + z * (support_arm_h + support_arm_e)
 
-        arm_object_l = bpy.data.objects.new('arm_' + '_' + str(i) + '_l', arm_mesh)
+        arm_object_l = bpy.data.objects.new('arm_' + str(i) + '_l', arm_mesh)
         arm_collection.objects.link(arm_object_l)
 
-        arm_object_l.location.x = arm_xl * math.cos(beta) - arm_yl * math.sin(beta)
-        arm_object_l.location.y = arm_xl * math.sin(beta) + arm_yl * math.cos(beta)
-        arm_object_l.location.z = arm_z + z * (support_arm_h + support_arm_e)
+        arm_object_l.location.x = support_arm_xl * math.cos(beta) - support_arm_yl * math.sin(beta)
+        arm_object_l.location.y = support_arm_xl * math.sin(beta) + support_arm_yl * math.cos(beta)
+        arm_object_l.location.z = sz
 
-        arm_object_r = bpy.data.objects.new('arm_' + '_' + str(i) + '_r', arm_mesh)
+        arm_object_r = bpy.data.objects.new('arm_' + str(i) + '_r', arm_mesh)
         arm_collection.objects.link(arm_object_r)
 
-        arm_object_r.location.x = arm_xr * math.cos(beta) - arm_yr * math.sin(beta)
-        arm_object_r.location.y = arm_xr * math.sin(beta) + arm_yr * math.cos(beta)
-        arm_object_r.location.z = arm_z + z * (support_arm_h + support_arm_e)
+        arm_object_r.location.x = support_arm_xr * math.cos(beta) - support_arm_yr * math.sin(beta)
+        arm_object_r.location.y = support_arm_xr * math.sin(beta) + support_arm_yr * math.cos(beta)
+        arm_object_r.location.z = sz
+
+        if z != support_arm_nz - 1:
+            continue
+
+        arm_head_object = bpy.data.objects.new('arm_head_' + str(i), arm_head_mesh)
+        arm_collection.objects.link(arm_head_object)
+
+        mx = (support_arm_xr + support_arm_xl) / 2
+        my = (support_arm_yr + support_arm_yl) / 2
+
+        arm_head_object.location.x = mx * math.cos(beta) - my * math.sin(beta)
+        arm_head_object.location.y = mx * math.sin(beta) + my * math.cos(beta)
+        arm_head_object.location.z = sz + support_arm_h - support_arm_head_e
+        arm_head_object.rotation_euler = Euler((0, 0, beta), 'XYZ')
 
 # bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\support_", check_existing=True, filter_glob='*.stl', use_selection=False, global_scale=100.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z')
+
+print('done')
