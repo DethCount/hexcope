@@ -6,8 +6,14 @@ from mathutils import Euler
 # f : focal length
 # d : parabola height
 # r : distance from parabola center
-def dist2z(f, r):
+def parabolic_z(f, r):
     return (r * r) / (4 * f)
+
+# f: focal length
+# r: mirror radius
+# d: distance to center in xy plane
+def spherical_z(f, r, d):
+    return math.sqrt(f - d ** 2) - math.sqrt(f - r ** 2)
 
 n = 1 # max distance (in r unit)
 # f = 2.0 # focal length
@@ -23,9 +29,11 @@ p = 25 # precision in parts of 1
 trig_h = 0.1 # triangle walls height
 
 support_secondary_e = 0.05
-support_secondary_h = 10
+support_secondary_t = 0.1
+support_secondary_h = 16
 support_secondary_r = r
 support_secondary_f = 10.0 * r
+support_secondary_rp = 25
 
 support_arm_e = 0.008
 support_arm_r = 0.1
@@ -42,15 +50,18 @@ support_arm_xl = support_arm_xr
 support_arm_yl = -support_arm_yr
 support_arm_d = math.sqrt(support_arm_xr ** 2 + support_arm_yr ** 2)
 support_arm_rld = math.sqrt((support_arm_xr - support_arm_xl) ** 2 + (support_arm_yr - support_arm_yl) ** 2)
-support_arm_z = dist2z(f, support_arm_d) - h
+support_arm_z = parabolic_z(f, support_arm_d) - h
 support_arm_nz = math.ceil(support_secondary_h / support_arm_h)
 
 support_arm_head_e = support_arm_e
 support_arm_head_t = 0.05
-support_arm_head_h = 0.1
+support_arm_head_h = support_secondary_t
 support_arm_head_arm_d = support_arm_rld
 support_arm_head_arm_r = support_arm_r
 support_arm_head_arm_rp = support_arm_rp
+
+support_spider_t = 0.03
+support_spider_w = 2.0
 
 # f : focal length
 # x : cartesian (1, 0)
@@ -72,7 +83,7 @@ def hex2xyz(f, x, y, z, w):
         points.append((
             x3,
             y3,
-            dist2z(f, math.sqrt(x3 * x3 + y3 * y3))
+            parabolic_z(f, math.sqrt(x3 * x3 + y3 * y3))
         ))
 
     if w != 0:
@@ -686,10 +697,6 @@ def create_arm_mesh(r, t, h, rp, hp):
 def create_arm_head_mesh(e, t, h, arm_d, arm_r, arm_rp):
     mesh = bpy.data.meshes.new('arm_head_' + str((e, t, h, arm_d, arm_r, arm_rp)))
 
-    print('args:' + str((e, t, h, arm_d, arm_r, arm_rp)))
-
-    pi2 = math.pi / 2
-    pi3 = math.pi / 3
     pi4 = math.pi / 4
 
     hd = 0.5 * arm_d
@@ -851,6 +858,61 @@ def create_arm_head_mesh(e, t, h, arm_d, arm_r, arm_rp):
 
     return mesh
 
+# t: thickness
+# st: spider arm thickness
+# sw: spider arm length
+# f: secondary mirror focal length
+# r: secondary mirror radius
+# rp: circles precision
+# arm_n: number of spider arms
+def create_secondary_mirror_mesh(t, f, r, rp):
+    mesh = bpy.data.meshes.new('secondary_' + str((t, f, r, rp)))
+
+    vertices = []
+    edges = []
+    faces = []
+
+    nb_verts = len(vertices)
+
+    for sr in range(0, rp + 1):
+        x = r - sr * r / rp
+        z = spherical_z(f, r, x)
+
+        for i in range(0, rp + 1):
+            alpha = i * math.tau / rp
+
+            nbidx = 2
+            tv = nb_verts + sr * (rp + 1) * nbidx + nbidx * i
+            bv = tv + 1
+            utv = nb_verts + (sr - 1) * (rp + 1) * nbidx + nbidx * i
+            ubv = utv + 1
+
+            vertices.extend([
+                (x * math.cos(alpha), x * math.sin(alpha), z + t),
+                (x * math.cos(alpha), x * math.sin(alpha), z),
+            ])
+
+            if i > 0:
+                edges.extend([
+                    (tv, tv - nbidx),
+                    (bv, bv - nbidx),
+                ])
+
+                if sr == 0:
+                    faces.extend([
+                        (tv - nbidx, tv, bv, bv - nbidx),
+                    ])
+                elif sr > 0:
+                    faces.extend([
+                        (tv - nbidx, tv, utv, utv - nbidx),
+                        (bv - nbidx, bv, ubv, ubv - nbidx),
+                    ])
+
+    mesh.from_pydata(vertices, edges, faces)
+    mesh.update()
+
+    return mesh
+
 hex_collection = bpy.data.collections.new('hex_collection')
 bpy.context.scene.collection.children.link(hex_collection)
 
@@ -914,6 +976,13 @@ arm_head_mesh = create_arm_head_mesh(
     support_arm_head_arm_rp
 )
 
+secondary_mesh = create_secondary_mirror_mesh(
+    support_secondary_t,
+    support_secondary_f,
+    support_secondary_r,
+    support_secondary_rp
+)
+
 arm_collection = bpy.data.collections.new('arm_collection')
 bpy.context.scene.collection.children.link(arm_collection)
 
@@ -949,8 +1018,12 @@ for z in range(0, support_arm_nz):
 
         arm_head_object.location.x = mx * math.cos(beta) - my * math.sin(beta)
         arm_head_object.location.y = mx * math.sin(beta) + my * math.cos(beta)
-        arm_head_object.location.z = sz + support_arm_h - support_arm_head_e
+        arm_head_object.location.z = support_secondary_h + support_secondary_t
         arm_head_object.rotation_euler = Euler((0, 0, beta), 'XYZ')
+
+secondary_object = bpy.data.objects.new('secondary_mirror', secondary_mesh)
+arm_collection.objects.link(secondary_object)
+secondary_object.location.z = support_secondary_h
 
 # bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\support_", check_existing=True, filter_glob='*.stl', use_selection=False, global_scale=100.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z')
 
