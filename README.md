@@ -1,8 +1,11 @@
 # hexcope
 
-3d printable hex pattern parabolic mirror for telescope
-20x20x20 cm parts
+3d printable hex pattern parabolic mirror for telescope \
+20x20x20 cm parts\
 
+Can be scaled by primary mirror radius in hexagons (hyperparameter "n") \
+e.g : n = 4, f = 16 (= 1.6m) \
+![Capture](https://github.com/Dethcount/hexcope/blob/main/snapshot_scaling.png?raw=true)
 
 ## primary mirror
 19 x 20cm side hexagonal mirrors \

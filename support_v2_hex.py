@@ -1,39 +1,27 @@
+import os
 import sys
 import bpy
 import math
 from mathutils import Euler
 
-# f : focal length
-# d : parabola height
-# r : distance from parabola center
-def parabolic_z(f, r):
-    return (r * r) / (2 * f)
+sys.dont_write_bytecode = 1
+dir = os.path.dirname(bpy.data.filepath)
+if not dir in sys.path:
+    sys.path.append(dir )
 
-# f: focal length
-# r: mirror radius
-# d: distance to center in xy plane
-def spherical_z(f, r, d):
-    return math.sqrt(f - d ** 2) - math.sqrt(f - r ** 2)
-
-n = 1 # max distance (in r unit)
-# f = 2.0 # focal length
-
-trig_name = 'tri'
-r = 1.0 # hex side
-h = 0.04 # hex thickness
-f = 16 # focal length
+from hyperparameters import n, r, h, f, p, trig_h, support_secondary_is_newton
+from optics import parabolic_z, spherical_z, hex2xy, hex2xyz
+#n = 0
+p = 25
 fw = 0.05 * r # fixation half width
 fd = 0.03 # fixation hole diameter
-p = 25 # precision in parts of 1
 
-trig_h = 0.1 # triangle walls height
-
+trig_name = 'tri'
 
 support_spider_t = 0.03
 support_spider_h = 0.1
 support_spider_w = 2.0
 
-support_secondary_is_newton = False
 support_secondary_z = 12
 
 support_spherical_secondary_name = 'spherical_secondary_mirror'
@@ -66,12 +54,18 @@ support_arm_hp = 18
 support_arm_n = 3
 support_arm_alpha_step = math.tau / support_arm_n
 support_arm_omega = 0
-support_arm_xr = 3.75 * r
-support_arm_yr = (math.sqrt(3) / 2) * r
-support_arm_xl = support_arm_xr
-support_arm_yl = -support_arm_yr
-support_arm_d = math.sqrt(support_arm_xr ** 2 + support_arm_yr ** 2)
-support_arm_rld = math.sqrt((support_arm_xr - support_arm_xl) ** 2 + (support_arm_yr - support_arm_yl) ** 2)
+support_arm_point_r = hex2xy(
+    r,
+    math.floor(0.5 * (n + 1)),
+    1 if n % 2 == 0 else 0,
+    0,
+    1 if n % 2 == 0 else 2
+)
+# print(str(support_arm_point_r) + ' r:' + str(r) + ' x:' + str(n + 1) + ' y:' + str(1 if n % 2 == 0 else 0) + ' z:' + str(1 if n % 2 == 0 else 2))
+support_arm_point_r = (support_arm_point_r[0] + 0.25 * r, support_arm_point_r[1])
+support_arm_point_l = (support_arm_point_r[0], -support_arm_point_r[1])
+support_arm_d = math.sqrt(support_arm_point_r[0] ** 2 + support_arm_point_r[1] ** 2)
+support_arm_rld = math.sqrt((support_arm_point_r[0] - support_arm_point_l[0]) ** 2 + (support_arm_point_r[1] - support_arm_point_l[1]) ** 2)
 support_arm_z = parabolic_z(f, support_arm_d) - h
 support_arm_nz = math.ceil(support_secondary_z / support_arm_h)
 
@@ -85,48 +79,15 @@ support_arm_head_arm_rp = support_arm_rp
 support_arm_spider_thickness = support_spider_t
 support_arm_spider_length = 1.5 * r
 
-# f : focal length
-# x : cartesian (1, 0)
-# y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
-# z : hex triangle index ccw
-# w : hex triangle vertex index cw from center
-def hex2xyz(f, x, y, z, w):
-    ytheta = math.pi / 6
-    x2 = x * (3 * r)
-    ytemp = y * (math.sqrt(3) * r)
-    x2 += ytemp * math.cos(ytheta)
-    y2 = ytemp * math.sin(ytheta)
-
-    points = []
-    for i in range(0, 6):
-        theta = i * math.pi / 3
-        x3 = x2 + r * math.cos(theta)
-        y3 = y2 + r * math.sin(theta)
-        points.append((
-            x3,
-            y3,
-            parabolic_z(f, math.sqrt(x3 * x3 + y3 * y3))
-        ))
-
-    if w != 0:
-        return points[(z + (w - 1)) % 6]
-
-    z2 = 0
-    for i in range(0, 6):
-        z2 += points[i][2]
-
-    z2 /= 6
-
-    return (x2, y2, z2)
-
-def create_primary_mirror_normal(e, f, x, y, z):
+def create_primary_mirror_normal(e, f, r, x, y, z):
     mesh = bpy.data.meshes.new('primary_mirror_normals_' + str((
         e, f, x, y, z
     )))
 
-    p1w0 = hex2xyz(f, x, y, z, 0)
-    p1w1 = hex2xyz(f, x, y, z, 1)
-    p1w2 = hex2xyz(f, x, y, z, 2)
+    # print('primary_mirror_normals')
+    p1w0 = hex2xyz(f, r, x, y, z, 0)
+    p1w1 = hex2xyz(f, r, x, y, z, 1)
+    p1w2 = hex2xyz(f, r, x, y, z, 2)
 
     u = (p1w1[0] - p1w0[0], p1w1[1] - p1w0[1], p1w1[2] - p1w0[2])
     v = (p1w2[0] - p1w0[0], p1w2[1] - p1w0[1], p1w2[2] - p1w0[2])
@@ -167,16 +128,17 @@ def create_primary_mirror_normal(e, f, x, y, z):
 
     return mesh
 
-def create_spherical_rays(e, h, r, f, x, y, z, primary_f):
+def create_spherical_rays(e, h, r, f, x, y, z, primary_f, hex_side):
     mesh = bpy.data.meshes.new('rays_mesh' + str((
-        e, h, r, f, x, y, z, primary_f
+        e, h, r, f, x, y, z, primary_f, hex_side
     )))
 
     p0 = (10, 10, 10)
 
-    p1w0 = hex2xyz(primary_f, x, y, z, 0)
-    p1w1 = hex2xyz(primary_f, x, y, z, 1)
-    p1w2 = hex2xyz(primary_f, x, y, z, 2)
+    # print('spherical_rays')
+    p1w0 = hex2xyz(primary_f, hex_side, x, y, z, 0)
+    p1w1 = hex2xyz(primary_f, hex_side, x, y, z, 1)
+    p1w2 = hex2xyz(primary_f, hex_side, x, y, z, 2)
 
     u = (p1w1[0] - p1w0[0], p1w1[1] - p1w0[1], p1w1[2] - p1w0[2])
     v = (p1w2[0] - p1w0[0], p1w2[1] - p1w0[1], p1w2[2] - p1w0[2])
@@ -231,7 +193,7 @@ def create_spherical_rays(e, h, r, f, x, y, z, primary_f):
         #maxd = (secondary_h + h - secondary_f) / un[2]
     #maxd0z = (secondary_h + h - p1w0[2]) / un[2]
     maxd = h + f / math.sqrt(p1w0[0] ** 2 + p1w0[1] ** 2 + (un[2] * maxd0 - p1w0[2]) ** 2)
-    print('sh: ' + str(sh) + ' maxd: ' + str(maxd) + ' h0: ' + str(h0))
+    # print('sh: ' + str(sh) + ' maxd: ' + str(maxd) + ' h0: ' + str(h0))
 
     p1n = (
         p1w0[0] + ureflected[0] * maxd0,
@@ -245,7 +207,7 @@ def create_spherical_rays(e, h, r, f, x, y, z, primary_f):
         p1w0[2] + un[2] * maxd
     )
 
-    print('p1n: ' + str(p1n))
+    # print('p1n: ' + str(p1n))
 
     vertices = [
         p0,
@@ -299,6 +261,7 @@ def create_spherical_rays(e, h, r, f, x, y, z, primary_f):
 
 
 # f : focal length
+# s : triangle side length
 # t : triangle thickness
 # h : walls height
 # fw : fixation half width
@@ -307,23 +270,18 @@ def create_spherical_rays(e, h, r, f, x, y, z, primary_f):
 # x : cartesian (1, 0)
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
 # z : hex triangle index ccw
-def create_triangle_mesh(f, t, h, fw, fd, p, x, y, z):
-    mesh = bpy.data.meshes.new('trig_mesh' + str((f,t,x,y,z)))
+def create_triangle_mesh(f, s, t, h, fw, fd, p, x, y, z):
+    mesh = bpy.data.meshes.new('trig_mesh' + str((f, s, t, h, fw, fd, p, x, y, z)))
+    # print('create_triangle_mesh: ' + str((f, s, t, h, fw, fd, p, x, y, z)))
 
-    c = r * math.cos(math.pi / 3)
-    s = r * math.sin(math.pi / 3)
     fr = 0.5 * fd
 
     vertices = []
 
-    v0 = hex2xyz(f, x, y, z, 0)
-    print(str((x, y, z, 0)) + ' ' + str(v0))
-
-    v1 = hex2xyz(f, x, y, z, 1)
-    print(str((x, y, z, 1)) + ' ' + str(v1))
-
-    v2 = hex2xyz(f, x, y, z, 2)
-    print(str((x, y, z, 2)) + ' ' + str(v2))
+    # print('triangle')
+    v0 = hex2xyz(f, s, x, y, z, 0)
+    v1 = hex2xyz(f, s, x, y, z, 1)
+    v2 = hex2xyz(f, s, x, y, z, 2)
 
     vmid = (
         (v0[0] + v1[0] + v2[0]) / 3,
@@ -490,9 +448,9 @@ def create_triangle_mesh(f, t, h, fw, fd, p, x, y, z):
         vmid20mid[0] * v20[1] - vmid20mid[1] * v20[0],
     )
 
-    print('01 : n : ' + str(vmid01mid) + ' u: ' + str(v01) + ' n x u:' + str(nu01))
-    print('12 : n : ' + str(vmid12mid) + ' u: ' + str(v12) + ' n x u:' + str(nu12))
-    print('20 : n : ' + str(vmid20mid) + ' u: ' + str(v20) + ' n x u:' + str(nu20))
+    # print('01 : n : ' + str(vmid01mid) + ' u: ' + str(v01) + ' n x u:' + str(nu01))
+    # print('12 : n : ' + str(vmid12mid) + ' u: ' + str(v12) + ' n x u:' + str(nu12))
+    # print('20 : n : ' + str(vmid20mid) + ' u: ' + str(v20) + ' n x u:' + str(nu20))
 
     nb_verts = len(vertices)
     vertices.extend([
@@ -661,7 +619,7 @@ def create_triangle_mesh(f, t, h, fw, fd, p, x, y, z):
         (37, vfw0 + 5, 33),
     ])
 
-    print(vfw1)
+    # print(vfw1)
 
     # print('trig mesh' + str(vertices) + ' ' + str(edges) + ' ' + str(faces))
 
@@ -736,8 +694,8 @@ def create_arm_mesh(r, t, h, rp, hp):
                         #(trvi, brvi),
                     ])
 
-                    print('verts: ' + str(len(vertices)) + ' i:' + str(i) + ' j:' + str(j))
-                    print('trv: ' + str(trv) + ' tlv: ' + str(tlv) + ' brv: ' + str(brv) + ' blv: ' + str(blv))
+                    # print('verts: ' + str(len(vertices)) + ' i:' + str(i) + ' j:' + str(j))
+                    # print('trv: ' + str(trv) + ' tlv: ' + str(tlv) + ' brv: ' + str(brv) + ' blv: ' + str(blv))
 
                     faces.extend([
                         (blv, brv, trv, tlv),
@@ -1114,6 +1072,15 @@ prev_hexes = [(0, 0)]
 curr_hexes = []
 hexes = prev_hexes
 
+if support_secondary_is_newton:
+    # print(' triangle r: ' + str(r))
+    for z in range(0, 6):
+        # print(' triangle r: ' + str(r))
+        mesh = create_triangle_mesh(f, r, h, trig_h, fw, fd, p, 0, 0, z)
+        # print('mesh created z: ' + str((0, 0, z)) + str(mesh))
+        triangle_object = bpy.data.objects.new(trig_name + '_center', mesh)
+        hex_collection.objects.link(triangle_object)
+
 for i in range(0, n + 1):
     for j in range(0, len(prev_hexes)):
         for l in range(0, len(hex_arrows)):
@@ -1125,7 +1092,7 @@ for i in range(0, n + 1):
 
             # print(str((x, y)) + ' not found')
             for z in range(0, 6):
-                mesh = create_triangle_mesh(f, h, trig_h, fw, fd, p, x, y, z)
+                mesh = create_triangle_mesh(f, r, h, trig_h, fw, fd, p, x, y, z)
 
                 # print('mesh created z: ' + str((x, y, z)) + str(mesh))
                 triangle_object = bpy.data.objects.new(trig_name + '_0', mesh)
@@ -1144,6 +1111,7 @@ for i in range(0, len(hexes)):
     normal_mesh = create_primary_mirror_normal(
         e,
         f,
+        r,
         hexes[i][0],
         hexes[i][1],
         0
@@ -1213,15 +1181,15 @@ for z in range(0, support_arm_nz):
         arm_object_l = bpy.data.objects.new('arm_' + str(i) + '_l', arm_mesh)
         arm_collection.objects.link(arm_object_l)
 
-        arm_object_l.location.x = support_arm_xl * math.cos(beta) - support_arm_yl * math.sin(beta)
-        arm_object_l.location.y = support_arm_xl * math.sin(beta) + support_arm_yl * math.cos(beta)
+        arm_object_l.location.x = support_arm_point_l[0] * math.cos(beta) - support_arm_point_l[1] * math.sin(beta)
+        arm_object_l.location.y = support_arm_point_l[0] * math.sin(beta) + support_arm_point_l[1] * math.cos(beta)
         arm_object_l.location.z = sz
 
         arm_object_r = bpy.data.objects.new('arm_' + str(i) + '_r', arm_mesh)
         arm_collection.objects.link(arm_object_r)
 
-        arm_object_r.location.x = support_arm_xr * math.cos(beta) - support_arm_yr * math.sin(beta)
-        arm_object_r.location.y = support_arm_xr * math.sin(beta) + support_arm_yr * math.cos(beta)
+        arm_object_r.location.x = support_arm_point_r[0] * math.cos(beta) - support_arm_point_r[1] * math.sin(beta)
+        arm_object_r.location.y = support_arm_point_r[0] * math.sin(beta) + support_arm_point_r[1] * math.cos(beta)
         arm_object_r.location.z = sz
 
         if z != support_arm_nz - 1:
@@ -1230,8 +1198,8 @@ for z in range(0, support_arm_nz):
         arm_head_object = bpy.data.objects.new('arm_head_' + str(i), arm_head_mesh)
         arm_collection.objects.link(arm_head_object)
 
-        mx = (support_arm_xr + support_arm_xl) / 2
-        my = (support_arm_yr + support_arm_yl) / 2
+        mx = (support_arm_point_r[0] + support_arm_point_l[0]) / 2
+        my = (support_arm_point_r[1] + support_arm_point_l[1]) / 2
 
         arm_head_object.location.x = mx * math.cos(beta) - my * math.sin(beta)
         arm_head_object.location.y = mx * math.sin(beta) + my * math.cos(beta)
@@ -1244,4 +1212,4 @@ secondary_object.location.z = support_secondary_z
 
 # bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\support_", check_existing=True, filter_glob='*.stl', use_selection=False, global_scale=100.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z')
 
-print('done')
+print("\nDONE\n\n\n")

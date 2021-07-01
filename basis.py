@@ -1,13 +1,16 @@
+import os
+import sys
 import bpy
 import math
 from mathutils import Euler
 
-n = 1 # max distance (in r unit)
-r = 1.0 # hex side
-h = 0.04 # hex thickness
-trig_h = 0.1 # triangle walls height
-p = 100
+sys.dont_write_bytecode = 1
+dir = os.path.dirname(bpy.data.filepath)
+if not dir in sys.path:
+    sys.path.append(dir)
 
+from hyperparameters import r, h, p, trig_h
+from optics import hex2xy
 
 basis_wheel_e = 0.008
 basis_wheel_t = h
@@ -99,34 +102,6 @@ basis_plate_bottom_x = basis_plate_top_x
 basis_plate_bottom_z = basis_plate_axis_z - basis_plate_axis_t - basis_plate_bottom_e
 basis_plate_bottom_hex_side = basis_plate_top_hex_side
 basis_plate_bottom_top_plate_thickness = basis_plate_top_t
-
-
-
-# x : cartesian (1, 0)
-# y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
-# z : hex triangle index ccw
-# w : hex triangle vertex index cw from center
-def hex2xy(x, y, z, w):
-    ytheta = math.pi / 6
-    x2 = x * (3 * r)
-    ytemp = y * (math.sqrt(3) * r)
-    x2 += ytemp * math.cos(ytheta)
-    y2 = ytemp * math.sin(ytheta)
-
-    points = []
-    for i in range(0, 6):
-        theta = i * math.pi / 3
-        x3 = x2 + r * math.cos(theta)
-        y3 = y2 + r * math.sin(theta)
-        points.append((
-            x3,
-            y3
-        ))
-
-    if w != 0:
-        return points[(z + (w - 1)) % 6]
-
-    return (x2, y2)
 
 # e: epsilon, smallest change in position
 # t: thickness
@@ -2112,8 +2087,8 @@ def create_plate_axis_mesh(e, t, r, p, x, z, top_t, top_r, bottom_t, bottom_r):
     return mesh
 
 def move_basis_to(obj, hex):
-    hex_1 = hex2xy(0, 0, hex, 1)
-    hex_2 = hex2xy(0, 0, hex, 2)
+    hex_1 = hex2xy(r, 0, 0, hex, 1)
+    hex_2 = hex2xy(r, 0, 0, hex, 2)
     hex_mid = (
         0.5 * (hex_1[0] + hex_2[0]),
         0.5 * (hex_1[1] + hex_2[1])
