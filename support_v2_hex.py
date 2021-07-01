@@ -7,7 +7,7 @@ from mathutils import Euler
 # d : parabola height
 # r : distance from parabola center
 def parabolic_z(f, r):
-    return (r * r) / (4 * f)
+    return (r * r) / (2 * f)
 
 # f: focal length
 # r: mirror radius
@@ -21,19 +21,41 @@ n = 1 # max distance (in r unit)
 trig_name = 'tri'
 r = 1.0 # hex side
 h = 0.04 # hex thickness
-f = 6 # focal length
+f = 16 # focal length
 fw = 0.05 * r # fixation half width
 fd = 0.03 # fixation hole diameter
 p = 25 # precision in parts of 1
 
 trig_h = 0.1 # triangle walls height
 
-support_secondary_e = 0.05
-support_secondary_t = 0.1
-support_secondary_h = 16
-support_secondary_r = r
-support_secondary_f = 10.0 * r
-support_secondary_rp = 25
+
+support_spider_t = 0.03
+support_spider_h = 0.1
+support_spider_w = 2.0
+
+support_secondary_is_newton = False
+support_secondary_z = 12
+
+support_spherical_secondary_name = 'spherical_secondary_mirror'
+support_spherical_secondary_t = support_spider_h
+support_spherical_secondary_z = support_secondary_z + support_spherical_secondary_t
+support_spherical_secondary_r = r
+support_spherical_secondary_f = 10.0 * r
+support_spherical_secondary_rp = 25
+
+support_newton_secondary_name = 'newton_secondary_mirror'
+support_newton_secondary_t = support_spider_h
+support_newton_secondary_rx = r
+support_newton_secondary_ry = support_newton_secondary_rx
+support_newton_secondary_rp = 25
+support_newton_secondary_z = support_secondary_z + support_newton_secondary_rx * math.cos(math.pi / 4) + support_newton_secondary_t
+
+support_secondary_final_name = support_spherical_secondary_name
+support_secondary_final_z = support_spherical_secondary_z
+
+if support_secondary_is_newton:
+    support_secondary_final_name = support_newton_secondary_name
+    support_secondary_final_z = support_newton_secondary_z
 
 support_arm_e = 0.008
 support_arm_r = 0.1
@@ -51,17 +73,17 @@ support_arm_yl = -support_arm_yr
 support_arm_d = math.sqrt(support_arm_xr ** 2 + support_arm_yr ** 2)
 support_arm_rld = math.sqrt((support_arm_xr - support_arm_xl) ** 2 + (support_arm_yr - support_arm_yl) ** 2)
 support_arm_z = parabolic_z(f, support_arm_d) - h
-support_arm_nz = math.ceil(support_secondary_h / support_arm_h)
+support_arm_nz = math.ceil(support_secondary_z / support_arm_h)
 
 support_arm_head_e = support_arm_e
 support_arm_head_t = 0.05
-support_arm_head_h = support_secondary_t
+support_arm_head_h = support_spider_h
+support_arm_head_z = support_secondary_final_z
 support_arm_head_arm_d = support_arm_rld
 support_arm_head_arm_r = support_arm_r
 support_arm_head_arm_rp = support_arm_rp
-
-support_spider_t = 0.03
-support_spider_w = 2.0
+support_arm_spider_thickness = support_spider_t
+support_arm_spider_length = 1.5 * r
 
 # f : focal length
 # x : cartesian (1, 0)
@@ -97,16 +119,64 @@ def hex2xyz(f, x, y, z, w):
 
     return (x2, y2, z2)
 
-def create_rays(e, h, r, f, x, y, z):
-    mesh = bpy.data.meshes.new('rays_mesh' + str((
-        e, h, r, f, x, y, z
+def create_primary_mirror_normal(e, f, x, y, z):
+    mesh = bpy.data.meshes.new('primary_mirror_normals_' + str((
+        e, f, x, y, z
     )))
-
-    p0 = (10, 10, 10)
 
     p1w0 = hex2xyz(f, x, y, z, 0)
     p1w1 = hex2xyz(f, x, y, z, 1)
     p1w2 = hex2xyz(f, x, y, z, 2)
+
+    u = (p1w1[0] - p1w0[0], p1w1[1] - p1w0[1], p1w1[2] - p1w0[2])
+    v = (p1w2[0] - p1w0[0], p1w2[1] - p1w0[1], p1w2[2] - p1w0[2])
+
+    n = (
+        u[1] * v[2] - u[2] * v[1],
+        u[2] * v[0] - u[0] * v[2],
+        u[0] * v[1] - u[1] * v[0]
+    )
+
+    ln = math.sqrt(n[0] ** 2 + n[1] ** 2 + n[2] ** 2)
+    un = (n[0] / ln, n[1] / ln, n[2] / ln)
+
+    dunxy = math.sqrt(un[0] ** 2 + un[1] ** 2)
+    maxd0 = 0
+    if dunxy > 0:
+        maxd0 = math.sqrt(p1w0[0] ** 2 + p1w0[1] ** 2) / math.sqrt(un[0] ** 2 + un[1] ** 2)
+
+    pun0 = (
+        p1w0[0] + un[0] * maxd0,
+        p1w0[1] + un[1] * maxd0,
+        p1w0[2] + un[2] * maxd0
+    )
+
+    vertices = [
+        p1w0,
+        (p1w0[0] + e, p1w0[1] + e, p1w0[2] + e),
+        pun0,
+        (pun0[0] + e, pun0[1] + e, pun0[2] + e),
+    ]
+    edges = []
+    faces = [
+        (0, 1, 3, 2),
+    ]
+
+    mesh.from_pydata(vertices, edges, faces)
+    mesh.update()
+
+    return mesh
+
+def create_spherical_rays(e, h, r, f, x, y, z, primary_f):
+    mesh = bpy.data.meshes.new('rays_mesh' + str((
+        e, h, r, f, x, y, z, primary_f
+    )))
+
+    p0 = (10, 10, 10)
+
+    p1w0 = hex2xyz(primary_f, x, y, z, 0)
+    p1w1 = hex2xyz(primary_f, x, y, z, 1)
+    p1w2 = hex2xyz(primary_f, x, y, z, 2)
 
     u = (p1w1[0] - p1w0[0], p1w1[1] - p1w0[1], p1w1[2] - p1w0[2])
     v = (p1w2[0] - p1w0[0], p1w2[1] - p1w0[1], p1w2[2] - p1w0[2])
@@ -169,12 +239,6 @@ def create_rays(e, h, r, f, x, y, z):
         p1w0[2] + ureflected[2] * maxd0
     )
 
-    pun0 = (
-        p1w0[0] + un[0] * maxd0,
-        p1w0[1] + un[1] * maxd0,
-        p1w0[2] + un[2] * maxd0
-    )
-
     pun = (
         p1w0[0] + un[0] * maxd,
         p1w0[1] + un[1] * maxd,
@@ -196,9 +260,6 @@ def create_rays(e, h, r, f, x, y, z):
 
         (pun[0], pun[1], -2.0),
         (pun[0] + e, pun[1] + e, -2.0 + e),
-
-        pun0,
-        (pun0[0] + e, pun0[1] + e, pun0[2] + e),
     ]
     edges = [
         (0, 1),
@@ -694,12 +755,21 @@ def create_arm_mesh(r, t, h, rp, hp):
 # d: distance between arms
 # arm_r: arm radius
 # arm_rp: arm circles precision
-def create_arm_head_mesh(e, t, h, arm_d, arm_r, arm_rp):
-    mesh = bpy.data.meshes.new('arm_head_' + str((e, t, h, arm_d, arm_r, arm_rp)))
+# spider_thickness: spider leg thickness
+# spider_length: spider leg length
+def create_arm_head_mesh(e, t, h, arm_d, arm_r, arm_rp, spider_thickness, spider_length):
+    mesh = bpy.data.meshes.new('arm_head_' + str((
+        e, t, h,
+        arm_d, arm_r, arm_rp,
+        spider_thickness, spider_length
+    )))
 
     pi4 = math.pi / 4
 
     hd = 0.5 * arm_d
+    hst = 0.5 * spider_thickness
+    hsl = 0.5 * spider_length
+
     ri = arm_r + e
     re = ri + t
 
@@ -716,6 +786,7 @@ def create_arm_head_mesh(e, t, h, arm_d, arm_r, arm_rp):
         (0, -hd + re, -h),
         (0, hd - re, -h),
 
+        # 8
         (re, -hd, -h),
         (re, hd, -h),
 
@@ -728,11 +799,38 @@ def create_arm_head_mesh(e, t, h, arm_d, arm_r, arm_rp):
         (ri * math.cos(pi4), -hd + ri * math.sin(pi4), -h),
         (ri * math.cos(pi4), hd - ri * math.sin(pi4), -h),
 
+        # 16
         (ri * math.cos(3 * pi4), -hd + ri * math.sin(3 * pi4), 0),
         (ri * math.cos(3 * pi4), hd - ri * math.sin(3 * pi4), 0),
 
         (ri * math.cos(3 * pi4), -hd + ri * math.sin(3 * pi4), -h),
         (ri * math.cos(3 * pi4), hd - ri * math.sin(3 * pi4), -h),
+
+        (-re, -hst, 0),
+        (-re, hst, 0),
+
+        (-re, -hst, -h - t),
+        (-re, hst, -h - t),
+
+        # 24
+        (0, -hst, -h - t),
+        (0, hst, -h - t),
+
+        (re, -hst, 0),
+        (re, hst, 0),
+
+        (re, -hst, -h),
+        (re, hst, -h),
+
+        (-re - spider_length, -hst, 0),
+        (-re - spider_length, hst, 0),
+
+        # 32
+        (-re - spider_length, -hst, -h),
+        (-re - spider_length, hst, -h),
+
+        (-re - hsl, -hst, -h),
+        (-re - hsl, hst, -h),
     ]
 
     edges = []
@@ -741,10 +839,25 @@ def create_arm_head_mesh(e, t, h, arm_d, arm_r, arm_rp):
         (0, 2, 3, 1),
         (5, 0, 1, 4),
 
-        (8, 6, 7, 9),
-        (6, 11, 10, 7),
+        (8, 6, 24, 28),
+        (25, 7, 9, 29),
+        (24, 6, 11, 22),
+        (7, 25, 23, 10),
+        (28, 24, 25, 29),
+        (24, 22, 23, 25),
 
-        #(11, 5, 4, 10),
+        (21, 4, 10, 23),
+        (5, 20, 22, 11),
+
+        (30, 20, 21, 31),
+        (22, 34, 35, 23),
+        (30, 31, 33, 32),
+        (34, 32, 33, 35),
+        (20, 30, 32, 28),
+        (22, 28, 34),
+        (31, 21, 29, 33),
+        (29, 23, 35),
+
         (9, 3, 2, 8),
 
         (0, 12, 2),
@@ -859,13 +972,93 @@ def create_arm_head_mesh(e, t, h, arm_d, arm_r, arm_rp):
     return mesh
 
 # t: thickness
+# rx: secondary mirror radius along x in secondary mirror plane
+# ry: secondary mirror radius along y in secondary mirror plane
+# rp: circles precision
+def create_newton_secondary_mirror_mesh(t, rx, ry, rp):
+    mesh = bpy.data.meshes.new('newton_secondary_' + str((t, rx, ry, rp)))
+
+    pi4m = -math.pi / 4
+    cpi4m = math.cos(pi4m)
+    spi4m = math.sin(pi4m)
+
+    vertices = [
+        (0, 0, t),
+        (0, 0, 0),
+    ]
+    edges = []
+    faces = []
+
+    nb_verts = len(vertices)
+
+    for i in range(0, rp + 1):
+        alpha = i * math.tau / rp
+
+        x = rx * math.cos(alpha)
+        y = ry * math.sin(alpha)
+
+        xi = (rx - t) * math.cos(alpha)
+        yi = (ry - t) * math.sin(alpha)
+
+        z = 0
+
+        nbidx = 5
+        trv = nb_verts + nbidx * i
+        brv = trv + 1
+        rrv = trv + 2
+        ritrv = trv + 3
+        ribrv = trv + 4
+        tlv = trv - nbidx
+        blv = brv - nbidx
+        rlv = rrv - nbidx
+        ritlv = ritrv - nbidx
+        riblv = ribrv - nbidx
+
+        vertices.extend([
+            (x * cpi4m + z * spi4m, y, x * -spi4m + z * cpi4m + t),
+            (x * cpi4m + z * spi4m, y, x * -spi4m + z * cpi4m),
+            (x * cpi4m + z * spi4m, y, rx * cpi4m + t),
+            (xi * cpi4m + z * spi4m, yi, rx * cpi4m + t),
+            (xi * cpi4m + z * spi4m, yi, xi * -spi4m + z * cpi4m + t),
+        ])
+
+        edges.extend([
+            (trv, brv),
+            (trv, rrv),
+            (ritrv, ribrv),
+        ])
+
+        if i > 0:
+            edges.extend([
+                (trv, tlv),
+                (brv, blv),
+                (rrv, rlv),
+                (ritrv, ritlv),
+                (ribrv, riblv),
+            ])
+
+            faces.extend([
+                (trv, tlv, blv, brv),
+                (1, brv, blv),
+                (trv, rrv, rlv, tlv),
+                (rrv, ritrv, ritlv, rlv),
+                (ritrv, ritlv, riblv, ribrv),
+                (0, ribrv, riblv),
+            ])
+
+    mesh.from_pydata(vertices, edges, faces)
+    mesh.update()
+
+    return mesh
+
+# t: thickness
 # st: spider arm thickness
 # sw: spider arm length
 # f: secondary mirror focal length
 # r: secondary mirror radius
 # rp: circles precision
 # arm_n: number of spider arms
-def create_secondary_mirror_mesh(t, f, r, rp):
+def create_spherical_secondary_mirror_mesh(t, f, r, rp):
     mesh = bpy.data.meshes.new('secondary_' + str((t, f, r, rp)))
 
     vertices = []
@@ -900,11 +1093,11 @@ def create_secondary_mirror_mesh(t, f, r, rp):
 
                 if sr == 0:
                     faces.extend([
-                        (tv - nbidx, tv, bv, bv - nbidx),
+                        (tv, tv - nbidx, bv - nbidx, bv),
                     ])
                 elif sr > 0:
                     faces.extend([
-                        (tv - nbidx, tv, utv, utv - nbidx),
+                        (tv, tv - nbidx, utv - nbidx, utv),
                         (bv - nbidx, bv, ubv, ubv - nbidx),
                     ])
 
@@ -947,14 +1140,28 @@ ray_collection = bpy.data.collections.new('ray_collection')
 bpy.context.scene.collection.children.link(ray_collection)
 
 for i in range(0, len(hexes)):
-        ray_mesh = create_rays(
-            support_secondary_e,
-            support_secondary_h,
-            support_secondary_r,
-            support_secondary_f,
+    e = 0.05
+    normal_mesh = create_primary_mirror_normal(
+        e,
+        f,
+        hexes[i][0],
+        hexes[i][1],
+        0
+    )
+
+    normal_object = bpy.data.objects.new('primary_mirror_normal_' + str(hexes[i][0]) + '_' + str(hexes[i][1]) + '_0', normal_mesh)
+    ray_collection.objects.link(normal_object)
+
+    if not support_secondary_is_newton:
+        ray_mesh = create_spherical_rays(
+            e,
+            support_spherical_secondary_z,
+            support_spherical_secondary_r,
+            support_spherical_secondary_f,
             hexes[i][0],
             hexes[i][1],
-            0
+            0,
+            f
         )
         ray_object = bpy.data.objects.new('ray_' + str(hexes[i][0]) + '_' + str(hexes[i][1]) + '_0', ray_mesh)
         ray_collection.objects.link(ray_object)
@@ -973,15 +1180,25 @@ arm_head_mesh = create_arm_head_mesh(
     support_arm_head_h,
     support_arm_head_arm_d,
     support_arm_head_arm_r,
-    support_arm_head_arm_rp
+    support_arm_head_arm_rp,
+    support_arm_spider_thickness,
+    support_arm_spider_length
 )
 
-secondary_mesh = create_secondary_mirror_mesh(
-    support_secondary_t,
-    support_secondary_f,
-    support_secondary_r,
-    support_secondary_rp
-)
+if support_secondary_is_newton:
+    secondary_mesh = create_newton_secondary_mirror_mesh(
+        support_newton_secondary_t,
+        support_newton_secondary_rx,
+        support_newton_secondary_ry,
+        support_newton_secondary_rp
+    )
+else:
+    secondary_mesh = create_spherical_secondary_mirror_mesh(
+        support_spherical_secondary_t,
+        support_spherical_secondary_f,
+        support_spherical_secondary_r,
+        support_spherical_secondary_rp
+    )
 
 arm_collection = bpy.data.collections.new('arm_collection')
 bpy.context.scene.collection.children.link(arm_collection)
@@ -1018,12 +1235,12 @@ for z in range(0, support_arm_nz):
 
         arm_head_object.location.x = mx * math.cos(beta) - my * math.sin(beta)
         arm_head_object.location.y = mx * math.sin(beta) + my * math.cos(beta)
-        arm_head_object.location.z = support_secondary_h + support_secondary_t
+        arm_head_object.location.z = support_arm_head_z
         arm_head_object.rotation_euler = Euler((0, 0, beta), 'XYZ')
 
-secondary_object = bpy.data.objects.new('secondary_mirror', secondary_mesh)
+secondary_object = bpy.data.objects.new(support_secondary_final_name, secondary_mesh)
 arm_collection.objects.link(secondary_object)
-secondary_object.location.z = support_secondary_h
+secondary_object.location.z = support_secondary_z
 
 # bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\support_", check_existing=True, filter_glob='*.stl', use_selection=False, global_scale=100.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z')
 

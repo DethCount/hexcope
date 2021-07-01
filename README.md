@@ -3,15 +3,23 @@
 3d printable hex pattern parabolic mirror for telescope
 20x20x20 cm parts
 
-primary mirror:
-18 x 20cm side hexagonal mirrors
+![Capture](https://github.com/Dethcount/hexcope/blob/main/snapshot.png?raw=true)
+
+## primary mirror
+19 x 20cm side hexagonal mirrors \
 https://www.gifi.fr/product/id/557688/miroir-sticker-hexagonal-x-3
 
-secondary mirror:
-1 x 10cm radius round mirror
+## secondary mirror - work in progress
+
+Allows for Newton setup (with basis central hex on) \
+or Ritchley-Chretien setup (with camera at basis center)
+
+1 x 10cm radius round mirror \
 https://www.gifi.fr/product/id/557686/miroir-sticker-rond-x-3
 
-telescope basis : missing instrument plate
-secondary mirror support : work in progress
+## telescope basis
+missing instrument plate and central hex for Newton setup
 
-![Capture](https://github.com/Dethcount/hexcope/blob/main/snapshot.png?raw=true)
+## gcode files
+DM_ is for Dagoma Magis 3d printer
+DD_ is for Dagoma DiscoEasy200
