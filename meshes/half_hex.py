@@ -1,8 +1,8 @@
 import bpy
 import math
-from mathutils import Euler, Vector
+from mathutils import Vector
 
-from optics import hex2xyz, parabolic_z
+from optics import hex2xyz
 
 half_hex_name = 'half_hex'
 half_hex_num = 0
@@ -84,11 +84,6 @@ def create_object(f, s, t, x, y, z):
     bpy.ops.font.style_set(style='UNDERLINE', clear=False)
     bpy.ops.object.mode_set( mode = 'OBJECT' )
 
-    # bpy.context.object.data.extrude = t
-
-    # for c in range(0, len(bpy.context.object.data.body_format)):
-        # bpy.context.object.data.body_format[c].use_underline = True
-
     p0 = hex2xyz(f, s, x, y, z, 0)
     p2 = hex2xyz(f, s, x, y, z + 1, 1)
     p3 = hex2xyz(f, s, x, y, z + 2, 1)
@@ -109,16 +104,9 @@ def create_object(f, s, t, x, y, z):
         (p0[2] + p2[2] + p3[2]) / 3,
     )
 
-    rx = 0# math.acos(abs(p2[1] - p0[1]) / math.sqrt((p2[1] - p0[1]) ** 2 + (p2[2] - p0[2]) ** 2))
-    ry = 0# math.acos(abs(p3[0] - p2[0]) / math.sqrt((p3[2] - p2[2]) ** 2 + (p3[0] - p2[0]) ** 2))
-    rz = 0# math.acos(abs(p3[0] - p2[0]) / math.sqrt((p3[0] - p2[0]) ** 2 + (p3[1] - p2[1]) ** 2))
-
-    print(half_hex_num, str(rx), str(ry), str(rz))
-
     bpy.context.object.location.x = mid[0]
     bpy.context.object.location.y = mid[1]
     bpy.context.object.location.z = mid[2] - t
-    bpy.context.object.rotation_euler = Euler((rx, ry, rz), 'XYZ')
 
     bpy.ops.transform.resize(value=(-0.25, 0.25, 0.25))
     bpy.ops.object.convert(target='MESH', keep_original=False)
