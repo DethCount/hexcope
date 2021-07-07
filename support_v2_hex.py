@@ -1249,7 +1249,8 @@ for i in range(0, len(hexes)):
             hexes[i][0],
             hexes[i][1],
             0,
-            f
+            f,
+            r
         )
         ray_object = bpy.data.objects.new('ray_' + str(hexes[i][0]) + '_' + str(hexes[i][1]) + '_0', ray_mesh)
         ray_collection.objects.link(ray_object)
