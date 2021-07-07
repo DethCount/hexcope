@@ -11,11 +11,14 @@ if not dir in sys.path:
 
 from hyperparameters import n, r, h, f, p, trig_h, support_secondary_is_newton
 from optics import parabolic_z, spherical_z, hex2xy, hex2xyz
+from meshes import half_hex
+
 #n = 0
 p = 25
 fw = 0.05 * r # fixation half width
 fd = 0.03 # fixation hole diameter
 
+current_triangle_num = 0
 trig_name = 'tri'
 
 support_spider_t = 0.03
@@ -271,14 +274,12 @@ def create_spherical_rays(e, h, r, f, x, y, z, primary_f, hex_side):
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
 # z : hex triangle index ccw
 def create_triangle_mesh(f, s, t, h, fw, fd, p, x, y, z):
-    mesh = bpy.data.meshes.new('trig_mesh' + str((f, s, t, h, fw, fd, p, x, y, z)))
+    mesh_name = 'trig_mesh' + str((f, s, t, h, fw, fd, p, x, y, z))
+    mesh = bpy.data.meshes.new(mesh_name)
     # print('create_triangle_mesh: ' + str((f, s, t, h, fw, fd, p, x, y, z)))
 
     fr = 0.5 * fd
 
-    vertices = []
-
-    # print('triangle')
     v0 = hex2xyz(f, s, x, y, z, 0)
     v1 = hex2xyz(f, s, x, y, z, 1)
     v2 = hex2xyz(f, s, x, y, z, 2)
@@ -288,6 +289,54 @@ def create_triangle_mesh(f, s, t, h, fw, fd, p, x, y, z):
         (v0[1] + v1[1] + v2[1]) / 3,
         (v0[2] + v1[2] + v2[2]) / 3
     )
+
+    vertices = []
+    edges = []
+    faces = []
+
+    #global current_triangle_num
+    #current_triangle_num += 1
+
+    #bpy.ops.object.text_add()
+    #bpy.context.object.data.body = str(current_triangle_num)
+    #bpy.context.object.data.extrude = 0.02
+    ##bpy.context.object.data.bevel_depth = 0.02
+    ##bpy.context.object.data.bevel_resolution = 8
+    #bpy.context.object.location.x = v0[0]
+    #bpy.context.object.location.y = v0[1]
+    #bpy.context.object.location.z = v0[2]
+    #bpy.ops.transform.resize(value=(0, 0.1, 0))
+
+    #bpy.context.view_layer.objects.active = mesh
+    #bpy.ops.object.parent_set()
+
+    #bpy.ops.object.convert(target='MESH', keep_original=False)
+    #vertices.extend(bpy.context.object.data.vertices)
+
+    #text_verts = []
+    #for v in bpy.context.object.data.vertices:
+        #vv = (v.co[0] + vmid[0], v.co[1] + vmid[1], v.co[2] + vmid[2])
+        #print(str(vv))
+        #text_verts.append(vv)
+
+    #vertices.extend(text_verts)
+
+    #text_edges = []
+    #for ed in bpy.context.object.data.edges:
+        # print(str(tuple(ed.vertices)))
+        #text_edges.append(tuple(ed.vertices))
+
+    #print(str(text_edges))
+    #edges.extend(text_edges)
+
+    #print(str(bpy.context.object.data.face_maps))
+    #faces.extend(bpy.context.object.data.face_maps)
+    #bpy.ops.object.delete()
+
+    nb_verts_text = len(vertices)
+
+
+    # print('triangle')
 
     vmid01 = (v0[0] + (v1[0] - v0[0]) / 2, v0[1] + (v1[1] - v0[1]) / 2, v0[2] + (v1[2] - v0[2]) / 2)
     vmid12 = (v1[0] + (v2[0] - v1[0]) / 2, v1[1] + (v2[1] - v1[1]) / 2, v1[2] + (v2[2] - v1[2]) / 2)
@@ -365,54 +414,133 @@ def create_triangle_mesh(f, s, t, h, fw, fd, p, x, y, z):
         (vmid20[0] - v20[0] * fw + vmid20mid[0] * t, vmid20[1] - v20[1] * fw + vmid20mid[1] * t, vmid20[2] - v20[2] * fw + vmid20mid[2] * t - t - h - 2* fw),
     ])
 
-    edges = [
-        (0, 1), (1, 2), (2, 0),
-        (3, 4), (4, 5), (5, 3),
-        (0, 3), (1, 4), (2, 5),
+    edges.extend([
+        (nb_verts_text, nb_verts_text + 1),
+        (nb_verts_text + 1, nb_verts_text + 2),
+        (nb_verts_text + 2, nb_verts_text),
 
-        (6, 7), (7, 8), (8, 6),
-        (3, 6), (4, 7), (5, 8),
+        (nb_verts_text + 3, nb_verts_text + 4),
+        (nb_verts_text + 4, nb_verts_text + 5),
+        (nb_verts_text + 5, nb_verts_text + 3),
 
-        (9, 10), (10, 11), (11, 9),
-        (6, 9), (7, 10), (8, 11),
+        (nb_verts_text, nb_verts_text + 3),
+        (nb_verts_text + 1, nb_verts_text + 4),
+        (nb_verts_text + 2, nb_verts_text + 5),
 
-        (12, 13), (13, 14), (14, 12),
-        (9, 12), (10, 13), (11, 14),
+        (nb_verts_text + 6, nb_verts_text + 7),
+        (nb_verts_text + 7, nb_verts_text + 8),
+        (nb_verts_text + 8, nb_verts_text + 6),
+
+        (nb_verts_text + 3, nb_verts_text + 6),
+        (nb_verts_text + 4, nb_verts_text + 7),
+        (nb_verts_text + 5, nb_verts_text + 8),
+
+        (nb_verts_text + 9, nb_verts_text + 10),
+        (nb_verts_text + 10, nb_verts_text + 11),
+        (nb_verts_text + 11, nb_verts_text + 9),
+
+        (nb_verts_text + 6, nb_verts_text + 9),
+        (nb_verts_text + 7, nb_verts_text + 10),
+        (nb_verts_text + 8, nb_verts_text + 11),
+
+        (nb_verts_text + 12, nb_verts_text + 13),
+        (nb_verts_text + 13, nb_verts_text + 14),
+        (nb_verts_text + 14, nb_verts_text + 12),
+
+        (nb_verts_text + 9, nb_verts_text + 12),
+        (nb_verts_text + 10, nb_verts_text + 13),
+        (nb_verts_text + 11, nb_verts_text + 14),
 
         # 01
-        (15, 17), (16, 18),
-        (19, 20), (20, 22),(21, 19),(21, 22),
-        (15, 19), (16, 20), (17, 21), (18, 22),
+        (nb_verts_text + 15, nb_verts_text + 17),
+        (nb_verts_text + 16, nb_verts_text + 18),
+
+        (nb_verts_text + 19, nb_verts_text + 20),
+        (nb_verts_text + 20, nb_verts_text + 22),
+        (nb_verts_text + 21, nb_verts_text + 19),
+        (nb_verts_text + 21, nb_verts_text + 22),
+
+        (nb_verts_text + 15, nb_verts_text + 19),
+        (nb_verts_text + 16, nb_verts_text + 20),
+        (nb_verts_text + 17, nb_verts_text + 21),
+        (nb_verts_text + 18, nb_verts_text + 22),
 
         # 12
-        (23, 25), (24, 26),
-        (27, 28), (28, 30),(29, 27),(29, 30),
-        (23, 27), (24, 28), (25, 29), (26, 30),
+        (nb_verts_text + 23, nb_verts_text + 25),
+        (nb_verts_text + 24, nb_verts_text + 26),
+
+        (nb_verts_text + 27, nb_verts_text + 28),
+        (nb_verts_text + 28, nb_verts_text + 30),
+        (nb_verts_text + 29, nb_verts_text + 27),
+        (nb_verts_text + 29, nb_verts_text + 30),
+
+        (nb_verts_text + 23, nb_verts_text + 27),
+        (nb_verts_text + 24, nb_verts_text + 28),
+        (nb_verts_text + 25, nb_verts_text + 29),
+        (nb_verts_text + 26, nb_verts_text + 30),
 
         # 20
-        (31, 33), (32, 34),
-        (35, 36), (36, 38),(37, 35),(37, 38),
-        (31, 35), (32, 36), (33, 37), (34, 38),
-    ]
-    faces = [
-        (0, 1, 2),
-        (3, 4, 1, 0), (4, 5, 2, 1), (5, 3, 0, 2),
-        (6, 7, 4, 3), (7, 8, 5, 4), (8, 6, 3, 5),
-        (10, 9, 12, 13), (11, 10, 13, 14), (9, 11, 14, 12),
-        (12, 14, 13),
+        (nb_verts_text + 31, nb_verts_text + 33),
+        (nb_verts_text + 32, nb_verts_text + 34),
 
-        (6, 20, 16), (9, 18, 22), (6, 9, 22, 20),
-        (19, 20, 22, 21),
-        (7, 15, 19), (10, 21, 17),(10, 7, 19, 21),
+        (nb_verts_text + 35, nb_verts_text + 36),
+        (nb_verts_text + 36, nb_verts_text + 38),
+        (nb_verts_text + 37, nb_verts_text + 35),
+        (nb_verts_text + 37, nb_verts_text + 38),
 
-        (7, 28, 24), (10, 26, 30), (7, 10, 30, 28),
-        (27, 28, 30, 29),
-        (8, 23, 27), (11, 29, 25), (11, 8, 27, 29),
+        (nb_verts_text + 31, nb_verts_text + 35),
+        (nb_verts_text + 32, nb_verts_text + 36),
+        (nb_verts_text + 33, nb_verts_text + 37),
+        (nb_verts_text + 34, nb_verts_text + 38),
+    ])
 
-        (8, 36, 32), (11, 34, 38), (8, 11, 38, 36),
-        (35, 36, 38, 37),
-        (6, 31, 35), (9, 37, 33), (9, 6, 35, 37),
-    ]
+    faces.extend([
+        (nb_verts_text, nb_verts_text + 1, nb_verts_text + 2),
+
+        (nb_verts_text + 3, nb_verts_text + 4, nb_verts_text + 1, nb_verts_text),
+        (nb_verts_text + 4, nb_verts_text + 5, nb_verts_text + 2, nb_verts_text + 1),
+        (nb_verts_text + 5, nb_verts_text + 3, nb_verts_text, nb_verts_text + 2),
+
+        (nb_verts_text + 6, nb_verts_text + 7, nb_verts_text + 4, nb_verts_text + 3),
+        (nb_verts_text + 7, nb_verts_text + 8, nb_verts_text + 5, nb_verts_text + 4),
+        (nb_verts_text + 8, nb_verts_text + 6, nb_verts_text + 3, nb_verts_text + 5),
+
+        (nb_verts_text + 10, nb_verts_text + 9, nb_verts_text + 12, nb_verts_text + 13),
+        (nb_verts_text + 11, nb_verts_text + 10, nb_verts_text + 13, nb_verts_text + 14),
+        (nb_verts_text + 9, nb_verts_text + 11, nb_verts_text + 14, nb_verts_text + 12),
+
+        (nb_verts_text + 12, nb_verts_text + 14, nb_verts_text + 13),
+
+        (nb_verts_text + 6, nb_verts_text + 20, nb_verts_text + 16),
+        (nb_verts_text + 9, nb_verts_text + 18, nb_verts_text + 22),
+        (nb_verts_text + 6, nb_verts_text + 9, nb_verts_text + 22, nb_verts_text + 20),
+
+        (nb_verts_text + 19, nb_verts_text + 20, nb_verts_text + 22, nb_verts_text + 21),
+
+        (nb_verts_text + 7, nb_verts_text + 15, nb_verts_text + 19),
+        (nb_verts_text + 10, nb_verts_text + 21, nb_verts_text + 17),
+        (nb_verts_text + 10, nb_verts_text + 7, nb_verts_text + 19, nb_verts_text + 21),
+
+        (nb_verts_text + 7, nb_verts_text + 28, nb_verts_text + 24),
+        (nb_verts_text + 10, nb_verts_text + 26, nb_verts_text + 30),
+        (nb_verts_text + 7, nb_verts_text + 10, nb_verts_text + 30, nb_verts_text + 28),
+
+        (nb_verts_text + 27, nb_verts_text + 28, nb_verts_text + 30, nb_verts_text + 29),
+
+        (nb_verts_text + 8, nb_verts_text + 23, nb_verts_text + 27),
+        (nb_verts_text + 11, nb_verts_text + 29, nb_verts_text + 25),
+        (nb_verts_text + 11, nb_verts_text + 8, nb_verts_text + 27, nb_verts_text + 29),
+
+        (nb_verts_text + 8, nb_verts_text + 36, nb_verts_text + 32),
+        (nb_verts_text + 11, nb_verts_text + 34, nb_verts_text + 38),
+        (nb_verts_text + 8, nb_verts_text + 11, nb_verts_text + 38, nb_verts_text + 36),
+
+        (nb_verts_text + 35, nb_verts_text + 36, nb_verts_text + 38, nb_verts_text + 37),
+
+        (nb_verts_text + 6, nb_verts_text + 31, nb_verts_text + 35),
+        (nb_verts_text + 9, nb_verts_text + 37, nb_verts_text + 33),
+        (nb_verts_text + 9, nb_verts_text + 6, nb_verts_text + 35, nb_verts_text + 37),
+    ])
 
     trig_h = (math.sqrt(3) / 6) * r
     trig_ih = trig_h - t
@@ -623,10 +751,12 @@ def create_triangle_mesh(f, s, t, h, fw, fd, p, x, y, z):
 
     # print('trig mesh' + str(vertices) + ' ' + str(edges) + ' ' + str(faces))
 
+
     mesh.from_pydata(vertices, edges, faces)
     mesh.update()
 
     return mesh
+
 
 # r: external radius
 # t: thickness
@@ -1073,13 +1203,8 @@ curr_hexes = []
 hexes = prev_hexes
 
 if support_secondary_is_newton:
-    # print(' triangle r: ' + str(r))
-    for z in range(0, 6):
-        # print(' triangle r: ' + str(r))
-        mesh = create_triangle_mesh(f, r, h, trig_h, fw, fd, p, 0, 0, z)
-        # print('mesh created z: ' + str((0, 0, z)) + str(mesh))
-        triangle_object = bpy.data.objects.new(trig_name + '_center', mesh)
-        hex_collection.objects.link(triangle_object)
+    half_hex.create_object(f, r, h, 0, 0, 0)
+    half_hex.create_object(f, r, h, 0, 0, 3)
 
 for i in range(0, n + 1):
     for j in range(0, len(prev_hexes)):
@@ -1090,13 +1215,8 @@ for i in range(0, n + 1):
             if (x, y) in hexes or (x, y) in curr_hexes:
                 continue
 
-            # print(str((x, y)) + ' not found')
-            for z in range(0, 6):
-                mesh = create_triangle_mesh(f, r, h, trig_h, fw, fd, p, x, y, z)
-
-                # print('mesh created z: ' + str((x, y, z)) + str(mesh))
-                triangle_object = bpy.data.objects.new(trig_name + '_0', mesh)
-                hex_collection.objects.link(triangle_object)
+            half_hex.create_object(f, r, h, x, y, 0)
+            half_hex.create_object(f, r, h, x, y, 3)
 
             curr_hexes.append((x, y))
     prev_hexes = curr_hexes

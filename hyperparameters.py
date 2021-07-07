@@ -1,4 +1,4 @@
-n = 2 # max distance (in r unit)
+n = 1 # max distance (in r unit)
 r = 1.0 # hex side
 h = 0.04 # hex thickness
 f = 16 # focal length
