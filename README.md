@@ -23,6 +23,11 @@ https://www.gifi.fr/product/id/557686/miroir-sticker-rond-x-3
 ## telescope basis
 missing instrument plate and central hex for Newton setup
 
+## running scripts in Blender
+Launch Blender (throw a terminal if you need to debug) \
+in the Scripting tab open support_v2_hex.py and run it \
+then open basis.py and run it
+
 ## gcode files
 DM_ is for Dagoma Magis 3d printer
 DD_ is for Dagoma DiscoEasy200
