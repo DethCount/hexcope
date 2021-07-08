@@ -8,7 +8,6 @@
 https://www.gifi.fr/product/id/557688/miroir-sticker-hexagonal-x-3
 
 ## secondary mirror - work in progress
-
 Allows for Newton setup (with basis central hex on) \
 
 ![Capture](https://github.com/Dethcount/hexcope/blob/main/snapshot_newton.png?raw=true)
@@ -38,6 +37,5 @@ e.g : n = 4, f = 16 (= 1.6m) \
 ![Capture](https://github.com/Dethcount/hexcope/blob/main/snapshot_scaling.png?raw=true)
 
 ## assembling
-
 Primary mirror requires soldering PLA parts using filament
 https://youtu.be/Q-PgjTYsAFY
