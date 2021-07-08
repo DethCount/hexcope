@@ -9,7 +9,7 @@ dir = os.path.dirname(bpy.data.filepath)
 if not dir in sys.path:
     sys.path.append(dir )
 
-from hyperparameters import n, r, h, f, p, trig_h, support_secondary_is_newton
+from hyperparameters import n, r, h, f, p, e, support_secondary_is_newton
 from optics import parabolic_z, spherical_z, hex2xy, hex2xyz
 from meshes import half_hex
 
@@ -48,7 +48,7 @@ if support_secondary_is_newton:
     support_secondary_final_name = support_newton_secondary_name
     support_secondary_final_z = support_newton_secondary_z
 
-support_arm_e = 0.008
+support_arm_e = e
 support_arm_r = 0.1
 support_arm_t = 0.03
 support_arm_h = 2
@@ -1203,8 +1203,8 @@ curr_hexes = []
 hexes = prev_hexes
 
 if support_secondary_is_newton:
-    half_hex.create_object(f, r, h, 0, 0, 0)
-    half_hex.create_object(f, r, h, 0, 0, 3)
+    half_hex.create_object(e, f, r, h, 0, 0, 0)
+    half_hex.create_object(e, f, r, h, 0, 0, 3)
 
 for i in range(0, n + 1):
     for j in range(0, len(prev_hexes)):
@@ -1215,8 +1215,8 @@ for i in range(0, n + 1):
             if (x, y) in hexes or (x, y) in curr_hexes:
                 continue
 
-            half_hex.create_object(f, r, h, x, y, 0)
-            half_hex.create_object(f, r, h, x, y, 3)
+            half_hex.create_object(e, f, r, h, x, y, 0)
+            half_hex.create_object(e, f, r, h, x, y, 3)
 
             curr_hexes.append((x, y))
     prev_hexes = curr_hexes

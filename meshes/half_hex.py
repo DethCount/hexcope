@@ -7,21 +7,31 @@ from optics import hex2xyz
 half_hex_name = 'half_hex'
 half_hex_num = 0
 
+# e : margin
 # f : focal length
 # s : hex side length
 # t : half hex thickness
 # x : cartesian (1, 0)
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
 # z : first hex triangle index ccw
-def create_mesh(f, s, t, x, y, z):
+def create_mesh(e, f, s, t, x, y, z):
     mesh_name = 'half_hex_mesh' + str((f, s, t, x, y, z))
     mesh = bpy.data.meshes.new(mesh_name)
+
+    dte = 2 * e + t
 
     v0 = hex2xyz(f, s, x, y, z, 0)
     v1 = hex2xyz(f, s, x, y, z, 1)
     v2 = hex2xyz(f, s, x, y, z + 1, 1)
     v3 = hex2xyz(f, s, x, y, z + 2, 1)
     v4 = hex2xyz(f, s, x, y, z + 2, 2)
+    v5 = v4
+
+    if x == 0 and y == 0:
+        v1 = ((v1[0] - dte) if z <= 0 else v1[0] + dte , v1[1], v1[2])
+        v2 = ((v2[0] - dte) if z <= 0 else v2[0] + dte, v2[1], v2[2])
+        v4 = (v4[0], (v4[1] + dte) if z <= 0 else v4[1] - dte, v4[2])
+        v5 = ((v5[0] + dte) if z <= 0 else v5[0] - dte, v5[1], v5[2])
 
     vertices = [
         v0,
@@ -40,32 +50,62 @@ def create_mesh(f, s, t, x, y, z):
         (v4[0], v4[1], v4[2] - t),
     ]
 
+    if x == 0 and y == 0:
+        vertices.extend([
+            v5,
+            (v5[0], v5[1], v5[2] - t),
+        ])
+
     edges = [
-        (0, 2), (2, 4), (4, 6), (6, 8), (8, 0),
-        (1, 3), (3, 5), (5, 7), (7, 9), (9, 1),
+        (0, 2), (2, 4), (4, 6), (6, 8),
+        (1, 3), (3, 5), (5, 7), (7, 9),
         (0, 1), (2, 3), (4, 5), (6, 7), (8, 9),
     ]
+
+    if x == 0 and y == 0:
+        edges.extend([
+            (8, 10), (10, 0),
+            (9, 11), (11, 1),
+            (10, 11),
+        ])
+    else:
+        edges.extend([
+            (8, 0),
+            (9, 1),
+        ])
 
     faces = [
         (0, 2, 4), (0, 4, 6), (0, 6, 8),
         (1, 9, 7), (1, 7, 5), (1, 5, 3),
-        (0, 1, 3, 2), (2, 3, 5, 4), (4, 5, 7, 6), (6, 7, 9, 8), (8, 9, 1, 0),
+        (0, 1, 3, 2), (2, 3, 5, 4), (4, 5, 7, 6), (6, 7, 9, 8),
     ]
+
+    if x == 0 and y == 0:
+        faces.extend([
+            (0, 8, 10),
+            (1, 11, 9),
+            (8, 9, 11, 10),
+            (10, 11, 1, 0),
+        ])
+    else:
+        faces.extend([
+            (8, 9, 1, 0),
+        ])
 
     mesh.from_pydata(vertices, edges, faces)
     mesh.update()
 
     return mesh
 
-def create_object(f, s, t, x, y, z):
+def create_object(e, f, s, t, x, y, z):
     global half_hex_num
     half_hex_num += 1
 
-    obj_name = half_hex_name + '_' + str(half_hex_num)
+    obj_name = half_hex_name + '_' + ('0' if half_hex_num < 10 else '') + str(half_hex_num)
 
     obj = bpy.data.objects.new(
         obj_name,
-        create_mesh(f, s, t, x, y, z)
+        create_mesh(e, f, s, t, x, y, z)
     )
 
     hex_collection = bpy.data.collections.get('hex_collection')
