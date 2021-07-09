@@ -812,25 +812,11 @@ def create_arm_mesh(r, t, h, rp, hp):
                         ])
 
 
-            if j > 0:
-                edges.extend([
-                    #(trv, tlv),
-                    #(trvi, tlvi),
+            if j > 0 and i > 0:
+                faces.extend([
+                    (blv, brv, trv, tlv),
+                    (brvi, blvi, tlvi, trvi),
                 ])
-
-                if i > 0:
-                    edges.extend([
-                        #(trv, brv),
-                        #(trvi, brvi),
-                    ])
-
-                    # print('verts: ' + str(len(vertices)) + ' i:' + str(i) + ' j:' + str(j))
-                    # print('trv: ' + str(trv) + ' tlv: ' + str(tlv) + ' brv: ' + str(brv) + ' blv: ' + str(blv))
-
-                    faces.extend([
-                        (blv, brv, trv, tlv),
-                        (brvi, blvi, tlvi, trvi),
-                    ])
 
     mesh.from_pydata(vertices, edges, faces)
     mesh.update()

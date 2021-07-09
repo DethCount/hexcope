@@ -33,27 +33,29 @@ def create_mesh(e, f, s, t, x, y, z):
         v4 = (v4[0], (v4[1] + dte) if z <= 0 else v4[1] - dte, v4[2])
         v5 = ((v5[0] + dte) if z <= 0 else v5[0] - dte, v5[1], v5[2])
 
+        print(str(v1), str(v2), str(v3), str(v4), str(v5))
+
     vertices = [
+        (v0[0], v0[1], v0[2] + t),
         v0,
-        (v0[0], v0[1], v0[2] - t),
 
+        (v1[0], v1[1], v1[2] + t),
         v1,
-        (v1[0], v1[1], v1[2] - t),
 
+        (v2[0], v2[1], v2[2] + t),
         v2,
-        (v2[0], v2[1], v2[2] - t),
 
+        (v3[0], v3[1], v3[2] + t),
         v3,
-        (v3[0], v3[1], v3[2] - t),
 
+        (v4[0], v4[1], v4[2] + t),
         v4,
-        (v4[0], v4[1], v4[2] - t),
     ]
 
     if x == 0 and y == 0:
         vertices.extend([
+            (v5[0], v5[1], v5[2] + t),
             v5,
-            (v5[0], v5[1], v5[2] - t),
         ])
 
     edges = [
@@ -108,6 +110,12 @@ def create_object(e, f, s, t, x, y, z):
         create_mesh(e, f, s, t, x, y, z)
     )
 
+    obj.location.z -= hex2xyz(f, s, 0, 0, 0, 0)[2]
+
+    p0 = hex2xyz(f, s, x, y, z, 0)
+    p2 = hex2xyz(f, s, x, y, z + 1, 1)
+    p3 = hex2xyz(f, s, x, y, z + 2, 1)
+
     hex_collection = bpy.data.collections.get('hex_collection')
     hex_collection.objects.link(obj)
 
@@ -123,10 +131,6 @@ def create_object(e, f, s, t, x, y, z):
     bpy.ops.font.move_select(type='NEXT_WORD')
     bpy.ops.font.style_set(style='UNDERLINE', clear=False)
     bpy.ops.object.mode_set( mode = 'OBJECT' )
-
-    p0 = hex2xyz(f, s, x, y, z, 0)
-    p2 = hex2xyz(f, s, x, y, z + 1, 1)
-    p3 = hex2xyz(f, s, x, y, z + 2, 1)
 
     text_normal = Vector((0, 0, 1))
     half_hex_normal = \
@@ -146,7 +150,7 @@ def create_object(e, f, s, t, x, y, z):
 
     bpy.context.object.location.x = mid[0]
     bpy.context.object.location.y = mid[1]
-    bpy.context.object.location.z = mid[2] - t
+    bpy.context.object.location.z = obj.location.z + mid[2]
 
     bpy.ops.transform.resize(value=(-0.25, 0.25, 0.25))
     bpy.ops.object.convert(target='MESH', keep_original=False)
@@ -169,6 +173,5 @@ def create_object(e, f, s, t, x, y, z):
     bpy.data.objects[text_name].select_set(True)
 
     bpy.ops.object.join()
-
 
     return obj
