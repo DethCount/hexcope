@@ -26,6 +26,8 @@ def create_mesh(e, t, h, r, p, wr, mr, kr, kw, z, hex_thickness, hex_walls_heigh
 
     z0 = z - hex_thickness - e
     z1 = z0 - hex_thickness
+    z0o = z0 - hex_walls_height
+    z1o = z1 - hex_walls_height
     z2 = z + -wr * math.sin(pi3)
     z3 = z2 + mr
     z4 = z2 + kr
@@ -49,14 +51,14 @@ def create_mesh(e, t, h, r, p, wr, mr, kr, kw, z, hex_thickness, hex_walls_heigh
         (-2 * hex_thickness - e, -hr + e, z1),
         (-hex_thickness, -hr + e, z1),
 
-        (-e, hr - e, z0),
-        (-e + hex_thickness, hr - e, z0),
-        (-e + hex_thickness, -hr + e, z0),
-        (-e, -hr + e, z0),
+        (-e, hr - e, z0o),
+        (-e + hex_thickness, hr - e, z0o),
+        (-e + hex_thickness, -hr + e, z0o),
+        (-e, -hr + e, z0o),
 
         # 16
-        (-e + hex_thickness, hr - e, z1),
-        (-e + hex_thickness, -hr + e, z1),
+        (-e + hex_thickness, hr - e, z1o),
+        (-e + hex_thickness, -hr + e, z1o),
 
         # 18
         (-e, hr - e, z1),
@@ -68,6 +70,10 @@ def create_mesh(e, t, h, r, p, wr, mr, kr, kw, z, hex_thickness, hex_walls_heigh
         (-hex_thickness, 0, z2),
         (-e, 0, z1),
         (-hex_thickness, 0, z1),
+
+        # 26
+        (-e, hr - e, z1o),
+        (-e, -hr + e, z1o),
     ]
 
     edges = [
@@ -76,7 +82,7 @@ def create_mesh(e, t, h, r, p, wr, mr, kr, kw, z, hex_thickness, hex_walls_heigh
         (8, 9), (9, 10), (10, 11), (11, 8),
         (4, 8), (5, 9), (6, 10), (7, 11),
         (12, 13), (13, 14), (14, 15), (15, 12),
-        (18, 16), (16, 17), (17, 21),
+        (26, 16), (16, 17), (17, 27),
         (13, 16), (14, 17),
 
         (18, 19), (19, 20), (20, 21), (21, 18),
@@ -84,6 +90,7 @@ def create_mesh(e, t, h, r, p, wr, mr, kr, kw, z, hex_thickness, hex_walls_heigh
         (1, 4), (4, 8), (8, 19),
         (2, 7), (7, 11), (11, 20),
         (3, 21),
+        (26, 27), (12, 26), (15, 27),
     ]
     faces = [
         (0, 1, 2, 3),
@@ -102,10 +109,10 @@ def create_mesh(e, t, h, r, p, wr, mr, kr, kw, z, hex_thickness, hex_walls_heigh
         (0, 3, 15, 12),
 
         (13, 12, 15, 14),
-        (12, 13, 16, 18),
-        (14, 15, 21, 17),
+        (12, 13, 16, 26),
+        (14, 15, 27, 17),
         (13, 14, 17, 16),
-        (16, 17, 21, 18),
+        (16, 17, 27, 26),
     ]
 
     nb_verts = len(vertices)
