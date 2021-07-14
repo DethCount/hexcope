@@ -79,3 +79,53 @@ def hex2xyz(f, r, x, y, z, w):
 
     # print(' => ' + str((x2, y2, z2)))
     return (x2, y2, z2)
+
+# n: hexcope iterations
+# r: hex side length
+# m: margin between hex side and arm point
+# alpha: arm position around mirror
+def get_support_arm_point(n, r, m, alpha):
+    support_arm_point = hex2xy(
+        r,
+        math.floor(0.5 * (n + 1)),
+        1 if n % 2 == 0 else 0,
+        0,
+        1 if n % 2 == 0 else 2
+    )
+
+    support_arm_point = (
+        support_arm_point[0] + m,
+        support_arm_point[1]
+    )
+
+    ca = math.cos(alpha)
+    sa = math.sin(alpha)
+    xca = support_arm_point[0] * ca
+    xsa = support_arm_point[0] * sa
+    yca = support_arm_point[1] * ca
+    ysa = support_arm_point[1] * sa
+
+    return [
+        (\
+            xca + ysa,
+            xsa - yca,
+        ),
+        (\
+            xca - ysa,
+            xsa + yca,
+        )
+    ]
+
+# n: hexcope iterations
+# r: hex side length
+# m: margin between hex side and arm point
+# arm_n: number of pairs of arm
+# arm_omega: position starting angle
+def get_support_arm_points(n, r, m, arm_n, arm_omega):
+    points = []
+    for i in range(0, arm_n):
+        points.append(
+            get_support_arm_point(n, r, m, arm_omega + i * math.tau / arm_n)
+        )
+
+    return points

@@ -9,9 +9,9 @@ dir = os.path.dirname(bpy.data.filepath)
 if not dir in sys.path:
     sys.path.append(dir )
 
-from hyperparameters import n, r, h, f, p, e, trig_h, support_secondary_is_newton
-from optics import parabolic_z, spherical_z, hex2xy, hex2xyz
-from meshes import half_hex
+from hyperparameters import n, r, h, f, p, e, trig_h, primary_t, support_secondary_is_newton
+from optics import parabolic_z, spherical_z, hex2xy, hex2xyz, get_support_arm_points
+from meshes import half_hex, support_arm_block
 
 #n = 0
 p = 25
@@ -55,22 +55,25 @@ support_arm_h = 2
 support_arm_rp = 25
 support_arm_hp = 18
 support_arm_n = 3
-support_arm_alpha_step = math.tau / support_arm_n
 support_arm_omega = 0
-support_arm_point_r = hex2xy(
-    r,
-    math.floor(0.5 * (n + 1)),
-    1 if n % 2 == 0 else 0,
-    0,
-    1 if n % 2 == 0 else 2
-)
-# print(str(support_arm_point_r) + ' r:' + str(r) + ' x:' + str(n + 1) + ' y:' + str(1 if n % 2 == 0 else 0) + ' z:' + str(1 if n % 2 == 0 else 2))
-support_arm_point_r = (support_arm_point_r[0] + 0.25 * r, support_arm_point_r[1])
-support_arm_point_l = (support_arm_point_r[0], -support_arm_point_r[1])
-support_arm_d = math.sqrt(support_arm_point_r[0] ** 2 + support_arm_point_r[1] ** 2)
-support_arm_rld = math.sqrt((support_arm_point_r[0] - support_arm_point_l[0]) ** 2 + (support_arm_point_r[1] - support_arm_point_l[1]) ** 2)
+support_arm_margin = 0.25 * r
+support_arm_points = get_support_arm_points(n, r, support_arm_margin, support_arm_n, support_arm_omega)
+support_arm_d = math.sqrt(support_arm_points[0][1][0] ** 2 + support_arm_points[0][1][1] ** 2)
+support_arm_rld = math.sqrt((support_arm_points[0][1][0] - support_arm_points[0][0][0]) ** 2 + (support_arm_points[0][1][1] - support_arm_points[0][0][1]) ** 2)
 support_arm_z = parabolic_z(f, support_arm_d) - h
 support_arm_nz = math.ceil(support_secondary_z / support_arm_h)
+
+support_arm_block_e = e
+support_arm_block_f = f
+support_arm_block_n = n
+support_arm_block_r = r
+support_arm_block_t = h
+support_arm_block_m = support_arm_margin
+support_arm_block_p = p
+support_arm_block_hex_thickness = h
+support_arm_block_hex_walls_height = trig_h
+support_arm_block_hex_primary_thickness = primary_t
+support_arm_block_arm_radius = support_arm_r
 
 support_arm_head_e = support_arm_e
 support_arm_head_t = 0.05
@@ -1249,6 +1252,20 @@ arm_mesh = create_arm_mesh(
     support_arm_hp
 )
 
+arm_block_mesh = support_arm_block.create_mesh(
+    support_arm_block_e,
+    support_arm_block_f,
+    support_arm_block_n,
+    support_arm_block_r,
+    support_arm_block_t,
+    support_arm_block_m,
+    support_arm_block_p,
+    support_arm_block_hex_thickness,
+    support_arm_block_hex_walls_height,
+    support_arm_block_hex_primary_thickness,
+    support_arm_block_arm_radius
+)
+
 arm_head_mesh = create_arm_head_mesh(
     support_arm_head_e,
     support_arm_head_t,
@@ -1279,24 +1296,33 @@ arm_collection = bpy.data.collections.new('arm_collection')
 bpy.context.scene.collection.children.link(arm_collection)
 
 for z in range(0, support_arm_nz):
-    for i in range(0, support_arm_n):
-        alpha = i * support_arm_alpha_step
+    for i in range(0, len(support_arm_points)):
+        alpha = i * math.tau / support_arm_n
         beta = support_arm_omega + alpha
+        rot = Euler((0, 0, beta), 'XYZ')
 
         sz = support_arm_z + z * (support_arm_h + support_arm_e)
+
+        if z == 0:
+            arm_block = bpy.data.objects.new(
+                'arm_block_' + str(support_arm_block_n) + '_' + str(i),
+                arm_block_mesh
+            )
+            arm_block.rotation_euler = rot
+            arm_collection.objects.link(arm_block)
 
         arm_object_l = bpy.data.objects.new('arm_' + str(i) + '_l', arm_mesh)
         arm_collection.objects.link(arm_object_l)
 
-        arm_object_l.location.x = support_arm_point_l[0] * math.cos(beta) - support_arm_point_l[1] * math.sin(beta)
-        arm_object_l.location.y = support_arm_point_l[0] * math.sin(beta) + support_arm_point_l[1] * math.cos(beta)
+        arm_object_l.location.x = support_arm_points[i][0][0]
+        arm_object_l.location.y = support_arm_points[i][0][1]
         arm_object_l.location.z = sz
 
         arm_object_r = bpy.data.objects.new('arm_' + str(i) + '_r', arm_mesh)
         arm_collection.objects.link(arm_object_r)
 
-        arm_object_r.location.x = support_arm_point_r[0] * math.cos(beta) - support_arm_point_r[1] * math.sin(beta)
-        arm_object_r.location.y = support_arm_point_r[0] * math.sin(beta) + support_arm_point_r[1] * math.cos(beta)
+        arm_object_r.location.x = support_arm_points[i][1][0]
+        arm_object_r.location.y = support_arm_points[i][1][1]
         arm_object_r.location.z = sz
 
         if z != support_arm_nz - 1:
@@ -1305,13 +1331,10 @@ for z in range(0, support_arm_nz):
         arm_head_object = bpy.data.objects.new('arm_head_' + str(i), arm_head_mesh)
         arm_collection.objects.link(arm_head_object)
 
-        mx = (support_arm_point_r[0] + support_arm_point_l[0]) / 2
-        my = (support_arm_point_r[1] + support_arm_point_l[1]) / 2
-
-        arm_head_object.location.x = mx * math.cos(beta) - my * math.sin(beta)
-        arm_head_object.location.y = mx * math.sin(beta) + my * math.cos(beta)
+        arm_head_object.location.x = 0.5 * (support_arm_points[i][0][0] + support_arm_points[i][1][0])
+        arm_head_object.location.y = 0.5 * (support_arm_points[i][0][1] + support_arm_points[i][1][1])
         arm_head_object.location.z = support_arm_head_z
-        arm_head_object.rotation_euler = Euler((0, 0, beta), 'XYZ')
+        arm_head_object.rotation_euler = rot
 
 secondary_object = bpy.data.objects.new(support_secondary_final_name, secondary_mesh)
 arm_collection.objects.link(secondary_object)

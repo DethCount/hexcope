@@ -16,7 +16,7 @@ half_hex_num = 0
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
 # z : first hex triangle index ccw
 def create_mesh(e, f, s, t, wh, x, y, z):
-    mesh_name = 'half_hex_mesh' + str((f, s, t, x, y, z))
+    mesh_name = half_hex_name + '_' + str((e, f, s, t, wh, x, y, z))
     mesh = bpy.data.meshes.new(mesh_name)
 
     dte = 2 * e + t
@@ -74,7 +74,7 @@ def create_mesh(e, f, s, t, wh, x, y, z):
         v4 = (v4[0], (v4[1] + dte) if z <= 0 else v4[1] - dte, v4[2])
         v5 = ((v5[0] + dte) if z <= 0 else v5[0] - dte, v5[1], v5[2])
 
-        print(str(v1), str(v2), str(v3), str(v4), str(v5))
+        # print(str(v1), str(v2), str(v3), str(v4), str(v5))
 
     vertices = [
         (v0[0], v0[1], v0[2] + t),
