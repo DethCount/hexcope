@@ -25,7 +25,6 @@ def create_mesh(
     x0 = arm_points[0][0] - m
     x1 = x0 + ch * wv
     x2 = x0 + wv
-    print('n', str(n), str(1 if n % 2 else -1), str(x0), str(x1))
 
     outer_r = max(
         x0 + m,
@@ -47,7 +46,6 @@ def create_mesh(
     y3 -= hex_thickness + hex_walls_height + t
     y5 -= hex_thickness + hex_walls_height + t
     y4 = y3 + ch * (y5 - y3)
-    print('y4', str(y4), str(y3), str(y5), str(y5 - y3), str(ch))
     y0 = y4
     y1 = y3
 
