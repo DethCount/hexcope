@@ -1,4 +1,4 @@
-# hexcope
+# hexcope - **Work in Progress**
 
 3d printable hex pattern parabolic mirror for telescope \
 20x20x20 cm parts\
@@ -7,7 +7,7 @@
 19 x 20cm side hexagonal mirrors \
 https://www.gifi.fr/product/id/557688/miroir-sticker-hexagonal-x-3
 
-## secondary mirror - work in progress
+## secondary mirror - **Work in Progress**
 Allows for Newton setup (with basis central hex on) \
 
 ![Capture](https://github.com/Dethcount/hexcope/blob/main/snapshot_newton.png?raw=true)
