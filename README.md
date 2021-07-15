@@ -37,9 +37,9 @@ e.g : n = 4, f = 16 (= 1.6m) \
 ![Capture](https://github.com/Dethcount/hexcope/blob/main/snapshot_scaling.png?raw=true)
 \
 and by number of support arms \
-e.g : support_arm_n = 6
+e.g : support_arm_n = 6 \
 ![Capture](https://github.com/Dethcount/hexcope/blob/main/snapshot_scaling_arms.png?raw=true)
 
 ## assembling
-Primary mirror requires soldering PLA parts using filament
+Primary mirror requires soldering PLA parts using filament \
 https://youtu.be/Q-PgjTYsAFY
