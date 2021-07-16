@@ -3,15 +3,16 @@ import math
 
 from optics import get_support_arm_point, hex2xy, hex2xyz
 
-support_arm_name = 'support_arm'
+support_arm_block_name = 'support_arm_block'
 
+# todo: thicker nose part
 def create_mesh(
     e, f, n, r, t, m, p,
     hex_thickness, hex_walls_height,
     primary_thickness,
     arm_radius
 ):
-    mesh_name = support_arm_name + '_' + str(())
+    mesh_name = support_arm_block_name + '_' + str(())
     mesh = bpy.data.meshes.new(mesh_name)
 
     arm_points = get_support_arm_point(n, r, m, 0)
