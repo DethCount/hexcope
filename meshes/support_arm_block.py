@@ -12,8 +12,15 @@ def create_mesh(
     primary_thickness,
     arm_radius
 ):
-    mesh_name = support_arm_block_name + '_' + str(())
-    mesh = bpy.data.meshes.new(mesh_name)
+    mesh = bpy.data.meshes.new(
+        support_arm_block_name
+        + '_' + str((
+            e, f, n, r, t, m, p,
+            hex_thickness, hex_walls_height,
+            primary_thickness,
+            arm_radius
+        ))
+    )
 
     arm_points = get_support_arm_point(n, r, m, 0)
 
@@ -164,6 +171,7 @@ def create_mesh(
         (arm_points[1][0] + ar, arm_points[1][1] - m, h4),
         (arm_points[1][0] + ar, arm_points[1][1] - m, h5),
     ]
+
     edges = [
         (0, 3),
         (0, 3),
@@ -190,6 +198,7 @@ def create_mesh(
         (58, 59), (60, 61), (62, 63), (64, 65),
         (58, 60), (62, 64), (59, 61), (63, 65),
     ]
+
     faces = [
         (20, 21, 25, 24), (24, 25, 29, 28), (28, 29, 33, 32), (32, 33, 37, 36),
         (1, 2, 6, 5), (5, 6, 10, 9), (9, 10, 14, 13), (13, 14, 18, 17),

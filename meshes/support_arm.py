@@ -75,4 +75,7 @@ def create_mesh(
                     (brvi, blvi, tlvi, trvi),
                 ])
 
+    mesh.from_pydata(vertices, edges, faces)
+    mesh.update()
+
     return mesh
