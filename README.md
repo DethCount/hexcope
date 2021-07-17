@@ -43,3 +43,25 @@ e.g : support_arm_n = 6 \
 ## assembling
 Primary mirror requires soldering PLA parts using filament \
 https://youtu.be/Q-PgjTYsAFY
+
+## printing
+(e.g: Dagoma DiscoEasy200) \
+
+- Basis: 1,217kg, 422m, 48h
+    - 2 x plate bottom: 96g, 33m, 3h30
+    - 1 x plate axis: 205g, 70m, 7h
+    - 2 x plate top: 96g, 33m, 3h30
+    - 2 x leg: 126g, 43m, 5h
+    - 4 x foot: 10g, 4m, 0h30
+    - 2 x arm: 128g, 44m, 5h30
+    - 2 x wheel: 40g, 15m, 2h
+- Primary mirror (n=0, newton): 592g, 204m, 27h
+    - 2 x center half hex: 40g, 14m, 1h30
+    - 16 x half hex: 32g, 11m, 1h30
+- Secondary mirror support (f=16, arm_n=3, newton): 1,248kg, 462m, 57h
+    - 3 x arm block: 87g, 30m, 3h30
+    - 42 x arm: 21g, 8m, 1h
+    - 3 x arm head: 35g, 12m, 1h30
+    - 3 x spider arms: unknown
+- Secondary mirror: unknown
+- Eyepiece support: unknown
