@@ -1,13 +1,13 @@
-# hexcope - **Work in Progress**
+# Hexcope - **Work in Progress**
 
 3d printable hex pattern parabolic mirror for telescope \
 20x20x20 cm parts\
 
-## primary mirror
+## Primary mirror
 19 x 20cm side hexagonal mirrors \
 https://www.gifi.fr/product/id/557688/miroir-sticker-hexagonal-x-3
 
-## secondary mirror - **Work in Progress**
+## Secondary mirror - **Work in Progress**
 Allows for Newton setup (with basis central hex on) \
 
 ![Capture](https://github.com/Dethcount/hexcope/blob/main/img/snapshot_newton.png?raw=true)
@@ -19,19 +19,19 @@ or Ritchley-Chretien setup (with camera at basis center)
 1 x 10cm radius round mirror \
 https://www.gifi.fr/product/id/557686/miroir-sticker-rond-x-3
 
-## telescope basis
+## Telescope basis
 missing instrument plate and central hex for Newton setup
 
-## running scripts in Blender
+## Running scripts in Blender
 Launch Blender (throw a terminal if you need to debug) \
 in the Scripting tab open support.py and run it \
 then open basis.py and run it
 
-## gcode files
+## Gcode files
 DM_ is for Dagoma Magis 3d printer
 DD_ is for Dagoma DiscoEasy200
 
-## scaling
+## Scaling
 Hexcope can be scaled by primary mirror radius hyperparameter "n" (number of hexagons) \
 e.g : n = 4, f = 16 (= 1.6m) \
 ![Capture](https://github.com/Dethcount/hexcope/blob/main/img/snapshot_scaling.png?raw=true)
@@ -40,11 +40,11 @@ and by number of support arms \
 e.g : support_arm_n = 6 \
 ![Capture](https://github.com/Dethcount/hexcope/blob/main/img/snapshot_scaling_arms.png?raw=true)
 
-## assembling
+## Assembling
 Primary mirror requires soldering PLA parts using filament \
 https://youtu.be/Q-PgjTYsAFY
 
-## printing
+## Printing
 (e.g: Dagoma DiscoEasy200) \
 
 - Basis: 1,217kg, 422m, 48h
@@ -65,3 +65,6 @@ https://youtu.be/Q-PgjTYsAFY
     - 3 x spider arms: unknown
 - Secondary mirror: unknown
 - Eyepiece support: unknown
+
+## Current prototype state
+![Capture](https://github.com/Dethcount/hexcope/blob/main/img/current_prototype_state.jpg?raw=true)
