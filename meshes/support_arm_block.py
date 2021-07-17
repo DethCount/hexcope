@@ -1,5 +1,6 @@
 import bpy
 import math
+from mathutils import Vector
 
 from optics import get_support_arm_point, hex2xy, hex2xyz
 
@@ -23,153 +24,141 @@ def create_mesh(
     )
 
     arm_points = get_support_arm_point(n, r, m, 0)
-
-    ht = 0.5 * t
     ch = 0.2
-    rh = ch * 0.5 * math.sqrt(3) * r
-    h = arm_points[1][1] + rh
-    wv = 0.5 * r * (1 if n % 2 else -1)
-
-    x0 = arm_points[0][0] - m
-    x1 = x0 + ch * wv
-    x2 = x0 + wv
-
-    outer_r = max(
-        x0 + m,
-        math.sqrt((arm_points[0][0] + m) ** 2 + h ** 2)
-    )
-    max_angle = math.asin(h / outer_r)
-    x3 = outer_r * math.cos(max_angle)
 
     if n % 2 == 0:
-        y2 = hex2xyz(f, r, math.floor(0.5 * n), 1, 5, 1)[2]
-        y3 = hex2xyz(f, r, math.floor(0.5 * n), 1, 0, 1)[2]
-        y5 = hex2xyz(f, r, math.floor(0.5 * n), 1, 0, 2)[2]
+        p2 = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 5, 1))
+        p3 = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 0, 1))
+        p5 = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 0, 2))
     else:
-        y2 = hex2xyz(f, r, math.ceil(0.5 * n), 0, 0, 1)[2]
-        y3 = hex2xyz(f, r, math.ceil(0.5 * n), 0, 5, 1)[2]
-        y5 = hex2xyz(f, r, math.ceil(0.5 * n) + 1, -2, 0, 1)[2]
+        p2 = Vector(hex2xyz(f, r, math.ceil(0.5 * n), 0, 0, 1))
+        p3 = Vector(hex2xyz(f, r, math.ceil(0.5 * n), 0, 5, 1))
+        p5 = Vector(hex2xyz(f, r, math.ceil(0.5 * n) + 1, -2, 0, 1))
 
-    y2 -= hex_thickness + hex_walls_height + t
-    y3 -= hex_thickness + hex_walls_height + t
-    y5 -= hex_thickness + hex_walls_height + t
-    y4 = y3 + ch * (y5 - y3)
-    y0 = y4
-    y1 = y3
+    v35n = (p5 - p3).normalized()
+    p4 = p3 + v35n * ch
 
-    v0 = (x1, -h, y0)
-    v1 = (x0, arm_points[0][1], y1)
-    v2 = (x2, 0, y2)
-    v3 = (x0, arm_points[1][1], y3)
-    v4 = (x1, h, y4)
+    outer_r = max(
+        p2.x + m,
+        math.sqrt((arm_points[0][0] + m) ** 2 + p4.y ** 2)
+    )
+    max_angle = math.asin(p4.y / outer_r)
+    arc_string_x = outer_r * math.cos(max_angle)
+
+    hex_total_thickness = hex_thickness + hex_walls_height + t
+
+    v0 = Vector((p4.x, -p4.y, p4.z - hex_total_thickness))
+    v1 = Vector((p3.x, -p3.y, p3.z - hex_total_thickness))
+    v2 = Vector((p2.x, p2.y, p2.z - hex_total_thickness))
+    v3 = Vector((p3.x, p3.y, p3.z - hex_total_thickness))
+    v4 = Vector((p4.x, p4.y, p4.z - hex_total_thickness))
 
     h0 = t
     h1 = h0 + hex_thickness + hex_walls_height + primary_thickness
-    h2 = h1 - hex_walls_height
-    h3 = h1 + t
-    h4 = min(v2[2], v3[2], v4[2])
-    h5 = max(v2[2], v3[2], v4[2]) + h3
+    h2 = h1 + t
+    h3 = min(v2.z, v3.z, v4.z)
+    h4 = max(v2.z, v3.z, v4.z) + h2
 
     ar = arm_radius + 0.5 * e
 
     vertices = [
-        (v0[0], v0[1], h4),
-        (v0[0], v0[1], v0[2] + h0),
-        (v0[0], v0[1], v0[2] + h1),
-        (v0[0], v0[1], h5),
+        (v0.x, v0.y, h3),
+        (v0.x, v0.y, v0.z + h0),
+        (v0.x, v0.y, v0.z + h1),
+        (v0.x, v0.y, h4),
 
-        (v1[0], v1[1], h4),
-        (v1[0], v1[1], v1[2] + h0),
-        (v1[0], v1[1], v1[2] + h1),
-        (v1[0], v1[1], h5),
+        (v1.x, v1.y, h3),
+        (v1.x, v1.y, v1.z + h0),
+        (v1.x, v1.y, v1.z + h1),
+        (v1.x, v1.y, h4),
 
         # 8
-        (v2[0], v2[1], h4),
-        (v2[0], v2[1], v2[2] + h0),
-        (v2[0], v2[1], v2[2] + h1),
-        (v2[0], v2[1], h5),
+        (v2.x, v2.y, h3),
+        (v2.x, v2.y, v2.z + h0),
+        (v2.x, v2.y, v2.z + h1),
+        (v2.x, v2.y, h4),
 
-        (v3[0], v3[1], h4),
-        (v3[0], v3[1], v3[2] + h0),
-        (v3[0], v3[1], v3[2] + h1),
-        (v3[0], v3[1], h5),
+        (v3.x, v3.y, h3),
+        (v3.x, v3.y, v3.z + h0),
+        (v3.x, v3.y, v3.z + h1),
+        (v3.x, v3.y, h4),
 
         # 16
-        (v4[0], v4[1], h4),
-        (v4[0], v4[1], v4[2] + h0),
-        (v4[0], v4[1], v4[2] + h1),
-        (v4[0], v4[1], h5),
+        (v4.x, v4.y, h3),
+        (v4.x, v4.y, v4.z + h0),
+        (v4.x, v4.y, v4.z + h1),
+        (v4.x, v4.y, h4),
 
         # 20
-        (v0[0] - 2 * hex_thickness, v0[1], h4),
-        (v0[0] - 2 * hex_thickness, v0[1], v0[2] + h0),
-        (v0[0] - 2 * hex_thickness, v0[1], v0[2] + h1),
-        (v0[0] - 2 * hex_thickness, v0[1], h5),
+        (v0.x - 2 * hex_thickness, v0.y, h3),
+        (v0.x - 2 * hex_thickness, v0.y, v0.z + h0),
+        (v0.x - 2 * hex_thickness, v0.y, v0.z + h1),
+        (v0.x - 2 * hex_thickness, v0.y, h4),
 
-        (v1[0] - 2 * hex_thickness, v1[1], h4),
-        (v1[0] - 2 * hex_thickness, v1[1], v1[2] + h0),
-        (v1[0] - 2 * hex_thickness, v1[1], v1[2] + h1),
-        (v1[0] - 2 * hex_thickness, v1[1], h5),
+        (v1.x - 2 * hex_thickness, v1.y, h3),
+        (v1.x - 2 * hex_thickness, v1.y, v1.z + h0),
+        (v1.x - 2 * hex_thickness, v1.y, v1.z + h1),
+        (v1.x - 2 * hex_thickness, v1.y, h4),
 
         # 28
-        (v2[0] - 2 * hex_thickness, v2[1], h4),
-        (v2[0] - 2 * hex_thickness, v2[1], v2[2] + h0),
-        (v2[0] - 2 * hex_thickness, v2[1], v2[2] + h1),
-        (v2[0] - 2 * hex_thickness, v2[1], h5),
+        (v2.x - 2 * hex_thickness, v2.y, h3),
+        (v2.x - 2 * hex_thickness, v2.y, v2.z + h0),
+        (v2.x - 2 * hex_thickness, v2.y, v2.z + h1),
+        (v2.x - 2 * hex_thickness, v2.y, h4),
 
-        (v3[0] - 2 * hex_thickness, v3[1], h4),
-        (v3[0] - 2 * hex_thickness, v3[1], v3[2] + h0),
-        (v3[0] - 2 * hex_thickness, v3[1], v3[2] + h1),
-        (v3[0] - 2 * hex_thickness, v3[1], h5),
+        (v3.x - 2 * hex_thickness, v3.y, h3),
+        (v3.x - 2 * hex_thickness, v3.y, v3.z + h0),
+        (v3.x - 2 * hex_thickness, v3.y, v3.z + h1),
+        (v3.x - 2 * hex_thickness, v3.y, h4),
 
         # 36
-        (v4[0] - 2 * hex_thickness, v4[1], h4),
-        (v4[0] - 2 * hex_thickness, v4[1], v4[2] + h0),
-        (v4[0] - 2 * hex_thickness, v4[1], v4[2] + h1),
-        (v4[0] - 2 * hex_thickness, v4[1], h5),
+        (v4.x - 2 * hex_thickness, v4.y, h3),
+        (v4.x - 2 * hex_thickness, v4.y, v4.z + h0),
+        (v4.x - 2 * hex_thickness, v4.y, v4.z + h1),
+        (v4.x - 2 * hex_thickness, v4.y, h4),
 
         # 40
+        (arm_points[0][0] - ar, arm_points[0][1] - ar, h3),
         (arm_points[0][0] - ar, arm_points[0][1] - ar, h4),
-        (arm_points[0][0] - ar, arm_points[0][1] - ar, h5),
 
+        (arm_points[0][0] - ar, arm_points[0][1] + ar, h3),
         (arm_points[0][0] - ar, arm_points[0][1] + ar, h4),
-        (arm_points[0][0] - ar, arm_points[0][1] + ar, h5),
 
+        (arm_points[0][0] + ar, arm_points[0][1] - ar, h3),
         (arm_points[0][0] + ar, arm_points[0][1] - ar, h4),
-        (arm_points[0][0] + ar, arm_points[0][1] - ar, h5),
 
+        (arm_points[0][0] + ar, arm_points[0][1] + ar, h3),
         (arm_points[0][0] + ar, arm_points[0][1] + ar, h4),
-        (arm_points[0][0] + ar, arm_points[0][1] + ar, h5),
 
         # 48
+        (arm_points[1][0] - ar, arm_points[1][1] - ar, h3),
         (arm_points[1][0] - ar, arm_points[1][1] - ar, h4),
-        (arm_points[1][0] - ar, arm_points[1][1] - ar, h5),
 
+        (arm_points[1][0] - ar, arm_points[1][1] + ar, h3),
         (arm_points[1][0] - ar, arm_points[1][1] + ar, h4),
-        (arm_points[1][0] - ar, arm_points[1][1] + ar, h5),
 
+        (arm_points[1][0] + ar, arm_points[1][1] - ar, h3),
         (arm_points[1][0] + ar, arm_points[1][1] - ar, h4),
-        (arm_points[1][0] + ar, arm_points[1][1] - ar, h5),
 
+        (arm_points[1][0] + ar, arm_points[1][1] + ar, h3),
         (arm_points[1][0] + ar, arm_points[1][1] + ar, h4),
-        (arm_points[1][0] + ar, arm_points[1][1] + ar, h5),
 
         # 56
-        (x3, 0, h4),
-        (x3, 0, h5),
+        (arc_string_x, 0, h3),
+        (arc_string_x, 0, h4),
 
         # 58
+        (arm_points[0][0] - ar, arm_points[0][1] + m, h3),
         (arm_points[0][0] - ar, arm_points[0][1] + m, h4),
-        (arm_points[0][0] - ar, arm_points[0][1] + m, h5),
 
+        (arm_points[0][0] + ar, arm_points[0][1] + m, h3),
         (arm_points[0][0] + ar, arm_points[0][1] + m, h4),
-        (arm_points[0][0] + ar, arm_points[0][1] + m, h5),
 
+        (arm_points[1][0] - ar, arm_points[1][1] - m, h3),
         (arm_points[1][0] - ar, arm_points[1][1] - m, h4),
-        (arm_points[1][0] - ar, arm_points[1][1] - m, h5),
 
+        (arm_points[1][0] + ar, arm_points[1][1] - m, h3),
         (arm_points[1][0] + ar, arm_points[1][1] - m, h4),
-        (arm_points[1][0] + ar, arm_points[1][1] - m, h5),
     ]
 
     edges = [
@@ -258,17 +247,17 @@ def create_mesh(
         sb = math.sin(beta)
 
         vertices.extend([
-            (outer_r * ca, outer_r * sa, h5),
             (outer_r * ca, outer_r * sa, h4),
+            (outer_r * ca, outer_r * sa, h3),
 
-            (outer_r * ca, -outer_r * sa, h5),
             (outer_r * ca, -outer_r * sa, h4),
+            (outer_r * ca, -outer_r * sa, h3),
 
-            (arm_points[0][0] + ar * cb, arm_points[0][1] + ar * sb, h5),
             (arm_points[0][0] + ar * cb, arm_points[0][1] + ar * sb, h4),
+            (arm_points[0][0] + ar * cb, arm_points[0][1] + ar * sb, h3),
 
-            (arm_points[1][0] + ar * cb, arm_points[1][1] + ar * sb, h5),
             (arm_points[1][0] + ar * cb, arm_points[1][1] + ar * sb, h4),
+            (arm_points[1][0] + ar * cb, arm_points[1][1] + ar * sb, h3),
         ])
 
         nbidx = 8
@@ -373,11 +362,6 @@ def create_mesh(
             (rtv, 55, 53, 11),
             (lbv, 44, 46, 8),
             (54, rbv, 8, 52),
-
-            #(47, 11, 43),
-            #(46, 42, 8),
-            #(53, 49, 11),
-            #(52, 8, 48),
         ])
 
     mesh.from_pydata(vertices, edges, faces)
