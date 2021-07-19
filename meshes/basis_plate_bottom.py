@@ -79,8 +79,6 @@ def create_mesh(
         if alpha >= pi6 and alpha < 5 * pi6:
             edges.extend([
                 (tv, bv),
-                (stv, tv),
-                (sbv, bv),
             ])
 
             if i0 == None:

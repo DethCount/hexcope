@@ -47,14 +47,14 @@ https://youtu.be/Q-PgjTYsAFY
 ## Printing
 (e.g: Dagoma DiscoEasy200) \
 
-- Basis: 1,217kg, 422m, 48h
+- Basis: 1.189kg, 410m, 57h
     - 2 x plate bottom: 96g, 33m, 3h30
     - 1 x plate axis: 205g, 70m, 7h
     - 2 x plate top: 96g, 33m, 3h30
-    - 2 x leg: 126g, 43m, 5h
+    - 2 x leg: 113g, 39m, 4h30
     - 4 x foot: 10g, 4m, 0h30
-    - 2 x arm: 128g, 44m, 5h30
-    - 2 x wheel: 40g, 15m, 2h
+    - 2 x arm: 79g, 27m, 3h30
+    - 2 x wheel: 88g, 30m, 8h
 - Primary mirror (n=0, newton): 592g, 204m, 27h
     - 2 x center half hex: 40g, 14m, 1h30
     - 16 x half hex: 32g, 11m, 1h30

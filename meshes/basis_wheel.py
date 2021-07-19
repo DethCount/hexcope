@@ -8,72 +8,116 @@ import math
 # p: precision in number of parts of 1
 # wr: wheel radius
 # mr: middle bar radius
-# kr: key radius
-# kw: key width
 # hex_thickness: mirror hex thickness
 # hex_walls_height : mirror hex walls height
-def create_mesh(e, t, h, r, p, wr, mr, kr, kw, z, hex_thickness, hex_walls_height):
+def create_mesh(
+    e, t, h, r, p, wr, mr, z,
+    hex_thickness, hex_walls_height,
+    arm_t
+):
     mesh = bpy.data.meshes.new('basis_wheel_mesh' + str((
-        e, t, h, r, p, wr, mr, kr, kw, z,
-        hex_thickness, hex_walls_height
+        e, t, h, r, p, wr, mr, z,
+        hex_thickness, hex_walls_height,
+        arm_t
     )))
 
     pi2 = math.pi / 2
     pi3 = math.pi / 3
 
+    he = 0.5 * e
     hr = 0.5 * r
-    hkw = 0.5 * kw
+    hht = 0.5 * hex_thickness
+    hat = 0.5 * arm_t
 
     z0 = z - hex_thickness - e
     z1 = z0 - hex_thickness
     z0o = z0 - hex_walls_height
     z1o = z1 - hex_walls_height
-    z2 = z + -wr * math.sin(pi3)
-    z3 = z2 + mr
-    z4 = z2 + kr
-    z5 = z2 - mr
-    z6 = z2 - kr
+    z2 = z - wr * math.sin(pi3)
+    z3 = z0o - hex_thickness
+
+    xr0 = e
+    xl0 = -hex_thickness
+    xr1 = xr0 + hex_thickness
+    xl1 = xl0 - hex_thickness
+    xl2 = xl0 + hht - hat - t - he
+    xr2 = xl2 + t
+    xl3 = xr0 - hht + hat + he
+    xr3 = xl3 + t
+
+    yt0 = hr - e
+    yb0 = -yt0
 
     vertices = [
-        (-e, hr - e, 0),
-        (-hex_thickness, hr - e, 0),
-        (-hex_thickness, -hr + e, 0),
-        (-e, -hr + e, 0),
+        (xr0, yt0, 0),
+        (xl0, yt0, 0),
+        (xl0, yb0, 0),
+        (xr0, yb0, 0),
 
-        (-hex_thickness, hr - e, z0),
-        (-2 * hex_thickness - e, hr - e, z0),
-        (-2 * hex_thickness - e, -hr + e, z0),
-        (-hex_thickness, -hr + e, z0),
+        (xl0, yt0, z0),
+        (xl1, yt0, z0),
+        (xl1, yb0, z0),
+        (xl0, yb0, z0),
 
         # 8
-        (-hex_thickness, hr - e, z1),
-        (-2 * hex_thickness - e, hr - e, z1),
-        (-2 * hex_thickness - e, -hr + e, z1),
-        (-hex_thickness, -hr + e, z1),
+        (xl0, yt0, z0o),
+        (xl1, yt0, z0o),
+        (xl1, yb0, z0o),
+        (xl0, yb0, z0o),
 
-        (-e, hr - e, z0o),
-        (-e + hex_thickness, hr - e, z0o),
-        (-e + hex_thickness, -hr + e, z0o),
-        (-e, -hr + e, z0o),
+        (xr0, yt0, z0o),
+        (xr1, yt0, z0o),
+        (xr1, yb0, z0o),
+        (xr0, yb0, z0o),
 
         # 16
-        (-e + hex_thickness, hr - e, z1o),
-        (-e + hex_thickness, -hr + e, z1o),
+        (xr1, yt0, z0o),
+        (xr1, yb0, z0o),
 
         # 18
-        (-e, hr - e, z1),
-        (-hex_thickness, hr - e, z1),
-        (-hex_thickness, -hr + e, z1),
-        (-e, -hr + e, z1),
+        (xr0, yt0, z1),
+        (xl0, yt0, z1),
+        (xl0, yb0, z1),
+        (xr0, yb0, z1),
 
-        (-e, 0, z2),
-        (-hex_thickness, 0, z2),
-        (-e, 0, z1),
-        (-hex_thickness, 0, z1),
+        (xr0, 0, z2),
+        (xl0, 0, z2),
+        (xr0, 0, z1),
+        (xl0, 0, z1),
 
         # 26
-        (-e, hr - e, z1o),
-        (-e, -hr + e, z1o),
+        (xr0, yt0, z0o),
+        (xr0, yb0, z0o),
+
+        # 28
+        (xl2, yt0, z0o),
+        (xr3, yt0, z0o),
+        (xl2, yb0, z0o),
+        (xr3, yb0, z0o),
+
+        # 32
+        (xl3, yt0, z3),
+        (xr2, yt0, z3),
+        (xl3, yb0, z3),
+        (xr2, yb0, z3),
+
+        # 36
+        (xl2, yt0, z3),
+        (xr3, yt0, z3),
+        (xl2, yb0, z3),
+        (xr3, yb0, z3),
+
+        # 40
+        (xl2, 0, z3),
+        (xr2, 0, z3),
+        (xl3, 0, z3),
+        (xr3, 0, z3),
+
+        # 44
+        (xr2, yt0, z0o),
+        (xl3, yt0, z0o),
+        (xr2, yb0, z0o),
+        (xl3, yb0, z0o),
     ]
 
     edges = [
@@ -91,12 +135,14 @@ def create_mesh(e, t, h, r, p, wr, mr, kr, kw, z, hex_thickness, hex_walls_heigh
         (2, 7), (7, 11), (11, 20),
         (3, 21),
         (26, 27), (12, 26), (15, 27),
+
+        (28, 29), (29, 31), (31, 30), (30, 28),
     ]
+
     faces = [
         (0, 1, 2, 3),
 
         (4, 5, 6, 7),
-        (9, 8, 11, 10),
         (2, 1, 4, 7),
         (11, 8, 19, 20),
 
@@ -109,10 +155,11 @@ def create_mesh(e, t, h, r, p, wr, mr, kr, kw, z, hex_thickness, hex_walls_heigh
         (0, 3, 15, 12),
 
         (13, 12, 15, 14),
-        (12, 13, 16, 26),
-        (14, 15, 27, 17),
-        (13, 14, 17, 16),
-        (16, 17, 27, 26),
+
+        (28, 30, 10, 9),
+        (31, 29, 13, 14),
+
+        (33, 32, 34, 35),
     ]
 
     nb_verts = len(vertices)
@@ -123,102 +170,189 @@ def create_mesh(e, t, h, r, p, wr, mr, kr, kw, z, hex_thickness, hex_walls_heigh
         beta = pi2 + alpha
         cb = math.cos(beta)
         sb = math.sin(beta)
+        wrcb = wr * cb
+        wrsb = wr * sb
+        mrcb = mr * cb
+        mrsb = mr * sb
+        z2wr = z2 + wrsb
+        z2mr = z2 + mrsb
 
         vertices.extend([
-            (-hex_thickness, wr * cb, z2 + wr * sb),
-            (-e, wr * cb, z2 + wr * sb),
+            (xl2, wrcb, z2wr),
+            (xr2, wrcb, z2wr),
 
-            (-hex_thickness, mr * cb, z2 + mr * sb),
-            (-e, mr * cb, z2 + mr * sb),
+            (xl2, mrcb, z2mr),
+            (xr2, mrcb, z2mr),
 
+            (xl2, -wrcb, z2wr),
+            (xr2, -wrcb, z2wr),
 
-            (-hex_thickness, -wr * cb, z2 + wr * sb),
-            (-e, -wr * cb, z2 + wr * sb),
+            (xl2, -mrcb, z2mr),
+            (xr2, -mrcb, z2mr),
 
-            (-hex_thickness, -mr * cb, z2 + mr * sb),
-            (-e, -mr * cb, z2 + mr * sb),
+            (xl3, wrcb, z2wr),
+            (xr3, wrcb, z2wr),
+
+            (xl3, mrcb, z2mr),
+            (xr3, mrcb, z2mr),
+
+            (xl3, -wrcb, z2wr),
+            (xr3, -wrcb, z2wr),
+
+            (xl3, -mrcb, z2mr),
+            (xr3, -mrcb, z2mr),
         ])
 
-        nbidx = 8
-        lrv = nb_verts + nbidx * i
-        llv = lrv + 1
-        srv = lrv + 2
-        slv = lrv + 3
-        rlrv = lrv + 4
-        rllv = lrv + 5
-        rsrv = lrv + 6
-        rslv = lrv + 7
+        nbidx = 16
+        rlllv = nb_verts + nbidx * i
+        rllrv = rlllv + 1
+        rlslv = rlllv + 2
+        rlsrv = rlllv + 3
+        rrllv = rlllv + 4
+        rrlrv = rlllv + 5
+        rrslv = rlllv + 6
+        rrsrv = rlllv + 7
+        llllv = rlllv + 8
+        lllrv = rlllv + 9
+        llslv = rlllv + 10
+        llsrv = rlllv + 11
+        lrllv = rlllv + 12
+        lrlrv = rlllv + 13
+        lrslv = rlllv + 14
+        lrsrv = rlllv + 15
 
         if i > 0:
             edges.extend([
-                (srv - nbidx, srv),
-                (slv - nbidx, slv),
-                (rsrv - nbidx, rsrv),
-                (rslv - nbidx, rslv),
+                (rlslv - nbidx, rlslv),
+                (rlsrv - nbidx, rlsrv),
+                (rrslv - nbidx, rrslv),
+                (rrsrv - nbidx, rrsrv),
+
+                (llslv - nbidx, llslv),
+                (llsrv - nbidx, llsrv),
+                (lrslv - nbidx, lrslv),
+                (lrsrv - nbidx, lrsrv),
             ])
 
             if alpha < pi2 and ( \
-                vertices[lrv - nbidx][1] > vertices[11][1]
-                or vertices[lrv - nbidx][2] > vertices[11][2]
+                vertices[rlllv - nbidx][1] > vertices[32][1]
+                or vertices[rlllv - nbidx][2] > vertices[32][2]
             ):
                 faces.extend([
-                    (24, slv, slv - nbidx),
-                    (25, srv - nbidx, srv),
-                    (24, rslv - nbidx, rslv),
-                    (25, rsrv, rsrv - nbidx),
+                    (41, rlsrv, rlsrv - nbidx),
+                    (40, rlslv - nbidx, rlslv),
+                    (41, rrsrv - nbidx, rrsrv),
+                    (40, rrslv, rrslv - nbidx),
+
+                    (43, llsrv, llsrv - nbidx),
+                    (42, llslv - nbidx, llslv),
+                    (43, lrsrv - nbidx, lrsrv),
+                    (42, lrslv, lrslv - nbidx),
                 ])
             else:
                 if tv == None:
                     tv = True
 
                     edges.extend([
-                        (llv - nbidx, lrv - nbidx),
-                        (21, llv - nbidx),
-                        (11, lrv - nbidx),
+                        (rllrv - nbidx, rlllv - nbidx),
+                        (46, rllrv - nbidx),
+                        (30, rlllv - nbidx),
 
-                        (rllv - nbidx, rlrv - nbidx),
-                        (18, rllv - nbidx),
-                        (8, rlrv - nbidx),
+                        (rrlrv - nbidx, rrllv - nbidx),
+                        (44, rrlrv - nbidx),
+                        (28, rrllv - nbidx),
+
+                        (lllrv - nbidx, llllv - nbidx),
+                        (31, lllrv - nbidx),
+                        (47, llllv - nbidx),
+
+                        (lrlrv - nbidx, lrllv - nbidx),
+                        (29, lrlrv - nbidx),
+                        (45, lrllv - nbidx),
                     ])
 
                     faces.extend([
-                        (21, slv, 24),
-                        (25, srv, 11),
-                        (24, rslv, 18),
-                        (8, rsrv, 25),
+                        (35, rlsrv - nbidx, 41),
+                        (40, rlslv - nbidx, 38),
+                        (41, rrsrv - nbidx, 33),
+                        (36, rrslv - nbidx, 40),
 
-                        (slv, slv - nbidx, 21, llv - nbidx),
-                        (srv - nbidx, srv, lrv - nbidx, 11),
-                        (rslv - nbidx, rslv, rllv - nbidx, 18),
-                        (rsrv, rsrv - nbidx, 8, rlrv - nbidx),
+                        (39, llsrv - nbidx, 43),
+                        (42, llslv - nbidx, 34),
+                        (43, lrsrv - nbidx, 37),
+                        (32, lrslv - nbidx, 42),
 
-                        (lrv - nbidx, llv - nbidx, 21, 11),
-                        (rllv - nbidx, rlrv - nbidx, 8, 18),
+                        (36, 38, 30, 28),
+                        (39, 37, 29, 31),
+
+                        (30, 38, rlllv - nbidx),
+                        (36, 28, rrllv - nbidx),
+
+                        (rlsrv, rlsrv - nbidx, 35, rllrv - nbidx),
+                        (38, rlslv - nbidx, rlslv, rlllv - nbidx),
+                        (33, rrsrv - nbidx, rrsrv, rrlrv - nbidx),
+                        (rrslv, rrslv - nbidx, 36, rrllv - nbidx),
+
+                        (39, 31, lllrv - nbidx),
+                        (29, 37, lrlrv - nbidx),
+
+                        (llsrv, llsrv - nbidx, 39, lllrv - nbidx),
+                        (34, llslv - nbidx, llslv, llllv - nbidx),
+                        (37, lrsrv - nbidx, lrsrv, lrlrv - nbidx),
+                        (lrslv, lrslv - nbidx, 32, lrllv - nbidx),
+
+                        (rlllv - nbidx, rllrv - nbidx, 46, 30),
+                        (rrlrv - nbidx, rrllv - nbidx, 28, 44),
+
+                        (llllv - nbidx, lllrv - nbidx, 31, 47),
+                        (lrlrv - nbidx, lrllv - nbidx, 45, 29),
+
+                        (rllrv - nbidx, llllv - nbidx, 47, 46),
+                        (llllv - nbidx, rllrv - nbidx, 35, 34),
+
+                        (lrllv - nbidx, rrlrv - nbidx, 44, 45),
+                        (rrlrv - nbidx, lrllv - nbidx, 32, 33),
                     ])
                 edges.extend([
-                    (lrv, llv),
-                    (rlrv, rllv),
+                    (rlllv, rllrv),
+                    (rrllv, rrlrv),
 
-                    (lrv - nbidx, lrv),
-                    (llv - nbidx, llv),
-                    (rlrv - nbidx, rlrv),
-                    (rllv - nbidx, rllv),
+                    (llllv, lllrv),
+                    (lrllv, lrlrv),
+
+                    (rlllv - nbidx, rlllv),
+                    (rllrv - nbidx, rllrv),
+                    (rrllv - nbidx, rrllv),
+                    (rrlrv - nbidx, rrlrv),
+
+                    (llllv - nbidx, llllv),
+                    (lllrv - nbidx, lllrv),
+                    (lrllv - nbidx, lrllv),
+                    (lrlrv - nbidx, lrlrv),
                 ])
+
                 faces.extend([
-                    (lrv - nbidx, lrv, llv, llv - nbidx),
+                    (rlllv - nbidx, rlllv, rllrv, rllrv - nbidx),
+                    (rlllv, rlllv - nbidx, rlslv - nbidx, rlslv),
+                    (rllrv - nbidx, rllrv, rlsrv, rlsrv - nbidx),
+                    (rrllv, rrllv - nbidx, rrlrv - nbidx, rrlrv),
+                    (rrllv - nbidx, rrllv, rrslv, rrslv - nbidx),
+                    (rrlrv, rrlrv - nbidx, rrsrv - nbidx, rrsrv),
 
-                    (lrv, lrv - nbidx, srv - nbidx, srv),
-                    (llv - nbidx, llv, slv, slv - nbidx),
-
-                    (rlrv, rlrv - nbidx, rllv - nbidx, rllv),
-
-                    (rlrv - nbidx, rlrv, rsrv, rsrv - nbidx),
-                    (rllv, rllv - nbidx, rslv - nbidx, rslv),
+                    (llllv - nbidx, llllv, lllrv, lllrv - nbidx),
+                    (llllv, llllv - nbidx, llslv - nbidx, llslv),
+                    (lllrv - nbidx, lllrv, llsrv, llsrv - nbidx),
+                    (lrllv, lrllv - nbidx, lrlrv - nbidx, lrlrv),
+                    (lrllv - nbidx, lrllv, lrslv, lrslv - nbidx),
+                    (lrlrv, lrlrv - nbidx, lrsrv - nbidx, lrsrv),
                 ])
 
             faces.extend([
-                (srv, srv - nbidx, slv - nbidx, slv),
-                (rsrv - nbidx, rsrv, rslv, rslv - nbidx),
+                (rlslv, rlslv - nbidx, rlsrv - nbidx, rlsrv),
+                (rrslv - nbidx, rrslv, rrsrv, rrsrv - nbidx),
+
+                (llslv, llslv - nbidx, llsrv - nbidx, llsrv),
+                (lrslv - nbidx, lrslv, lrsrv, lrsrv - nbidx),
             ])
 
     mesh.from_pydata(vertices, edges, faces)

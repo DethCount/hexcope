@@ -34,6 +34,9 @@ def create_mesh(
     lr = t + middle_bar_radius # large radius
     hw = 0.5 * w
     hwr = 0.5 * wheel_radius
+    hwt = 0.5 * wheel_thickness
+    htt = 0.5 * teeth_thickness
+    htw = 0.5 * teeth_width
 
     h1 = h - (wheel_radius + e + teeth_height)# arm filled block height
 
@@ -43,11 +46,19 @@ def create_mesh(
     z3 = z2 - h1 # teeth top z
     z4 = z3 - teeth_height # teeth bottom z
 
+    x = -hwt
+    xr = x + 0.5 * t
+    xl = x - 0.5 * t
+    xr2 = x + t
+    xl2 = x - t
+    xr3 = x + htt
+    xl3 = x - htt
+
     vertices = [
-        (-wheel_thickness - e, 0, z0),
-        (-wheel_thickness - e - t, 0, z0),
-        (-wheel_thickness - e - t, 0, z),
-        (-wheel_thickness - e, 0, z),
+        (xl, 0, z0),
+        (xl - t, 0, z0),
+        (xl - t, 0, z),
+        (xl, 0, z),
     ]
     edges = [(0, 1)]
     faces = []
@@ -61,139 +72,94 @@ def create_mesh(
         cb = math.cos(beta)
         sb = math.sin(beta)
 
+        lrsb = lr * sb
+        mbry = middle_bar_radius * sb
+
         lz = z + lr * cb
         sz = z + middle_bar_radius * cb
 
         vertices.extend([
-            (-wheel_thickness - e - t, lr * sb, lz),
-            (-wheel_thickness - e, lr * sb, lz),
+            (xl, lrsb, lz),
+            (xl, -lrsb, lz),
 
-            (-wheel_thickness - e - t, middle_bar_radius * sb, sz),
-            (-wheel_thickness - e, middle_bar_radius * sb, sz),
+            (xl, mbry, sz),
+            (xl, -mbry, sz),
 
-            (-wheel_thickness - e - t, -lr * sb, lz),
-            (-wheel_thickness - e, -lr * sb, lz),
+            (xr, lrsb, lz),
+            (xr, -lrsb, lz),
 
-            (-wheel_thickness - e - t, -middle_bar_radius * sb, sz),
-            (-wheel_thickness - e, -middle_bar_radius * sb, sz),
-
-            (e + t, lr * sb, lz),
-            (e, lr * sb, lz),
-
-            (e + t, middle_bar_radius * sb, sz),
-            (e, middle_bar_radius * sb, sz),
-
-            (e + t, -lr * sb, z + lr * cb),
-            (e, -lr * sb, z + lr * cb),
-
-            (e + t, -middle_bar_radius * sb, sz),
-            (e, -middle_bar_radius * sb, sz),
+            (xr, mbry, sz),
+            (xr, -mbry, sz),
         ])
 
-        llllv = nb_verts + 16 * i
-        lllrv = nb_verts + 16 * i + 1
+        nbidx = 8
 
-        llslv = nb_verts + 16 * i + 2
-        llsrv = nb_verts + 16 * i + 3
-
-        lrllv = nb_verts + 16 * i + 4
-        lrlrv = nb_verts + 16 * i + 5
-
-        lrslv = nb_verts + 16 * i + 6
-        lrsrv = nb_verts + 16 * i + 7
-
-        rlllv = nb_verts + 16 * i + 8
-        rllrv = nb_verts + 16 * i + 9
-
-        rlslv = nb_verts + 16 * i + 10
-        rlsrv = nb_verts + 16 * i + 11
-
-        rrllv = nb_verts + 16 * i + 12
-        rrlrv = nb_verts + 16 * i + 13
-
-        rrslv = nb_verts + 16 * i + 14
-        rrsrv = nb_verts + 16 * i + 15
+        lllv = nb_verts + nbidx * i
+        llrv = lllv + 1
+        lslv = lllv + 2
+        lsrv = lllv + 3
+        rllv = lllv + 4
+        rlrv = lllv + 5
+        rslv = lllv + 6
+        rsrv = lllv + 7
 
         edges.extend([
-            (llllv, lllrv),
-            (llslv, llsrv),
-
-            (lrllv, lrlrv),
-            (lrslv, lrsrv),
-
-            (rlllv, rllrv),
-            (rlslv, rlsrv),
-
-            (rrllv, rrlrv),
-            (rrslv, rrsrv),
+            (lllv, rllv),
+            (llrv, rlrv),
+            (lslv, rslv),
+            (lsrv, rsrv),
         ])
 
         if i > 0:
+            edges.extend([
+                (lllv, lllv - nbidx),
+                (llrv, llrv - nbidx),
+                (lslv, lslv - nbidx),
+                (lsrv, lsrv - nbidx),
+            ])
+
             faces.extend([
-                (llllv - 16, llllv, lllrv, lllrv - 16),
-                (llllv - 16, llllv, llslv, llslv - 16),
-                (lllrv - 16, lllrv, llsrv, llsrv - 16),
-                (llslv - 16, llslv, llsrv, llsrv - 16),
+                (lllv - nbidx, lllv, lslv, lslv - nbidx),
+                (llrv - nbidx, llrv, lsrv, lsrv - nbidx),
 
-                (lrllv - 16, lrllv, lrlrv, lrlrv - 16),
-                (lrllv - 16, lrllv, lrslv, lrslv - 16),
-                (lrlrv - 16, lrlrv, lrsrv, lrsrv - 16),
-                (lrslv - 16, lrslv, lrsrv, lrsrv - 16),
+                (rllv - nbidx, rllv, rslv, rslv - nbidx),
+                (rlrv - nbidx, rlrv, rsrv, rsrv - nbidx),
 
-                (rlllv - 16, rlllv, rllrv, rllrv - 16),
-                (rlllv - 16, rlllv, rlslv, rlslv - 16),
-                (rllrv - 16, rllrv, rlsrv, rlsrv - 16),
-                (rlslv - 16, rlslv, rlsrv, rlsrv - 16),
+                (lllv, lllv - nbidx, rllv - nbidx, rllv),
+                (llrv - nbidx, llrv, rlrv, rlrv - nbidx),
 
-                (rrllv - 16, rrllv, rrlrv, rrlrv - 16),
-                (rrllv - 16, rrllv, rrslv, rrslv - 16),
-                (rrlrv - 16, rrlrv, rrsrv, rrsrv - 16),
-                (rrslv - 16, rrslv, rrsrv, rrsrv - 16),
+                (lslv, lslv - nbidx, rslv - nbidx, rslv),
+                (lsrv - nbidx, lsrv, rsrv, rsrv - nbidx),
             ])
 
     nb_verts = len(vertices)
 
     vertices.extend([
-        (-wheel_thickness - e - t, hw, z1),
-        (-wheel_thickness - e, hw, z1),
+        (xl, hw, z1),
+        (xl, -hw, z1),
 
-        (-wheel_thickness - e - t, -hw, z1),
-        (-wheel_thickness - e, -hw, z1),
-
-        (e + t, hw, z1),
-        (e, hw, z1),
-
-        (e + t, -hw, z1),
-        (e, -hw, z1),
+        (xr, hw, z1),
+        (xr, -hw, z1),
     ])
 
     edges.extend([
-        (llllv, nb_verts),
-        (lllrv, nb_verts + 1),
+        (nb_verts, nb_verts + 2),
+        (nb_verts + 1, nb_verts + 3),
 
-        (lrllv, nb_verts + 2),
-        (lrlrv, nb_verts + 3),
+        (lllv, nb_verts),
+        (llrv, nb_verts + 1),
 
-        (rlllv, nb_verts + 4),
-        (rllrv, nb_verts + 5),
-
-        (rrllv, nb_verts + 6),
-        (rrlrv, nb_verts + 7),
+        (rllv, nb_verts + 2),
+        (rlrv, nb_verts + 3),
     ])
 
     faces.extend([
-        (llllv, nb_verts, nb_verts + 1, lllrv),
-        (lrllv, nb_verts + 2, nb_verts + 3, lrlrv),
-        (rlllv, nb_verts + 4, nb_verts + 5, rllrv),
-        (rrllv, nb_verts + 6, nb_verts + 7, rrlrv),
-        (llllv, llslv, nb_verts),
-        (lllrv, llsrv, nb_verts + 1),
-        (lrllv, lrslv, nb_verts + 2),
-        (lrlrv, lrsrv, nb_verts + 3),
-        (rlllv, rlslv, nb_verts + 4),
-        (rllrv, rlsrv, nb_verts + 5),
-        (rrllv, rrslv, nb_verts + 6),
-        (rrlrv, rrsrv, nb_verts + 7),
+        (lllv, nb_verts, nb_verts + 2, rllv),
+        (llrv, nb_verts + 1, nb_verts + 3, rlrv),
+        (lllv, lslv, nb_verts),
+        (llrv, lsrv, nb_verts + 1),
+        (rllv, rslv, nb_verts + 2),
+        (rlrv, rsrv, nb_verts + 3),
     ])
 
     nb_verts2 = len(vertices)
@@ -205,79 +171,61 @@ def create_mesh(
         cb = math.cos(beta)
         sb = math.sin(beta)
 
+        mbry = middle_bar_radius * sb
         sz = z + middle_bar_radius * cb
 
         vertices.extend([
-            (-wheel_thickness - e - t, middle_bar_radius * sb, sz),
-            (-wheel_thickness - e, middle_bar_radius * sb, sz),
+            (xl, mbry, sz),
+            (xl, -mbry, sz),
 
-            (-wheel_thickness - e - t, -middle_bar_radius * sb, sz),
-            (-wheel_thickness - e, -middle_bar_radius * sb, sz),
-
-            (e + t, middle_bar_radius * sb, sz),
-            (e, middle_bar_radius * sb, sz),
-
-            (e + t, -middle_bar_radius * sb, sz),
-            (e, -middle_bar_radius * sb, sz),
+            (xr, mbry, sz),
+            (xr, -mbry, sz),
         ])
 
-        lllv = nb_verts2 + 8 * i
-        llrv = lllv + 1
-        lrlv = lllv + 2
-        lrrv = lllv + 3
-        rllv = lllv + 4
-        rlrv = lllv + 5
-        rrlv = lllv + 6
-        rrrv = lllv + 7
+        nbidx = 4
+        llv = nb_verts2 + nbidx * i
+        lrv = llv + 1
+        rlv = llv + 2
+        rrv = llv + 3
 
         edges.extend([
-            (lllv, llrv),
-            (lrlv, lrrv),
-            (rllv, rlrv),
-            (rrlv, rrrv),
+            (llv, llv - nbidx),
+            (lrv, lrv - nbidx),
+            (llv, rlv),
+            (lrv, rrv),
         ])
 
         if i > 0:
             faces.extend([
-                (lllv - 8, lllv, llrv, llrv - 8),
-                (lrlv - 8, lrlv, lrrv, lrrv - 8),
-                (rllv - 8, rllv, rlrv, rlrv - 8),
-                (rrlv - 8, rrlv, rrrv, rrrv - 8),
+                (llv - nbidx, llv, rlv, rlv - nbidx),
+                (lrv - nbidx, lrv, rrv, rrv - nbidx),
 
-                (lllv - 8, lllv, nb_verts),
-                (llrv - 8, llrv, nb_verts + 1),
+                (llv - nbidx, llv, nb_verts),
+                (lrv - nbidx, lrv, nb_verts + 1),
 
-                (lrlv - 8, lrlv, nb_verts + 2),
-                (lrrv - 8, lrrv, nb_verts + 3),
-
-                (rllv - 8, rllv, nb_verts + 4),
-                (rlrv - 8, rlrv, nb_verts + 5),
-
-                (rrlv - 8, rrlv, nb_verts + 6),
-                (rrrv - 8, rrrv, nb_verts + 7),
+                (rlv - nbidx, rlv, nb_verts + 2),
+                (rrv - nbidx, rrv, nb_verts + 3),
             ])
 
     faces.extend([
-        (nb_verts, nb_verts + 2, lllv),
-        (nb_verts + 1, nb_verts + 3, llrv),
-        (nb_verts + 4, nb_verts + 6, rllv),
-        (nb_verts + 5, nb_verts + 7, rlrv),
+        (nb_verts, nb_verts + 1, llv),
+        (nb_verts + 2, nb_verts + 3, rlv),
     ])
 
     nb_verts3 = len(vertices)
 
     vertices.extend([
-        (-wheel_thickness - e - t, hw, z2),
-        (-wheel_thickness - e, hw, z2),
+        (xl, hw, z2),
+        (xl, -hw, z2),
 
-        (-wheel_thickness - e - t, -hw, z2),
-        (-wheel_thickness - e, -hw, z2),
+        (xr, hw, z2),
+        (xr, -hw, z2),
 
-        (e + t, hw, z2),
-        (e, hw, z2),
+        (xl2, hw, z2 - t),
+        (xl2, -hw, z2 - t),
 
-        (e + t, -hw, z2),
-        (e, -hw, z2),
+        (xr2, hw, z2 - t),
+        (xr2, -hw, z2 - t),
     ])
 
     edges.extend([
@@ -285,60 +233,62 @@ def create_mesh(
         (nb_verts + 1, nb_verts3 + 1),
         (nb_verts + 2, nb_verts3 + 2),
         (nb_verts + 3, nb_verts3 + 3),
-        (nb_verts + 4, nb_verts3 + 4),
-        (nb_verts + 5, nb_verts3 + 5),
-        (nb_verts + 6, nb_verts3 + 6),
-        (nb_verts + 7, nb_verts3 + 7),
-        (nb_verts3, nb_verts3 + 1), (nb_verts3 + 1, nb_verts3 + 3),  (nb_verts3 + 3, nb_verts3 + 2), (nb_verts3 + 2, nb_verts3),
-        (nb_verts3 + 5, nb_verts3 + 4), (nb_verts3 + 4, nb_verts3 + 6), (nb_verts3 + 6, nb_verts3 + 7), (nb_verts3 + 7, nb_verts3 + 5),
+
+        (nb_verts3, nb_verts3 + 1),
+        (nb_verts3 + 1, nb_verts3 + 3),
+        (nb_verts3 + 3, nb_verts3 + 2),
+        (nb_verts3 + 2, nb_verts3),
+
+        (nb_verts3, nb_verts3 + 4),
         (nb_verts3 + 1, nb_verts3 + 5),
+        (nb_verts3 + 2, nb_verts3 + 6),
         (nb_verts3 + 3, nb_verts3 + 7),
     ])
 
     faces.extend([
         (nb_verts, nb_verts3, nb_verts3 + 2, nb_verts + 2),
         (nb_verts + 1, nb_verts3 + 1, nb_verts3 + 3, nb_verts + 3),
-        (nb_verts + 4, nb_verts3 + 4, nb_verts3 + 6, nb_verts + 6),
-        (nb_verts + 5, nb_verts3 + 5, nb_verts3 + 7, nb_verts + 7),
         (nb_verts, nb_verts3, nb_verts3 + 1, nb_verts + 1),
         (nb_verts + 2, nb_verts3 + 2, nb_verts3 + 3, nb_verts + 3),
-        (nb_verts + 4, nb_verts3 + 4, nb_verts3 + 5, nb_verts + 5),
-        (nb_verts + 6, nb_verts3 + 6, nb_verts3 + 7, nb_verts + 7),
+
+        (nb_verts3, nb_verts3 + 4, nb_verts3 + 6, nb_verts3 + 2),
         (nb_verts3 + 1, nb_verts3 + 5, nb_verts3 + 7, nb_verts3 + 3),
+        (nb_verts3, nb_verts3 + 1, nb_verts3 + 5, nb_verts3 + 4),
+        (nb_verts3 + 2, nb_verts3 + 3, nb_verts3 + 7, nb_verts3 + 6),
     ])
 
     nb_verts4 = len(vertices)
 
     vertices.extend([
-        (-wheel_thickness - e - t, hw, z3),
-        (-wheel_thickness - e - t, -hw, z3),
+        (xl2, hw, z3),
+        (xl2, -hw, z3),
 
-        (e + t, hw, z3),
-        (e + t, -hw, z3),
+        (xr2, hw, z3),
+        (xr2, -hw, z3),
 
-        (-0.5 * wheel_thickness - 0.5 * teeth_thickness, 0.5 * teeth_width, z3),
-        (-0.5 * wheel_thickness - 0.5 * teeth_thickness, -0.5 * teeth_width, z3),
+        (xl3, htw, z3),
+        (xl3, -htw, z3),
 
-        (-0.5 * wheel_thickness + 0.5 * teeth_thickness, 0.5 * teeth_width, z3),
-        (-0.5 * wheel_thickness + 0.5 * teeth_thickness, -0.5 * teeth_width, z3),
+        (xr3, htw, z3),
+        (xr3, -htw, z3),
 
-        (-0.5 * wheel_thickness - 0.5 * teeth_thickness, 0.5 * teeth_width, z4),
-        (-0.5 * wheel_thickness - 0.5 * teeth_thickness, -0.5 * teeth_width, z4),
+        (xl3, htw, z4),
+        (xl3, -htw, z4),
 
-        (-0.5 * wheel_thickness + 0.5 * teeth_thickness, 0.5 * teeth_width, z4),
-        (-0.5 * wheel_thickness + 0.5 * teeth_thickness, -0.5 * teeth_width, z4),
+        (xr3, htw, z4),
+        (xr3, -htw, z4),
     ])
 
     edges.extend([
+        (nb_verts3 + 4, nb_verts4),
+        (nb_verts3 + 5, nb_verts4 + 1),
+        (nb_verts3 + 6, nb_verts4 + 2),
+        (nb_verts3 + 7, nb_verts4 + 3),
+
         (nb_verts4, nb_verts4 + 1),
         (nb_verts4 + 1, nb_verts4 + 3),
         (nb_verts4 + 3, nb_verts4 + 2),
         (nb_verts4 + 2, nb_verts4),
-
-        (nb_verts3, nb_verts4),
-        (nb_verts3 + 4, nb_verts4 + 2),
-        (nb_verts3 + 6, nb_verts4 + 3),
-        (nb_verts3 + 2, nb_verts4 + 1),
 
         (nb_verts4 + 4, nb_verts4 + 6),
         (nb_verts4 + 6, nb_verts4 + 7),
@@ -357,11 +307,10 @@ def create_mesh(
     ])
 
     faces.extend([
-        (nb_verts3, nb_verts4, nb_verts4 + 1, nb_verts3 + 2),
-        (nb_verts3 + 6, nb_verts4 + 3, nb_verts4 + 2, nb_verts3 + 4),
-
-        (nb_verts3 + 2, nb_verts4 + 1, nb_verts4 + 3, nb_verts3 + 6),
-        (nb_verts3, nb_verts4, nb_verts4 + 2, nb_verts3 + 4),
+        (nb_verts3 + 4, nb_verts4, nb_verts4 + 1, nb_verts3 + 5),
+        (nb_verts3 + 6, nb_verts4 + 2, nb_verts4 + 3, nb_verts3 + 7),
+        (nb_verts3 + 4, nb_verts4, nb_verts4 + 2, nb_verts3 + 6),
+        (nb_verts3 + 5, nb_verts4 + 1, nb_verts4 + 3, nb_verts3 + 7),
 
         (nb_verts4, nb_verts4 + 1, nb_verts4 + 5, nb_verts4 + 4),
         (nb_verts4 + 2, nb_verts4 + 3, nb_verts4 + 7, nb_verts4 + 6),

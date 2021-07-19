@@ -27,13 +27,12 @@ basis_wheel_r = r
 basis_wheel_p = p # wheel precision
 basis_wheel_wr = 0.8 * r # wheel radius
 basis_wheel_mr = 0.2 * r
-basis_wheel_kr = 0.25 * r
-basis_wheel_kw = basis_wheel_t
+basis_wheel_arm_t = 0.1
 basis_wheel_top_z = 0
 basis_wheel_bottom_z = -basis_wheel_wr * math.sin(math.pi / 3)
 
 basis_arm_e = basis_wheel_e
-basis_arm_t = 0.1
+basis_arm_t = basis_wheel_arm_t
 basis_arm_h = basis_wheel_h
 basis_arm_w = 1.2 * r
 basis_arm_p = 20
@@ -46,7 +45,7 @@ basis_arm_teeth_height = 0.2
 basis_arm_teeth_thickness = 0.8 * basis_arm_t
 
 basis_leg_e = basis_arm_e
-basis_leg_t = 2 * basis_arm_t + basis_arm_wheel_thickness + 2 * basis_arm_e
+basis_leg_t = 2 * basis_arm_t + 2 * basis_arm_e
 basis_leg_h = basis_arm_h
 basis_leg_w = basis_arm_w
 basis_leg_x = -0.5 * basis_arm_wheel_thickness
@@ -142,11 +141,10 @@ basis_wheel_mesh = basis_wheel.create_mesh(
     basis_wheel_p,
     basis_wheel_wr,
     basis_wheel_mr,
-    basis_wheel_kr,
-    basis_wheel_kw,
     basis_wheel_top_z,
     h,
-    trig_h
+    trig_h,
+    basis_wheel_arm_t,
 )
 
 basis_arm_mesh = basis_arm.create_mesh(
