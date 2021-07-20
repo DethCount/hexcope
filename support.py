@@ -29,6 +29,12 @@ fd = 0.03 # fixation hole diameter
 current_triangle_num = 0
 trig_name = 'tri'
 
+support_half_hex_e = 0.015
+support_half_hex_f = f
+support_half_hex_r = r
+support_half_hex_h = h
+support_half_hex_walls_height = trig_h
+
 support_spider_t = 0.03
 support_spider_h = 0.1
 support_spider_w = 2.0
@@ -102,8 +108,26 @@ curr_hexes = []
 hexes = prev_hexes
 
 if support_secondary_is_newton:
-    half_hex.create_object(e, f, r, h, trig_h, 0, 0, 0)
-    half_hex.create_object(e, f, r, h, trig_h, 0, 0, 3)
+    half_hex.create_object(
+        support_half_hex_e,
+        support_half_hex_f,
+        support_half_hex_r,
+        support_half_hex_h,
+        support_half_hex_walls_height,
+        0,
+        0,
+        0
+    )
+    half_hex.create_object(
+        support_half_hex_e,
+        support_half_hex_f,
+        support_half_hex_r,
+        support_half_hex_h,
+        support_half_hex_walls_height,
+        0,
+        0,
+        3
+    )
 
 for i in range(0, n + 1):
     for j in range(0, len(prev_hexes)):
@@ -114,8 +138,27 @@ for i in range(0, n + 1):
             if (x, y) in hexes or (x, y) in curr_hexes:
                 continue
 
-            half_hex.create_object(e, f, r, h, trig_h, x, y, 0)
-            half_hex.create_object(e, f, r, h, trig_h, x, y, 3)
+            half_hex.create_object(
+                support_half_hex_e,
+                support_half_hex_f,
+                support_half_hex_r,
+                support_half_hex_h,
+                support_half_hex_walls_height,
+                x,
+                y,
+                0
+            )
+
+            half_hex.create_object(
+                support_half_hex_e,
+                support_half_hex_f,
+                support_half_hex_r,
+                support_half_hex_h,
+                support_half_hex_walls_height,
+                x,
+                y,
+                3
+            )
 
             curr_hexes.append((x, y))
     prev_hexes = curr_hexes

@@ -19,7 +19,7 @@ def create_mesh(e, f, s, t, wh, x, y, z):
     mesh_name = half_hex_name + '_' + str((e, f, s, t, wh, x, y, z))
     mesh = bpy.data.meshes.new(mesh_name)
 
-    dte = 2 * e + t
+    te = t + e
 
     v0 = hex2xyz(f, s, x, y, z, 0)
     v1 = hex2xyz(f, s, x, y, z, 1)
@@ -68,11 +68,35 @@ def create_mesh(e, f, s, t, wh, x, y, z):
     i4 = (2 * t * (w34[0] - w03[0]) / n034, 2 * t * (w34[1] - w03[1]) / n034, 2 * t * (w34[2] - w03[2]) / n034)
     i5 = (2 * t * (w40[0] - w34[0]) / n340, 2 * t * (w40[1] - w34[1]) / n340, 2 * t * (w40[2] - w34[2]) / n340)
 
+    ecpi3 = e * math.cos(math.pi / 3)
+    d4x = 0.5 * (te + ecpi3)
+
     if x == 0 and y == 0:
-        v1 = ((v1[0] - dte) if z <= 0 else v1[0] + dte , v1[1], v1[2])
-        v2 = ((v2[0] - dte) if z <= 0 else v2[0] + dte, v2[1], v2[2])
-        v4 = (v4[0], (v4[1] + dte) if z <= 0 else v4[1] - dte, v4[2])
-        v5 = ((v5[0] + dte) if z <= 0 else v5[0] - dte, v5[1], v5[2])
+        v1 = (
+            (v1[0] - te - ecpi3) if z <= 0 else (v1[0] + te + ecpi3),
+            v1[1],
+            v1[2]
+        )
+        v2 = (
+            (v2[0] - te) if z <= 0 else (v2[0] + te),
+            (v2[1] - e) if z <= 0 else (v2[1] + e),
+            v2[2]
+        )
+        v3 = (
+            (v3[0] + e) if z <= 0 else (v3[0] - e),
+            (v3[1] - e) if z <= 0 else (v3[1] + e),
+            v3[2]
+        )
+        v4 = (
+            (v4[0] + te + ecpi3) if z <= 0 else (v4[0] - te - ecpi3),
+            (v4[1] + te) if z <= 0 else (v4[1] - te),
+            v4[2]
+        )
+        v5 = (
+            (v5[0] + te + ecpi3) if z <= 0 else (v5[0] - te - ecpi3),
+            v5[1],
+            v5[2]
+        )
 
         # print(str(v1), str(v2), str(v3), str(v4), str(v5))
 
