@@ -13,6 +13,7 @@ from hyperparameters import r, h, p, e, trig_h
 from optics import hex2xy
 from meshes import \
     basis_arm, \
+    basis_cap, \
     basis_foot, \
     basis_leg, \
     basis_plate_axis, \
@@ -46,7 +47,8 @@ basis_arm_teeth_height = 0.2
 basis_arm_teeth_thickness = 0.8 * basis_arm_t
 
 basis_screw_r = basis_wheel_mr - e
-basis_screw_start = 2 * basis_wheel_t + basis_wheel_arm_t + 0.03
+basis_screw_start_e = 0.03
+basis_screw_start = 2 * basis_wheel_t + basis_wheel_arm_t + basis_screw_start_e
 basis_screw_iterations = 3
 basis_screw_step_h = 0.02
 basis_screw_step_w = 0.03
@@ -55,6 +57,15 @@ basis_screw_head_h = 0.03
 basis_screw_bottom_r = basis_screw_r - 2 * basis_screw_step_h
 basis_screw_bottom_h = basis_screw_step_w
 basis_screw_p = 100
+
+basis_cap_r = basis_screw_r
+basis_cap_t = basis_screw_step_h
+basis_cap_iterations = basis_screw_iterations + 1
+basis_cap_bottom_h = basis_screw_start_e
+basis_cap_h = basis_cap_bottom_h + (basis_cap_iterations + 1) * basis_screw_step_w + basis_cap_t
+basis_cap_step_h = basis_screw_step_h
+basis_cap_step_w = basis_screw_step_w
+basis_cap_p = basis_screw_p
 
 basis_leg_e = basis_arm_e
 basis_leg_t = 2 * basis_arm_t + 2 * basis_arm_e
@@ -174,6 +185,22 @@ basis_wheel_screw_mesh = basis_screw.create_mesh(
 basis_wheel_screw_mesh.transform(
     Matrix.Translation(
         Vector((-0.5 * basis_wheel_t - 0.5 * basis_wheel_arm_t - basis_wheel_t, 0, basis_wheel_bottom_z))
+    )
+)
+
+basis_wheel_screw_cap_mesh = basis_cap.create_mesh(
+    basis_cap_r,
+    basis_cap_t,
+    basis_cap_h,
+    basis_cap_iterations,
+    basis_cap_step_h,
+    basis_cap_step_w,
+    basis_cap_bottom_h,
+    basis_cap_p
+)
+basis_wheel_screw_cap_mesh.transform(
+    Matrix.Translation(
+        Vector((0.5 * basis_wheel_arm_t + basis_wheel_t, 0, basis_wheel_bottom_z))
     )
 )
 
@@ -303,6 +330,10 @@ basis_screw_obj_r = bpy.data.objects.new('basis_screw_r', basis_wheel_screw_mesh
 basis_collection.objects.link(basis_screw_obj_r)
 move_basis_to(basis_screw_obj_r, 0)
 
+basis_cap_r = bpy.data.objects.new('basis_cap_r', basis_wheel_screw_cap_mesh)
+basis_collection.objects.link(basis_cap_r)
+move_basis_to(basis_cap_r, 0)
+
 basis_leg_r = bpy.data.objects.new('basis_leg_r', basis_leg_mesh)
 basis_collection.objects.link(basis_leg_r)
 move_basis_to(basis_leg_r, 0)
@@ -339,6 +370,10 @@ move_basis_to(basis_arm_l, 3)
 basis_screw_obj_l = bpy.data.objects.new('basis_screw_l', basis_wheel_screw_mesh)
 basis_collection.objects.link(basis_screw_obj_l)
 move_basis_to(basis_screw_obj_l, 3)
+
+basis_cap_l = bpy.data.objects.new('basis_cap_l', basis_wheel_screw_cap_mesh)
+basis_collection.objects.link(basis_cap_l)
+move_basis_to(basis_cap_l, 3)
 
 basis_leg_l = bpy.data.objects.new('basis_leg_l', basis_leg_mesh)
 basis_collection.objects.link(basis_leg_l)

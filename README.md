@@ -47,15 +47,24 @@ https://youtu.be/Q-PgjTYsAFY
 ## Printing
 (e.g: Dagoma DiscoEasy200) \
 
-- Basis: 1.215kg, 420m, 60h
+200% speed \
+0.3mm layer height \
+10% infill \
+support: touching buildplate \
+build plate adhesion type: skirt \
+skirt line count: 3 \
+skirt distance: 2mm \
+
+- Basis: 1.233kg, 442m, 65h
     - 2 x plate bottom: 96g, 33m, 3h30
     - 1 x plate axis: 205g, 70m, 7h
     - 2 x plate top: 96g, 33m, 3h30
-    - 2 x leg: 113g, 39m, 4h30
+    - 2 x leg: 113g, 39m, 4h30  (support: everywhere)
     - 4 x foot: 10g, 4m, 0h30
     - 2 x arm: 79g, 27m, 3h30
-    - 2 x wheel: 88g, 30m, 8h
-    - 2 x screw: 13g, 5m, 1h30 (0.1mm layer height)
+    - 2 x wheel: 88g, 30m, 8h (print vertically, bottom up)
+    - 2 x screw: 13g, 5m, 1h30 (0.1mm layer height, 100% speed)
+    - 2 x screw cap: 9g, 4m, 2h30  (0.1mm layer height, 100% speed)
 - Primary mirror (n=0, newton): 592g, 204m, 27h
     - 2 x center half hex: 40g, 14m, 1h30
     - 16 x half hex: 32g, 11m, 1h30
