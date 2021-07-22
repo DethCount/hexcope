@@ -1,24 +1,34 @@
 import bpy
+import bmesh
 import math
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 clip_name = 'clip'
+start_angle = math.pi / 3 + math.pi / 6
+arc_angle = 5 * math.pi / 6
+
+# 2 equilateral triangle wide basis
+# + 1 triangle row (triangle height = 0.5 * math.sqrt(3) * triangle side)
+# + almost half circles centered on next triangle row
+# + math.sin(math.pi / 2 - pi / 3) from half circles over triangle row
+def get_triangle_side_length(depth, thickness):
+    return (depth - thickness) / \
+        (3 * 0.5 * math.sqrt(3) + math.sin(math.pi / 6))
+
+def get_triangle_h(triangle_side_length):
+    return 0.5 * math.sqrt(3) * triangle_side_length
+
+def get_clip_radius(triangle_side_length):
+    return 1.0 * triangle_side_length
 
 def create_mesh(depth, thickness, height, precision):
     mesh = bpy.data.meshes.new(clip_name + str((
         depth, thickness, height, precision
     )))
 
-    # 2 equilateral triangle wide basis
-    # + 1 triangle row (triangle height = 0.5 * math.sqrt(3) * triangle side)
-    # + almost half circles centered on next triangle row
-    # + math.sin(math.pi / 2 - pi / 3) from half circles over triangle row
-    triangle_side_length = depth / \
-        (3 * math.sqrt(3) / 2 + math.sin(math.pi / 6))
+    triangle_side_length = get_triangle_side_length(depth, thickness)
+    triangle_h = get_triangle_h(triangle_side_length)
 
-    triangle_h = 0.5 * math.sqrt(3) * triangle_side_length
-    start_angle = math.pi / 3 + math.pi / 6
-    arc_angle = 5 * math.pi / 6
     hs = 0.5 * triangle_side_length
     hh = 0.5 * height
 
@@ -65,7 +75,7 @@ def create_mesh(depth, thickness, height, precision):
     c2 = (hs, 2 * triangle_h)
     nb_verts = len(vertices)
 
-    r = 0.75 * triangle_side_length
+    r = get_clip_radius(triangle_side_length)
     ro = r + thickness
     min_y = c1[1] + r * math.sin(start_angle + arc_angle)
     max_idx = None
@@ -125,8 +135,6 @@ def create_mesh(depth, thickness, height, precision):
                 (idx + 4 - nbidx, idx + 4, idx + 5, idx + 5 - nbidx),
             ])
 
-            print(str(vio[1]), str(min_y))
-
             if vio[1] > min_y:
                 edges.extend([
                     (idx + 2 - nbidx, idx + 2),
@@ -145,7 +153,6 @@ def create_mesh(depth, thickness, height, precision):
                     (idx + 7 - nbidx, idx + 7, idx + 4, idx + 4 - nbidx),
                 ])
             else:
-                print('max_idx', idx)
                 if max_idx == None:
                     max_idx = idx - nbidx
                     faces.extend([
@@ -212,3 +219,98 @@ def create_mesh(depth, thickness, height, precision):
     mesh.update()
 
     return mesh
+
+def make_hole(vec, angle, axis, depth, thickness, height, first_vert_idx):
+    triangle_side_length = get_triangle_side_length(depth, thickness)
+    triangle_h = get_triangle_h(triangle_side_length)
+
+    hs = 0.5 * triangle_side_length
+    hh = 0.5 * height
+
+    sx = hs + thickness - triangle_side_length * math.cos(start_angle + arc_angle)
+    sx2 = sx + triangle_side_length * math.cos(math.pi / 6)
+
+    y1 = -triangle_h
+    y2 = -depth
+
+    rot = Matrix.Rotation(angle, 3, axis)
+
+    vertices = [
+        vec + rot @ Vector((-sx, 0, hh)),
+        vec + rot @ Vector((-sx, 0, -hh)),
+        vec + rot @ Vector((sx, 0, -hh)),
+        vec + rot @ Vector((sx, 0, hh)),
+
+        vec + rot @ Vector((-sx, y1, hh)),
+        vec + rot @ Vector((-sx, y1, -hh)),
+        vec + rot @ Vector((sx, y1, -hh)),
+        vec + rot @ Vector((sx, y1, hh)),
+
+        vec + rot @ Vector((-sx2, y1, hh)),
+        vec + rot @ Vector((-sx2, y1, -hh)),
+        vec + rot @ Vector((sx2, y1, -hh)),
+        vec + rot @ Vector((sx2, y1, hh)),
+
+        vec + rot @ Vector((-sx2, y2, hh)),
+        vec + rot @ Vector((-sx2, y2, -hh)),
+        vec + rot @ Vector((sx2, y2, -hh)),
+        vec + rot @ Vector((sx2, y2, hh)),
+    ]
+
+    edges = [
+        (first_vert_idx, first_vert_idx + 1),
+        (first_vert_idx + 1, first_vert_idx + 2),
+        (first_vert_idx + 2, first_vert_idx + 3),
+        (first_vert_idx + 3, first_vert_idx),
+
+        (first_vert_idx + 4, first_vert_idx + 5),
+        (first_vert_idx + 5, first_vert_idx + 6),
+        (first_vert_idx + 6, first_vert_idx + 7),
+        (first_vert_idx + 7, first_vert_idx + 4),
+
+        (first_vert_idx + 8, first_vert_idx + 9),
+        (first_vert_idx + 9, first_vert_idx + 10),
+        (first_vert_idx + 10, first_vert_idx + 11),
+        (first_vert_idx + 11, first_vert_idx + 8),
+
+        (first_vert_idx + 12, first_vert_idx + 13),
+        (first_vert_idx + 13, first_vert_idx + 14),
+        (first_vert_idx + 14, first_vert_idx + 15),
+        (first_vert_idx + 15, first_vert_idx + 12),
+
+        (first_vert_idx, first_vert_idx + 4),
+        (first_vert_idx + 1, first_vert_idx + 5),
+        (first_vert_idx + 2, first_vert_idx + 6),
+        (first_vert_idx + 3, first_vert_idx + 7),
+
+        (first_vert_idx + 4, first_vert_idx + 8),
+        (first_vert_idx + 5, first_vert_idx + 9),
+        (first_vert_idx + 6, first_vert_idx + 10),
+        (first_vert_idx + 7, first_vert_idx + 11),
+
+        (first_vert_idx + 8, first_vert_idx + 12),
+        (first_vert_idx + 9, first_vert_idx + 13),
+        (first_vert_idx + 10, first_vert_idx + 14),
+        (first_vert_idx + 11, first_vert_idx + 15),
+    ]
+
+    faces = [
+        (first_vert_idx, first_vert_idx + 4, first_vert_idx + 5, first_vert_idx + 1),
+        (first_vert_idx + 1, first_vert_idx + 5, first_vert_idx + 6, first_vert_idx + 2),
+        (first_vert_idx + 2, first_vert_idx + 6, first_vert_idx + 7, first_vert_idx + 3),
+        (first_vert_idx + 3, first_vert_idx + 7, first_vert_idx + 4, first_vert_idx),
+
+        (first_vert_idx + 4, first_vert_idx + 8, first_vert_idx + 9, first_vert_idx + 5),
+        (first_vert_idx + 5, first_vert_idx + 9, first_vert_idx + 10, first_vert_idx + 6),
+        (first_vert_idx + 6, first_vert_idx + 10, first_vert_idx + 11, first_vert_idx + 7),
+        (first_vert_idx + 7, first_vert_idx + 11, first_vert_idx + 8, first_vert_idx + 4),
+
+        (first_vert_idx + 8, first_vert_idx + 12, first_vert_idx + 13, first_vert_idx + 9),
+        (first_vert_idx + 9, first_vert_idx + 13, first_vert_idx + 14, first_vert_idx + 10),
+        (first_vert_idx + 10, first_vert_idx + 14, first_vert_idx + 15, first_vert_idx + 11),
+        (first_vert_idx + 11, first_vert_idx + 15, first_vert_idx + 12, first_vert_idx + 8),
+
+        (first_vert_idx + 12, first_vert_idx + 13, first_vert_idx + 14, first_vert_idx + 15),
+    ]
+
+    return [vertices, edges, faces, vertices[0:4]]

@@ -34,6 +34,10 @@ support_half_hex_f = f
 support_half_hex_r = r
 support_half_hex_h = h
 support_half_hex_walls_height = trig_h
+support_half_hex_clip_depth = support_half_hex_h - 0.02
+support_half_hex_clip_height = 0.5 * support_half_hex_walls_height
+support_half_hex_clip_thickness = 0.015
+support_half_hex_clip_precision = 25
 
 support_spider_t = 0.03
 support_spider_h = 0.1
@@ -116,7 +120,11 @@ if support_secondary_is_newton:
         support_half_hex_walls_height,
         0,
         0,
-        0
+        0,
+        support_half_hex_clip_depth,
+        support_half_hex_clip_height,
+        support_half_hex_clip_thickness,
+        support_half_hex_clip_precision
     )
     half_hex.create_object(
         support_half_hex_e,
@@ -126,7 +134,11 @@ if support_secondary_is_newton:
         support_half_hex_walls_height,
         0,
         0,
-        3
+        3,
+        support_half_hex_clip_depth,
+        support_half_hex_clip_height,
+        support_half_hex_clip_thickness,
+        support_half_hex_clip_precision
     )
 
 for i in range(0, n + 1):
@@ -146,7 +158,11 @@ for i in range(0, n + 1):
                 support_half_hex_walls_height,
                 x,
                 y,
-                0
+                0,
+                support_half_hex_clip_depth,
+                support_half_hex_clip_height,
+                support_half_hex_clip_thickness,
+                support_half_hex_clip_precision
             )
 
             half_hex.create_object(
@@ -157,7 +173,11 @@ for i in range(0, n + 1):
                 support_half_hex_walls_height,
                 x,
                 y,
-                3
+                3,
+                support_half_hex_clip_depth,
+                support_half_hex_clip_height,
+                support_half_hex_clip_thickness,
+                support_half_hex_clip_precision
             )
 
             curr_hexes.append((x, y))
