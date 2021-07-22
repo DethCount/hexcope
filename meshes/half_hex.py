@@ -1,8 +1,10 @@
 import bpy
+import bmesh
 import math
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 from optics import hex2xyz
+from meshes import clip
 
 half_hex_name = 'half_hex'
 half_hex_num = 0
@@ -18,6 +20,8 @@ half_hex_num = 0
 def create_mesh(e, f, s, t, wh, x, y, z):
     mesh_name = half_hex_name + '_' + str((e, f, s, t, wh, x, y, z))
     mesh = bpy.data.meshes.new(mesh_name)
+
+    hwh = 0.5 * wh
 
     te = t + e
 
@@ -231,6 +235,127 @@ def create_mesh(e, f, s, t, wh, x, y, z):
 
     mesh.from_pydata(vertices, edges, faces)
     mesh.update()
+
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+
+    if x != 0 or y != 0:
+        clip_depth = t - 0.02
+        clip_h = 0.5 * wh
+        clip_t = 0.015
+        clip_p = 25
+        clip_mesh = clip.create_mesh(clip_depth, clip_t, clip_h, clip_p)
+        if z <= 0:
+            alpha = -math.pi / 3
+            tv = Vector((
+                v1[0] + v12[0] * 0.25 * s,
+                v1[1] + v12[1] * 0.25 * s,
+                v1[2] + v12[2] * 0.25 * s - hwh
+            ))
+
+            clip_mesh.transform(Matrix.Rotation(alpha, 4, 'Z'))
+            clip_mesh.transform(Matrix.Translation(tv))
+
+            bm.from_mesh(clip_mesh)
+
+            tv2 = Vector((
+                v12[0] * 0.5 * s,
+                v12[1] * 0.5 * s,
+                v12[2] * 0.5 * s
+            ))
+
+            clip_mesh.transform(Matrix.Translation(tv2))
+
+            bm.from_mesh(clip_mesh)
+
+            beta = math.pi / 3
+            tv3 = Vector((
+                v3[0] + v34[0] * 0.25 * s,
+                v3[1] + v34[1] * 0.25 * s,
+                v3[2] + v34[2] * 0.25 * s - hwh
+            ))
+
+            ri = Matrix.Rotation(-alpha, 4, 'Z')
+            ti = Matrix.Translation(-tv - tv2)
+
+            clip_mesh.transform(ti)
+            clip_mesh.transform(ri)
+
+            clip_mesh.transform(Matrix.Rotation(beta, 4, 'Z'))
+            clip_mesh.transform(Matrix.Translation(tv3))
+
+            bm.from_mesh(clip_mesh)
+
+            tv4 = Vector((
+                v34[0] * 0.5 * s,
+                v34[1] * 0.5 * s,
+                v34[2] * 0.5 * s
+            ))
+
+            clip_mesh.transform(Matrix.Translation(tv4))
+
+            bm.from_mesh(clip_mesh)
+
+
+            ri = Matrix.Rotation(-beta, 4, 'Z')
+            ti = Matrix.Translation(-tv3 - tv4)
+
+            clip_mesh.transform(ti)
+            clip_mesh.transform(ri)
+        else:
+            alpha = math.pi
+            tv = Vector((
+                v2[0] + v23[0] * 0.25 * s,
+                v2[1] + v23[1] * 0.25 * s,
+                v2[2] + v23[2] * 0.25 * s - hwh
+            ))
+
+            clip_mesh.transform(Matrix.Rotation(alpha, 4, 'Z'))
+            clip_mesh.transform(Matrix.Translation(tv))
+
+            bm.from_mesh(clip_mesh)
+
+            tv2 = Vector((
+                v23[0] * 0.5 * s,
+                v23[1] * 0.5 * s,
+                v23[2] * 0.5 * s
+            ))
+
+            clip_mesh.transform(Matrix.Translation(tv2))
+
+            bm.from_mesh(clip_mesh)
+
+            ri = Matrix.Rotation(-alpha, 4, 'Z')
+            ti = Matrix.Translation(-tv - tv2)
+
+            clip_mesh.transform(ti)
+            clip_mesh.transform(ri)
+
+        gamma = math.pi if z <= 0 else 0
+        tv5 = Vector((
+            v4[0] + v40[0] * 0.25 * s,
+            v4[1] + v40[1] * 0.25 * s,
+            v4[2] + v40[2] * 0.25 * s - hwh
+        ))
+
+        clip_mesh.transform(Matrix.Rotation(gamma, 4, 'Z'))
+        clip_mesh.transform(Matrix.Translation(tv5))
+
+        bm.from_mesh(clip_mesh)
+
+        tv6 = Vector((
+            v40[0] * 0.5 * s,
+            v40[1] * 0.5 * s,
+            v40[2] * 0.5 * s
+        ))
+
+        clip_mesh.transform(Matrix.Translation(tv6))
+
+        bm.from_mesh(clip_mesh)
+
+    mesh = bpy.data.meshes.new(mesh_name)
+    bm.to_mesh(mesh)
+    bm.free()
 
     return mesh
 
