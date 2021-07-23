@@ -60,13 +60,13 @@ def create_mesh(depth, thickness, height, precision):
         (15, 16), (18, 19),
 
         (0, 5), (4, 9),
-        (5, 10), (9, 14),
-        (10, 15), (14, 19),
-        (15, 0), (19, 4),
+        (5, 15), (9, 19),
+        (15, 10), (19, 14),
+        (10, 0), (14, 4),
     ]
     faces = [
-        (0, 5, 10, 15),
-        (4, 9, 14, 19),
+        (0, 5, 15, 10),
+        (4, 9, 19, 14),
         (0, 1, 11, 10), (10, 11, 16, 15), (15, 16, 6, 5), (5, 6, 1, 0),
         (3, 4, 14, 13), (13, 14, 19, 18), (18, 19, 9, 8), (8, 9, 4, 3),
     ]
@@ -132,7 +132,7 @@ def create_mesh(depth, thickness, height, precision):
 
             faces.extend([
                 (idx - nbidx, idx, idx + 1, idx + 1 - nbidx),
-                (idx + 4 - nbidx, idx + 4, idx + 5, idx + 5 - nbidx),
+                (idx + 4, idx + 4 - nbidx, idx + 5 - nbidx, idx + 5),
             ])
 
             if vio[1] > min_y:
@@ -148,24 +148,24 @@ def create_mesh(depth, thickness, height, precision):
                     (idx + 2 - nbidx, idx + 2, idx + 3, idx + 3 - nbidx),
                     (idx + 3 - nbidx, idx + 3, idx, idx - nbidx),
 
-                    (idx + 5 - nbidx, idx + 5, idx + 6, idx + 6 - nbidx),
-                    (idx + 6 - nbidx, idx + 6, idx + 7, idx + 7 - nbidx),
-                    (idx + 7 - nbidx, idx + 7, idx + 4, idx + 4 - nbidx),
+                    (idx + 5, idx + 5 - nbidx, idx + 6 - nbidx, idx + 6),
+                    (idx + 6, idx + 6 - nbidx, idx + 7 - nbidx, idx + 7),
+                    (idx + 7, idx + 7 - nbidx, idx + 4 - nbidx, idx + 4),
                 ])
             else:
                 if max_idx == None:
                     max_idx = idx - nbidx
                     faces.extend([
-                        (idx, idx + 1, max_idx + 3, max_idx + 2),
-                        (idx + 4, idx + 5, max_idx + 7, max_idx + 6),
+                        #(idx, idx + 1, max_idx + 3, max_idx + 2),
+                        #(idx + 4, idx + 5, max_idx + 7, max_idx + 6),
                     ])
 
                 faces.extend([
                     (idx + 1 - nbidx, idx + 1, max_idx + 2, max_idx + 2 - nbidx),
                     (max_idx + 3 - nbidx, max_idx + 3, idx, idx - nbidx),
 
-                    (idx + 5 - nbidx, idx + 5, max_idx + 6, max_idx + 6 - nbidx),
-                    (max_idx + 7 - nbidx, max_idx + 7, idx + 4, idx + 4 - nbidx),
+                    (idx + 5, idx + 5 - nbidx, max_idx + 6 - nbidx, max_idx + 6),
+                    (max_idx + 7, max_idx + 7 - nbidx, idx + 4 - nbidx, idx + 4),
                 ])
 
             if i == precision and max_idx != None:
@@ -193,7 +193,7 @@ def create_mesh(depth, thickness, height, precision):
 
                 faces.extend([
                     (idx, 1, 11, max_idx + 3),
-                    (max_idx + 3, 11, 16, max_idx + 2),
+                    (11, max_idx + 3, max_idx + 2, 16),
                     (max_idx + 2, 16, 6, idx + 1),
                     (idx + 1, 6, 1, idx),
 
@@ -202,10 +202,10 @@ def create_mesh(depth, thickness, height, precision):
                     (max_idx + 6, 18, 8, idx + 5),
                     (idx + 5, 8, 3, idx + 4),
 
-                    (nb_verts, 2, 7, nb_verts + 1),
-                    (nb_verts + 1, 7, 17, nb_verts + 2),
-                    (nb_verts + 2, 17, 12, nb_verts + 3),
-                    (nb_verts + 3, 12, 2, nb_verts),
+                    (2, nb_verts, nb_verts + 1, 7),
+                    (7, nb_verts + 1, nb_verts + 2, 17),
+                    (17, nb_verts + 2, nb_verts + 3, 12),
+                    (12, nb_verts + 3, nb_verts, 2),
 
                     (nb_verts + 4, 2, 7, nb_verts + 5),
                     (nb_verts + 5, 7, 17, nb_verts + 6),
@@ -310,7 +310,7 @@ def make_hole(vec, angle, axis, depth, thickness, height, first_vert_idx):
         (first_vert_idx + 10, first_vert_idx + 14, first_vert_idx + 15, first_vert_idx + 11),
         (first_vert_idx + 11, first_vert_idx + 15, first_vert_idx + 12, first_vert_idx + 8),
 
-        (first_vert_idx + 12, first_vert_idx + 13, first_vert_idx + 14, first_vert_idx + 15),
+        (first_vert_idx + 13, first_vert_idx + 12, first_vert_idx + 15, first_vert_idx + 14),
     ]
 
     return [vertices, edges, faces, vertices[0:4]]

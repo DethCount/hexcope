@@ -2,7 +2,7 @@ import os
 import sys
 import bpy
 import math
-from mathutils import Euler
+from mathutils import Euler, Matrix
 
 sys.dont_write_bytecode = 1
 dir = os.path.dirname(bpy.data.filepath)
@@ -31,10 +31,11 @@ trig_name = 'tri'
 
 support_half_hex_e = 0.015
 support_half_hex_f = f
-support_half_hex_r = r
-support_half_hex_h = h
+support_half_hex_s = r
+support_half_hex_t = h
+support_half_hex_it = 0.25 * support_half_hex_t
 support_half_hex_walls_height = trig_h
-support_half_hex_clip_depth = support_half_hex_h - 0.02
+support_half_hex_clip_depth = support_half_hex_t - 0.02
 support_half_hex_clip_height = 0.5 * support_half_hex_walls_height
 support_half_hex_clip_thickness = 0.015
 support_half_hex_clip_precision = 25
@@ -72,7 +73,7 @@ support_arm_t = 0.03
 support_arm_h = 2
 support_arm_rp = 25
 support_arm_hp = 18
-support_arm_n = 3
+support_arm_n = 6
 support_arm_omega = 0
 support_arm_margin = 0.25 * r
 support_arm_points = get_support_arm_points(n, r, support_arm_margin, support_arm_n, support_arm_omega)
@@ -87,8 +88,10 @@ support_arm_block_n = n
 support_arm_block_r = r
 support_arm_block_t = h
 support_arm_block_m = support_arm_margin
+support_arm_block_wl = 0.17
 support_arm_block_p = p
-support_arm_block_hex_thickness = h
+support_arm_block_hex_thickness = support_half_hex_t
+support_arm_block_hex_interior_thickness = support_half_hex_it
 support_arm_block_hex_walls_height = trig_h
 support_arm_block_hex_primary_thickness = primary_t
 support_arm_block_arm_radius = support_arm_r
@@ -115,8 +118,9 @@ if support_secondary_is_newton:
     half_hex.create_object(
         support_half_hex_e,
         support_half_hex_f,
-        support_half_hex_r,
-        support_half_hex_h,
+        support_half_hex_s,
+        support_half_hex_t,
+        support_half_hex_it,
         support_half_hex_walls_height,
         0,
         0,
@@ -129,8 +133,9 @@ if support_secondary_is_newton:
     half_hex.create_object(
         support_half_hex_e,
         support_half_hex_f,
-        support_half_hex_r,
-        support_half_hex_h,
+        support_half_hex_s,
+        support_half_hex_t,
+        support_half_hex_it,
         support_half_hex_walls_height,
         0,
         0,
@@ -153,8 +158,9 @@ for i in range(0, n + 1):
             half_hex.create_object(
                 support_half_hex_e,
                 support_half_hex_f,
-                support_half_hex_r,
-                support_half_hex_h,
+                support_half_hex_s,
+                support_half_hex_t,
+                support_half_hex_it,
                 support_half_hex_walls_height,
                 x,
                 y,
@@ -168,8 +174,9 @@ for i in range(0, n + 1):
             half_hex.create_object(
                 support_half_hex_e,
                 support_half_hex_f,
-                support_half_hex_r,
-                support_half_hex_h,
+                support_half_hex_s,
+                support_half_hex_t,
+                support_half_hex_it,
                 support_half_hex_walls_height,
                 x,
                 y,
@@ -232,11 +239,24 @@ arm_block_mesh = support_arm_block.create_mesh(
     support_arm_block_r,
     support_arm_block_t,
     support_arm_block_m,
+    support_arm_block_wl,
     support_arm_block_p,
     support_arm_block_hex_thickness,
+    support_arm_block_hex_interior_thickness,
     support_arm_block_hex_walls_height,
     support_arm_block_hex_primary_thickness,
     support_arm_block_arm_radius
+)
+arm_block_mesh.transform(
+    Matrix.Translation(
+        (0, 0,
+            -hex2xyz(
+                support_arm_block_f,
+                support_arm_block_r,
+                0, 0, 0, 0
+            )[2]
+        )
+    )
 )
 
 arm_head_mesh = support_arm_head.create_mesh(

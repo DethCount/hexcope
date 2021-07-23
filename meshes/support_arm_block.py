@@ -7,36 +7,49 @@ from optics import get_support_arm_point, hex2xy, hex2xyz
 support_arm_block_name = 'support_arm_block'
 
 # todo: thicker nose part
+# wl : wing length: v4 distance from v3 along v35
 def create_mesh(
-    e, f, n, r, t, m, p,
-    hex_thickness, hex_walls_height,
+    e, f, n, r, t, m, wl, p,
+    hex_thickness, hex_interior_thickness, hex_walls_height,
     primary_thickness,
     arm_radius
 ):
     mesh = bpy.data.meshes.new(
         support_arm_block_name
         + '_' + str((
-            e, f, n, r, t, m, p,
-            hex_thickness, hex_walls_height,
+            e, f, n, r, t, m, wl, p,
+            hex_thickness, hex_interior_thickness, hex_walls_height,
             primary_thickness,
             arm_radius
         ))
     )
 
     arm_points = get_support_arm_point(n, r, m, 0)
-    ch = 0.2
+
+    fit = hex_thickness + hex_interior_thickness
 
     if n % 2 == 0:
-        p2 = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 5, 1))
+        p2 = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 4, 2))
         p3 = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 0, 1))
         p5 = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 0, 2))
+
+        p2o = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 4, 1))
+        p3o = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 0, 0))
     else:
         p2 = Vector(hex2xyz(f, r, math.ceil(0.5 * n), 0, 0, 1))
-        p3 = Vector(hex2xyz(f, r, math.ceil(0.5 * n), 0, 5, 1))
-        p5 = Vector(hex2xyz(f, r, math.ceil(0.5 * n) + 1, -2, 0, 1))
+        p3 = Vector(hex2xyz(f, r, math.ceil(0.5 * n), 0, 1, 1))
+        p5 = Vector(hex2xyz(f, r, math.ceil(0.5 * n) - 1, 2, 0, 1))
 
+        p2o = Vector(hex2xyz(f, r, math.ceil(0.5 * n), 0, 0, 0))
+        p3o = Vector(hex2xyz(f, r, math.ceil(0.5 * n), 0, 1, 2))
+
+    v2on = (p2o - p2).normalized()
+    v3on = (p3o - p3).normalized()
     v35n = (p5 - p3).normalized()
-    p4 = p3 + v35n * ch
+    v1on = Vector((v3on.x, -v3on.y, v3on.z))
+    v0on = v1on
+    v4on = v3on
+    p4 = p3 + v35n * wl
 
     outer_r = max(
         p2.x + m,
@@ -45,16 +58,23 @@ def create_mesh(
     max_angle = math.asin(p4.y / outer_r)
     arc_string_x = outer_r * math.cos(max_angle)
 
-    hex_total_thickness = hex_thickness + hex_walls_height + t
+    hex_total_thickness = hex_thickness + hex_walls_height + primary_thickness
+    z_displacement = -(hex_total_thickness - primary_thickness)
 
-    v0 = Vector((p4.x, -p4.y, p4.z - hex_total_thickness))
-    v1 = Vector((p3.x, -p3.y, p3.z - hex_total_thickness))
-    v2 = Vector((p2.x, p2.y, p2.z - hex_total_thickness))
-    v3 = Vector((p3.x, p3.y, p3.z - hex_total_thickness))
-    v4 = Vector((p4.x, p4.y, p4.z - hex_total_thickness))
+    v0 = Vector((p4.x, -p4.y, p4.z + z_displacement))
+    v1 = Vector((p3.x, -p3.y, p3.z + z_displacement))
+    v2 = Vector((p2.x, p2.y, p2.z + z_displacement))
+    v3 = Vector((p3.x, p3.y, p3.z + z_displacement))
+    v4 = Vector((p4.x, p4.y, p4.z + z_displacement))
+
+    v0o = v0 + v0on * fit
+    v1o = v1 + v1on * fit
+    v2o = v2 + v2on * fit
+    v3o = v3 + v3on * fit
+    v4o = v4 + v4on * fit
 
     h0 = t
-    h1 = h0 + hex_thickness + hex_walls_height + primary_thickness
+    h1 = h0 + hex_total_thickness
     h2 = h1 + t
     h3 = min(v2.z, v3.z, v4.z)
     h4 = max(v2.z, v3.z, v4.z) + h2
@@ -90,32 +110,32 @@ def create_mesh(
         (v4.x, v4.y, h4),
 
         # 20
-        (v0.x - 2 * hex_thickness, v0.y, h3),
-        (v0.x - 2 * hex_thickness, v0.y, v0.z + h0),
-        (v0.x - 2 * hex_thickness, v0.y, v0.z + h1),
-        (v0.x - 2 * hex_thickness, v0.y, h4),
+        (v0o.x, v0o.y, v0o.z),
+        (v0o.x, v0o.y, v0o.z + h0),
+        (v0o.x, v0o.y, v0o.z + h1),
+        (v0o.x, v0o.y, v0o.z + h2),
 
-        (v1.x - 2 * hex_thickness, v1.y, h3),
-        (v1.x - 2 * hex_thickness, v1.y, v1.z + h0),
-        (v1.x - 2 * hex_thickness, v1.y, v1.z + h1),
-        (v1.x - 2 * hex_thickness, v1.y, h4),
+        (v1o.x, v1o.y, v1o.z),
+        (v1o.x, v1o.y, v1o.z + h0),
+        (v1o.x, v1o.y, v1o.z + h1),
+        (v1o.x, v1o.y, v1o.z + h2),
 
         # 28
-        (v2.x - 2 * hex_thickness, v2.y, h3),
-        (v2.x - 2 * hex_thickness, v2.y, v2.z + h0),
-        (v2.x - 2 * hex_thickness, v2.y, v2.z + h1),
-        (v2.x - 2 * hex_thickness, v2.y, h4),
+        (v2o.x, v2o.y, v2o.z),
+        (v2o.x, v2o.y, v2o.z + h0),
+        (v2o.x, v2o.y, v2o.z + h1),
+        (v2o.x, v2o.y, v2o.z + h2),
 
-        (v3.x - 2 * hex_thickness, v3.y, h3),
-        (v3.x - 2 * hex_thickness, v3.y, v3.z + h0),
-        (v3.x - 2 * hex_thickness, v3.y, v3.z + h1),
-        (v3.x - 2 * hex_thickness, v3.y, h4),
+        (v3o.x, v3o.y, v3o.z),
+        (v3o.x, v3o.y, v3o.z + h0),
+        (v3o.x, v3o.y, v3o.z + h1),
+        (v3o.x, v3o.y, v3o.z + h2),
 
         # 36
-        (v4.x - 2 * hex_thickness, v4.y, h3),
-        (v4.x - 2 * hex_thickness, v4.y, v4.z + h0),
-        (v4.x - 2 * hex_thickness, v4.y, v4.z + h1),
-        (v4.x - 2 * hex_thickness, v4.y, h4),
+        (v4o.x, v4o.y, v4o.z),
+        (v4o.x, v4o.y, v4o.z + h0),
+        (v4o.x, v4o.y, v4o.z + h1),
+        (v4o.x, v4o.y, v4o.z + h2),
 
         # 40
         (arm_points[0][0] - ar, arm_points[0][1] - ar, h3),
@@ -159,6 +179,17 @@ def create_mesh(
 
         (arm_points[1][0] + ar, arm_points[1][1] - m, h3),
         (arm_points[1][0] + ar, arm_points[1][1] - m, h4),
+
+        # 66
+        (v2.x + hex_thickness, v2.y, h3),
+        (v2.x + hex_thickness, v2.y, h4),
+
+        # 68
+        (arm_points[0][0] - ar + hex_thickness, arm_points[0][1] + m, h3),
+        (arm_points[0][0] - ar + hex_thickness, arm_points[0][1] + m, h4),
+
+        (arm_points[1][0] - ar + hex_thickness, arm_points[1][1] - m, h3),
+        (arm_points[1][0] - ar + hex_thickness, arm_points[1][1] - m, h4),
     ]
 
     edges = [
@@ -211,28 +242,19 @@ def create_mesh(
         (12, 48, 62),
         (49, 15, 63),
 
-        (8, 58, 4),
-        (7, 59, 11),
-
-        (8, 12, 62),
-        (15, 11, 63),
-
-        (58, 59, 61, 60),
         (46, 42, 58, 60), (43, 47, 61, 59),
-
-        (63, 62, 64, 65),
         (48, 52, 64, 62), (53, 49, 63, 65),
+
+        (59, 58, 66, 67),
+        (62, 63, 67, 66),
+
+        (60, 61, 57, 56),
+        (65, 64, 56, 57),
 
         (46, 60, 56),
         (47, 57, 61),
         (52, 56, 64),
         (53, 65, 57),
-
-        (60, 61, 57, 56),
-        (65, 64, 56, 57),
-
-        (59, 58, 8, 11),
-        (62, 63, 11, 8),
     ]
 
     nb_verts = len(vertices)
@@ -347,9 +369,18 @@ def create_mesh(
 
     if n % 2 == 0:
         faces.extend([
+            (66, 58, 4, 8),
+            (7, 59, 67, 11),
+
+            (8, 12, 62, 66),
+            (15, 11, 67, 63),
+
+            (58, 59, 61, 60),
+            (63, 62, 64, 65),
+
             (ltv, 47, 45),
             (lbv, 44, 46),
-            (rtv, 53, 55),
+            (rtv, 55, 53),
             (rbv, 52, 54),
             (ltv, 57, 47),
             (rtv, 53, 57),
@@ -358,10 +389,22 @@ def create_mesh(
         ])
     else:
         faces.extend([
-            (45, ltv, 11, 47),
-            (rtv, 55, 53, 11),
-            (lbv, 44, 46, 8),
-            (54, rbv, 8, 52),
+            (8, 66, 68, 58),
+            (67, 11, 59, 69),
+
+            (66, 8, 62, 70),
+            (11, 67, 71, 63),
+
+            (66, 67, 69, 68),
+            (67, 66, 70, 71),
+
+            (61, 60, 68, 69),
+            (64, 65, 71, 70),
+
+            (45, ltv, 57, 47),
+            (rtv, 55, 53, 57),
+            (lbv, 44, 46, 56),
+            (54, rbv, 56, 52),
         ])
 
     mesh.from_pydata(vertices, edges, faces)
