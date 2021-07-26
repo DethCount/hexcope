@@ -78,7 +78,7 @@ Skirt distance: 2mm \
     - 42 x arm: 21g, 8m, 1h
     - 3 x arm head: 35g, 12m, 1h30
     - 3 x spider arms: unknown
-- Secondary mirror: unknown
+- Secondary mirror (f=16, arm_n=3, newton): 217g, 74m, 13h (disable support)
 - Eyepiece support: unknown
 
 ## Current prototype state

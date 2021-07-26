@@ -111,13 +111,13 @@ def create_mesh(
 
             if alpha < pi6:
                 faces.extend([
-                    (6, stv - nbidx, stv),
-                    (7, sbv, sbv - nbidx),
+                    (6, stv, stv - nbidx),
+                    (7, sbv - nbidx, sbv),
                 ])
             elif alpha >= 5 * pi6:
                 faces.extend([
-                    (8, stv - nbidx, stv),
-                    (9, sbv, sbv - nbidx),
+                    (8, stv, stv - nbidx),
+                    (9, sbv - nbidx, sbv),
                 ])
 
     nb_verts2 = len(vertices)

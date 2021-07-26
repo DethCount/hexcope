@@ -154,4 +154,7 @@ def create_mesh(
     mesh.from_pydata(vertices, edges, faces)
     mesh.update()
 
+    if yscale < 0:
+        mesh.flip_normals()
+
     return mesh

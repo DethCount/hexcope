@@ -85,8 +85,8 @@ def create_mesh(t, rx, ry, rp):
                 (1, brv, blv),
                 (trv, rrv, rlv, tlv),
                 (rrv, ritrv, ritlv, rlv),
-                (ritrv, ritlv, riblv, ribrv),
-                (0, ribrv, riblv),
+                (ritlv, ritrv, ribrv, riblv),
+                (0, riblv, ribrv),
             ])
 
     mesh.from_pydata(vertices, edges, faces)

@@ -120,16 +120,16 @@ def create_mesh(
 
             faces.extend([
                 (lllv - nbidx, lllv, lslv, lslv - nbidx),
-                (llrv - nbidx, llrv, lsrv, lsrv - nbidx),
+                (llrv, llrv - nbidx, lsrv - nbidx, lsrv),
 
-                (rllv - nbidx, rllv, rslv, rslv - nbidx),
+                (rllv, rllv - nbidx, rslv - nbidx, rslv),
                 (rlrv - nbidx, rlrv, rsrv, rsrv - nbidx),
 
                 (lllv, lllv - nbidx, rllv - nbidx, rllv),
                 (llrv - nbidx, llrv, rlrv, rlrv - nbidx),
 
-                (lslv, lslv - nbidx, rslv - nbidx, rslv),
-                (lsrv - nbidx, lsrv, rsrv, rsrv - nbidx),
+                (lslv - nbidx, lslv, rslv, rslv - nbidx),
+                (lsrv, lsrv - nbidx, rsrv - nbidx, rsrv),
             ])
 
     nb_verts = len(vertices)
@@ -154,12 +154,12 @@ def create_mesh(
     ])
 
     faces.extend([
-        (lllv, nb_verts, nb_verts + 2, rllv),
+        (nb_verts, lllv, rllv, nb_verts + 2),
         (llrv, nb_verts + 1, nb_verts + 3, rlrv),
-        (lllv, lslv, nb_verts),
+        (lslv, lllv, nb_verts),
         (llrv, lsrv, nb_verts + 1),
         (rllv, rslv, nb_verts + 2),
-        (rlrv, rsrv, nb_verts + 3),
+        (rsrv, rlrv, nb_verts + 3),
     ])
 
     nb_verts2 = len(vertices)
@@ -198,18 +198,18 @@ def create_mesh(
         if i > 0:
             faces.extend([
                 (llv - nbidx, llv, rlv, rlv - nbidx),
-                (lrv - nbidx, lrv, rrv, rrv - nbidx),
+                (lrv, lrv - nbidx, rrv - nbidx, rrv),
 
-                (llv - nbidx, llv, nb_verts),
+                (llv, llv - nbidx, nb_verts),
                 (lrv - nbidx, lrv, nb_verts + 1),
 
                 (rlv - nbidx, rlv, nb_verts + 2),
-                (rrv - nbidx, rrv, nb_verts + 3),
+                (rrv, rrv - nbidx, nb_verts + 3),
             ])
 
     faces.extend([
         (nb_verts, nb_verts + 1, llv),
-        (nb_verts + 2, nb_verts + 3, rlv),
+        (nb_verts + 3, nb_verts + 2, rlv),
     ])
 
     nb_verts3 = len(vertices)
@@ -246,14 +246,14 @@ def create_mesh(
     ])
 
     faces.extend([
-        (nb_verts, nb_verts3, nb_verts3 + 2, nb_verts + 2),
+        (nb_verts3, nb_verts, nb_verts + 2, nb_verts3 + 2),
         (nb_verts + 1, nb_verts3 + 1, nb_verts3 + 3, nb_verts + 3),
         (nb_verts, nb_verts3, nb_verts3 + 1, nb_verts + 1),
-        (nb_verts + 2, nb_verts3 + 2, nb_verts3 + 3, nb_verts + 3),
+        (nb_verts3 + 2, nb_verts + 2, nb_verts + 3, nb_verts3 + 3),
 
-        (nb_verts3, nb_verts3 + 4, nb_verts3 + 6, nb_verts3 + 2),
+        (nb_verts3 + 4, nb_verts3, nb_verts3 + 2, nb_verts3 + 6),
         (nb_verts3 + 1, nb_verts3 + 5, nb_verts3 + 7, nb_verts3 + 3),
-        (nb_verts3, nb_verts3 + 1, nb_verts3 + 5, nb_verts3 + 4),
+        (nb_verts3 + 1, nb_verts3, nb_verts3 + 4, nb_verts3 + 5),
         (nb_verts3 + 2, nb_verts3 + 3, nb_verts3 + 7, nb_verts3 + 6),
     ])
 
@@ -308,22 +308,21 @@ def create_mesh(
 
     faces.extend([
         (nb_verts3 + 4, nb_verts4, nb_verts4 + 1, nb_verts3 + 5),
-        (nb_verts3 + 6, nb_verts4 + 2, nb_verts4 + 3, nb_verts3 + 7),
-        (nb_verts3 + 4, nb_verts4, nb_verts4 + 2, nb_verts3 + 6),
+        (nb_verts4 + 2, nb_verts3 + 6, nb_verts3 + 7, nb_verts4 + 3),
+        (nb_verts4, nb_verts3 + 4, nb_verts3 + 6, nb_verts4 + 2),
         (nb_verts3 + 5, nb_verts4 + 1, nb_verts4 + 3, nb_verts3 + 7),
 
-        (nb_verts4, nb_verts4 + 1, nb_verts4 + 5, nb_verts4 + 4),
+        (nb_verts4 + 1, nb_verts4, nb_verts4 + 4, nb_verts4 + 5),
         (nb_verts4 + 2, nb_verts4 + 3, nb_verts4 + 7, nb_verts4 + 6),
-
-        (nb_verts4 + 1, nb_verts4 + 3, nb_verts4 + 7, nb_verts4 + 5),
+        (nb_verts4 + 3, nb_verts4 + 1, nb_verts4 + 5, nb_verts4 + 7),
         (nb_verts4, nb_verts4 + 2, nb_verts4 + 6, nb_verts4 + 4),
 
-        (nb_verts4 + 4, nb_verts4 + 5, nb_verts4 + 9, nb_verts4 + 8),
-        (nb_verts4 + 5, nb_verts4 + 7, nb_verts4 + 11, nb_verts4 + 9),
+        (nb_verts4 + 5, nb_verts4 + 4, nb_verts4 + 8, nb_verts4 + 9),
+        (nb_verts4 + 7, nb_verts4 + 5, nb_verts4 + 9, nb_verts4 + 11),
         (nb_verts4 + 7, nb_verts4 + 11, nb_verts4 + 10, nb_verts4 + 6),
-        (nb_verts4 + 8, nb_verts4 + 10, nb_verts4 + 6, nb_verts4 + 4),
+        (nb_verts4 + 10, nb_verts4 + 8, nb_verts4 + 4, nb_verts4 + 6),
 
-        (nb_verts4 + 8, nb_verts4 + 9, nb_verts4 + 11, nb_verts4 + 10),
+        (nb_verts4 + 9, nb_verts4 + 8, nb_verts4 + 10, nb_verts4 + 11),
     ])
 
     mesh.from_pydata(vertices, edges, faces)
