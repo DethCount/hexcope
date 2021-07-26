@@ -1,7 +1,7 @@
 # Hexcope - **Work in Progress**
 
 3d printable hex pattern parabolic mirror for telescope \
-20x20x20 cm parts\
+20x20x20 cm parts \
 
 ## Primary mirror
 19 x 20cm side hexagonal mirrors \
@@ -55,7 +55,7 @@ build plate adhesion type: skirt \
 skirt line count: 3 \
 skirt distance: 2mm \
 
-- Basis: 1.284kg, 478m, 67h30
+- Basis: 1.290kg, 480m, 68h30
     - 2 x plate bottom: 96g, 33m, 3h30
     - 1 x plate axis: 205g, 70m, 7h
     - 2 x plate top: 96g, 33m, 3h30
@@ -63,7 +63,7 @@ skirt distance: 2mm \
     - 4 x foot: 10g, 4m, 0h30
     - 2 x arm: 79g, 27m, 3h30
     - 2 x wheel: 135g, 46m, 10h30 (print vertically, bottom up)
-    - 2 x screw: 13g, 5m, 1h30 (0.1mm layer height, 100% speed)
+    - 2 x screw: 16g, 6m, 2h (0.1mm layer height, 100% speed)
     - 2 x screw cap: 9g, 4m, 2h30  (0.1mm layer height, 100% speed)
 - Primary mirror (n=0, newton): 1280g, 444m, 51h
     - 2 x center half hex: 47g, 16m, 1h30
