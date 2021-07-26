@@ -46,14 +46,19 @@ https://youtu.be/Q-PgjTYsAFY
 
 ## Printing
 (e.g: Dagoma DiscoEasy200) \
-
-200% speed \
-0.3mm layer height \
-10% infill \
-support: touching buildplate \
-build plate adhesion type: skirt \
-skirt line count: 3 \
-skirt distance: 2mm \
+Layer height: 0.3mm \
+Infill density: 10% \
+Print speed: 75 mm/s \
+Infill speed: 80 mm/s \
+Outer wall speed: 50 mm/s \
+Inner wall speed: 70 mm/s \
+Top / Bottom speed: 70 mm/s \
+Travel speed: 100 mm/s \
+Initial layer speed: 15 mm/s \
+Support: touching buildplate \
+Build plate adhesion type: skirt \
+Skirt line count: 3 \
+Skirt distance: 2mm \
 
 - Basis: 1.290kg, 480m, 68h30
     - 2 x plate bottom: 96g, 33m, 3h30
