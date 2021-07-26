@@ -69,7 +69,7 @@ def hex2xyz(f, r, x, y, z, w):
 
     if w != 0:
         # print(' => ' + str(points[(z + (w - 1)) % 6]))
-        return points[(z + (w - 1)) % 6]
+        return points[round((z + (w - 1)) % 6)]
 
     z2 = 0
     for i in range(0, 6):

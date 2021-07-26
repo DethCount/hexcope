@@ -9,7 +9,9 @@ dir = os.path.dirname(bpy.data.filepath)
 if not dir in sys.path:
     sys.path.append(dir )
 
-from hyperparameters import n, r, h, f, p, e, trig_h, primary_t, support_secondary_is_newton
+from hyperparameters import n, r, h, f, p, e, trig_h, \
+    primary_t, support_secondary_is_newton, \
+    clip_depth, clip_thickness, clip_height, clip_precision
 from optics import parabolic_z, spherical_z, hex2xy, hex2xyz, get_support_arm_points
 from meshes import \
     primary_mirror_normals, \
@@ -35,10 +37,10 @@ support_half_hex_s = r
 support_half_hex_t = h
 support_half_hex_it = 0.25 * support_half_hex_t
 support_half_hex_walls_height = trig_h
-support_half_hex_clip_depth = support_half_hex_t - 0.02
-support_half_hex_clip_height = 0.5 * support_half_hex_walls_height
-support_half_hex_clip_thickness = 0.015
-support_half_hex_clip_precision = 25
+support_half_hex_clip_depth = clip_depth
+support_half_hex_clip_height = clip_height
+support_half_hex_clip_thickness = clip_thickness
+support_half_hex_clip_precision = clip_precision
 
 support_spider_t = 0.03
 support_spider_h = 0.1
@@ -73,7 +75,7 @@ support_arm_t = 0.03
 support_arm_h = 2
 support_arm_rp = 25
 support_arm_hp = 18
-support_arm_n = 6
+support_arm_n = 3
 support_arm_omega = 0
 support_arm_margin = 0.25 * r
 support_arm_points = get_support_arm_points(n, r, support_arm_margin, support_arm_n, support_arm_omega)
@@ -95,6 +97,10 @@ support_arm_block_hex_interior_thickness = support_half_hex_it
 support_arm_block_hex_walls_height = trig_h
 support_arm_block_hex_primary_thickness = primary_t
 support_arm_block_arm_radius = support_arm_r
+support_arm_block_clip_depth = support_half_hex_clip_depth
+support_arm_block_clip_thickness = support_half_hex_clip_thickness
+support_arm_block_clip_height = support_half_hex_clip_height
+support_arm_block_clip_precision = support_half_hex_clip_precision
 
 support_arm_head_e = support_arm_e
 support_arm_head_t = 0.05
@@ -245,7 +251,11 @@ arm_block_mesh = support_arm_block.create_mesh(
     support_arm_block_hex_interior_thickness,
     support_arm_block_hex_walls_height,
     support_arm_block_hex_primary_thickness,
-    support_arm_block_arm_radius
+    support_arm_block_arm_radius,
+    support_arm_block_clip_depth,
+    support_arm_block_clip_thickness,
+    support_arm_block_clip_height,
+    support_arm_block_clip_precision
 )
 arm_block_mesh.transform(
     Matrix.Translation(

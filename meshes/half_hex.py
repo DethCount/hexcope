@@ -1,5 +1,4 @@
 import bpy
-import bmesh
 import math
 from mathutils import Matrix, Vector
 
@@ -39,23 +38,33 @@ def create_mesh(
     v4 = hex2xyz(f, s, x, y, z + 2, 2)
     v5 = v4
 
-    v01 = Vector((v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2])).normalized()
-    v12 = Vector((v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2])).normalized()
-    v23 = Vector((v3[0] - v2[0], v3[1] - v2[1], v3[2] - v2[2])).normalized()
-    v34 = Vector((v4[0] - v3[0], v4[1] - v3[1], v4[2] - v3[2])).normalized()
-    v40 = Vector((v0[0] - v4[0], v0[1] - v4[1], v0[2] - v4[2])).normalized()
+    v01 = (Vector(v1) - Vector(v0))
+    v03 = (Vector(v3) - Vector(v0))
+    v12 = (Vector(v2) - Vector(v1))
+    v20 = (Vector(v0) - Vector(v2))
+    v23 = (Vector(v3) - Vector(v2))
+    v34 = (Vector(v4) - Vector(v3))
+    v40 = (Vector(v0) - Vector(v4))
 
-    n1 = v01.cross(v12).length
-    n2 = v12.cross(v23).length
-    n3 = v23.cross(v34).length
-    n4 = v34.cross(v40).length
+    v01n = v01.normalized()
+    v03n = v03.normalized()
+    v12n = v12.normalized()
+    v20n = v20.normalized()
+    v23n = v23.normalized()
+    v34n = v34.normalized()
+    v40n = v40.normalized()
 
-    w01 = Vector((v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2])).normalized()
-    w03 = Vector((v3[0] - v0[0], v3[1] - v0[1], v3[2] - v0[2])).normalized()
-    w12 = Vector((v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2])).normalized()
-    w20 = Vector((v0[0] - v2[0], v0[1] - v2[1], v0[2] - v2[2])).normalized()
-    w34 = Vector((v4[0] - v3[0], v4[1] - v3[1], v4[2] - v3[2])).normalized()
-    w40 = Vector((v0[0] - v4[0], v0[1] - v4[1], v0[2] - v4[2])).normalized()
+    n1 = v01n.cross(v12n).length
+    n2 = v12n.cross(v23n).length
+    n3 = v23n.cross(v34n).length
+    n4 = v34n.cross(v40n).length
+
+    w01 = v01n.copy()
+    w03 = v03n.copy()
+    w12 = v12n.copy()
+    w20 = v20n.copy()
+    w34 = v34n.copy()
+    w40 = v40n.copy()
 
     n012 = w01.cross(w12).length
     n034 = w03.cross(w34).length
@@ -64,20 +73,20 @@ def create_mesh(
     n340 = w34.cross(w40).length
     n403 = w40.cross(w03).length
 
-    d1 = (t * (v12[0] - v01[0]) / n1, t * (v12[1] - v01[1]) / n1, t * (v12[2] - v01[2]) / n1)
-    d2 = (t * (v23[0] - v12[0]) / n2, t * (v23[1] - v12[1]) / n2, t * (v23[2] - v12[2]) / n2)
-    d3 = (t * (v34[0] - v23[0]) / n3, t * (v34[1] - v23[1]) / n3, t * (v34[2] - v23[2]) / n3)
-    d4 = (t * (v40[0] - v34[0]) / n4, t * (v40[1] - v34[1]) / n4, t * (v40[2] - v34[2]) / n4)
+    d1 = t * (v12 - v01) / n1
+    d2 = t * (v23 - v12) / n2
+    d3 = t * (v34 - v23) / n3
+    d4 = t * (v40 - v34) / n4
 
     d0 = tuple(t * (Vector(d1) + Vector(d4)).normalized())
 
-    i0 = (fit * (w01[0] - w20[0]) / n201, fit * (w01[1] - w20[1]) / n201, fit * (w01[2] - w20[2]) / n201)
-    i1 = (fit * (w12[0] - w01[0]) / n012, fit * (w12[1] - w01[1]) / n012, fit * (w12[2] - w01[2]) / n012)
-    i2 = (fit * (w20[0] - w12[0]) / n120, fit * (w20[1] - w12[1]) / n120, fit * (w20[2] - w12[2]) / n120)
+    i0 = fit * (w01 - w20) / n201
+    i1 = fit * (w12 - w01) / n012
+    i2 = fit * (w20 - w12) / n120
 
-    i3 = (fit * (w03[0] - w40[0]) / n403, fit * (w03[1] - w40[1]) / n403, fit * (w03[2] - w40[2]) / n403)
-    i4 = (fit * (w34[0] - w03[0]) / n034, fit * (w34[1] - w03[1]) / n034, fit * (w34[2] - w03[2]) / n034)
-    i5 = (fit * (w40[0] - w34[0]) / n340, fit * (w40[1] - w34[1]) / n340, fit * (w40[2] - w34[2]) / n340)
+    i3 = fit * (w03 - w40) / n403
+    i4 = fit * (w34 - w03) / n034
+    i5 = fit * (w40 - w34) / n340
 
     ecpi3 = e * math.cos(math.pi / 3)
     d4x = 0.5 * (te + ecpi3)
@@ -241,172 +250,180 @@ def create_mesh(
             (0, 6, 29, 28), (6, 8, 30, 29), (8, 0, 28, 30),
         ])
 
-    c1 = 0.25 * s
-    c2 = 0.75 * s
-    cvh = Vector((0, 0, -hwh))
-    clip_positions = [
-        Vector(v0 if z <= 0 else v1) + (v01 if z <= 0 else -v01) * (c1 if z <= 0 else c2) + cvh,
-        Vector(v0 if z <= 0 else v1) + (v01 if z <= 0 else -v01) * (c2 if z <= 0 else c1) + cvh,
-
-        Vector(v1) + v12 * c1 + cvh,
-        Vector(v1) + v12 * c2 + cvh,
-
-        Vector(v2) + v23 * c1 + cvh,
-        Vector(v2) + v23 * c2 + cvh,
-
-        Vector(v3) + v34 * c1 + cvh,
-        Vector(v3) + v34 * c2 + cvh,
-
-        Vector(v4 if z <= 0 else v0) + (v40 if z <= 0 else -v40) * (c1 if z <= 0 else c2) + cvh,
-        Vector(v4 if z <= 0 else v0) + (v40 if z <= 0 else -v40) * (c2 if z <= 0 else c1) + cvh,
-    ]
-
-    clip_angles = [
-        -math.pi,
-        -math.pi / 3,
-        0,
-        math.pi / 3,
-        -math.pi,
-    ]
-
     if x != 0 or y != 0:
-        lltv = 3
-        llbv = 2
-        lrtv = 0
-        lrbv = 1
+        for i in range(0, 5):
+            dz = 0
+            w_l = 1
+            position = None
+            if i == 0:
+                dz = 0
+                w_l = 0
+                position = (Vector(v0) + 0.5 * v01) if z <= 2 \
+                    else (Vector(v1) - 0.5 * v01)
+            elif i == 1:
+                dz = 0
+                position = (Vector(v1) + 0.5 * v12) if z <= 2 \
+                    else (Vector(v2) - 0.5 * v12)
+            elif i == 2:
+                dz = 1
+                position = (Vector(v2) + 0.5 * v23) if z <= 2 \
+                    else (Vector(v3) - 0.5 * v23)
+            elif i == 3:
+                dz = 2
+                position = (Vector(v3) + 0.5 * v34) if z <= 2 \
+                    else (Vector(v4) - 0.5 * v34)
+            elif i == 4:
+                dz = 2
+                w_l = 2
+                position = (Vector(v4) + 0.5 * v40) if z <= 2 \
+                    else (Vector(v0) - 0.5 * v40)
 
-        rrtv = 0
-        rrbv = 1
-        rltv = 3
-        rlbv = 2
+            ret = create_clip_face(
+                f,
+                s,
+                clip_depth,
+                clip_thickness,
+                clip_height,
+                clip_precision,
+                Vector((x, y, z + dz)),
+                wh,
+                w_l,
+                len(vertices),
+                position
+            )
 
-        prev_nb_verts = None
-        for i in range(0, len(clip_positions)):
-            j = math.floor(0.5 * i)
-            if (j % 2 == 0 and z <= 0 and j != 4) \
-                or (j % 2 == 1 and z > 0 or j == 0):
-
-                ret = clip.make_hole(
-                    clip_positions[i],
-                    clip_angles[j] + (math.pi if z > 0 else 0),
-                    'Z',
-                    clip_depth,
-                    clip_thickness,
-                    clip_height,
-                    len(vertices)
-                )
-
-                nb_verts = len(vertices)
-                vertices += ret[0]
-                edges += ret[1]
-                faces += ret[2]
-
-                oltv = None
-                ortv = None
-                olbv = None
-                orbv = None
-
-                if j == 0:
-                    oltv = 1
-                    ortv = 3
-                    olbv = 10
-                    orbv = 11
-                elif j == 1:
-                    oltv = 3
-                    ortv = 5
-                    olbv = 11
-                    orbv = 12
-                elif j == 2:
-                    oltv = 5
-                    ortv = 7
-                    olbv = 12
-                    orbv = 13
-                elif j == 3:
-                    oltv = 7
-                    ortv = 9
-                    olbv = 13
-                    orbv = 14
-                elif j == 4:
-                    oltv = 9
-                    ortv = 1
-                    olbv = 14
-                    orbv = 10
-
-                if i % 2 == 0:
-                    faces.extend([
-                        (nb_verts + lltv, oltv, olbv, nb_verts + llbv),
-                        (olbv, nb_verts + lrbv, nb_verts + llbv),
-                        (oltv, nb_verts + lltv, nb_verts + lrtv)
-                    ])
-                else:
-                    faces.extend([
-                        (ortv, nb_verts + rrtv, nb_verts + rrbv, orbv),
-                        (nb_verts + rrtv, ortv, nb_verts + rltv),
-                        (nb_verts + rrbv, nb_verts + rlbv, orbv),
-                        (prev_nb_verts + lrtv, prev_nb_verts + lrbv, nb_verts + rlbv, nb_verts + rltv),
-                        (oltv, prev_nb_verts + lrtv, nb_verts + rltv, ortv),
-                        (olbv, orbv, nb_verts + rlbv, prev_nb_verts + lrbv),
-                    ])
-
-                prev_nb_verts = nb_verts
+            vertices.extend(ret[0])
+            edges.extend(ret[1])
+            faces.extend(ret[2])
 
     mesh.from_pydata(vertices, edges, faces)
     mesh.update()
 
-    bm = bmesh.new()
-    bm.from_mesh(mesh)
-
-    clip_faces = list()
-
-    if x != 0 or y != 0:
-        clip_mesh = clip.create_mesh(
-            clip_depth,
-            clip_thickness,
-            clip_height,
-            clip_precision
-        )
-
-        for i in range(0, len(clip_positions)):
-            j = math.floor(0.5 * i)
-            if (j % 2 == 0 and z > 0 and j != 0) \
-                or (j % 2 == 1 and z <= 0 or j == 4):
-
-                alpha = clip_angles[j] + (math.pi if z > 0 else 0)
-                clip_mesh.transform(Matrix.Rotation(alpha, 4, 'Z'))
-                clip_mesh.transform(Matrix.Translation(clip_positions[i]))
-
-                bm.from_mesh(clip_mesh)
-
-                clip_mesh.transform(Matrix.Translation(-clip_positions[i]))
-                clip_mesh.transform(Matrix.Rotation(-alpha, 4, 'Z'))
-
-                if i % 2 == 0:
-                    if j == 0:
-                        clip_faces.append((3, 1, 10, 11))
-                    elif j == 1:
-                        clip_faces.append((5, 3, 11, 12))
-                    elif j == 2:
-                        clip_faces.append((7, 5, 12, 13))
-                    elif j == 3:
-                        clip_faces.append((9, 7, 13, 14))
-                    elif j == 4:
-                        clip_faces.append((1, 9, 14, 10))
-
-        bm.verts.ensure_lookup_table()
-        bm.faces.ensure_lookup_table()
-        for clip_face in clip_faces:
-            bm.faces.new([
-                bm.verts[clip_face[0]],
-                bm.verts[clip_face[1]],
-                bm.verts[clip_face[2]],
-                bm.verts[clip_face[3]]
-            ])
-
-    mesh = bpy.data.meshes.new(mesh_name)
-    bm.to_mesh(mesh)
-    bm.free()
-
     return mesh
+
+
+def create_clip_face(
+    f,
+    r,
+    depth,
+    thickness,
+    height,
+    precision,
+    face,
+    face_height,
+    face_w_l = 1,
+    fvi = 0,
+    position = None,
+    angle = None,
+    axis = 'Z',
+):
+    vl = Vector(hex2xyz(
+        f,
+        r,
+        round(face.x),
+        round(face.y),
+        round(face.z),
+        round(face_w_l)
+    ))
+    vr = Vector(hex2xyz(
+        f,
+        r,
+        round(face.x),
+        round(face.y),
+        round(face.z),
+        ((round(face_w_l) + 1) % 3)
+    ))
+
+    dv = vl - vr
+    dvn = Vector((r, 0, dv.z)).normalized()
+    # displ = dvn * 0.25 * r
+    displ = dvn * 0.25 * r
+
+    vxz = 0.5 * r * dvn
+    vz = Vector((0, 0, face_height))
+    hvz = 0.5 * vz
+    half_face_length = 0.5 * (vr - vl).length
+    vhfl = Vector((half_face_length * dvn.x, 0, 0))
+
+    if angle == None:
+        angle = ((face.z + 2 * face_w_l) - 3) * math.pi / 3
+
+    rot = Matrix.Rotation(angle, 3, axis if axis != None else 'Z')
+
+    vpos = position if position != None else Vector(0, 0, 0)
+
+    vertices = [
+        vpos + (rot @ -vxz),
+        vpos + (rot @ (-vxz - vz)),
+        vpos + (rot @ (vxz - vz)),
+        vpos + (rot @ vxz)
+    ]
+
+    surface_indices = [fvi, fvi + 1, fvi + 2, fvi + 3]
+
+    edges = []
+    faces = []
+
+    ret = clip.get_clip(
+        depth,
+        thickness,
+        height,
+        precision,
+        face,
+        fvi + len(vertices),
+        face_w_l
+    )
+
+    for i in range(0, len(ret[0])):
+        ret[0][i] += -displ - hvz
+        ret[0][i] = vpos + (rot @ ret[0][i])
+
+    vertices.extend(ret[0])
+    # print('get_clip l ', str(len(vertices)), str(ret))
+    edges.extend(ret[1])
+    faces.extend(ret[2])
+    surface_l = ret[3]
+
+    ret = clip.get_clip(
+        depth,
+        thickness,
+        height,
+        precision,
+        face,
+        fvi + len(vertices),
+        face_w_l
+    )
+
+    for i in range(0, len(ret[0])):
+        ret[0][i] += displ - hvz
+        ret[0][i] = vpos + (rot @ ret[0][i])
+
+    # print('get_clip r', str(len(vertices)), str(ret))
+    vertices.extend(ret[0])
+    edges.extend(ret[1])
+    faces.extend(ret[2])
+    surface_r = ret[3]
+
+    # f_fvi = fvi + len(vertices)
+    edges.extend([
+        (surface_indices[0], surface_indices[1]),
+        (surface_indices[1], surface_indices[2]),
+        (surface_indices[2], surface_indices[3]),
+        (surface_indices[3], surface_indices[0])
+    ])
+    faces.extend([
+        (surface_indices[0], surface_l[0], surface_l[1], surface_indices[1]),
+        (surface_r[3], surface_indices[3], surface_indices[2], surface_r[2]),
+        (surface_indices[0], surface_l[3], surface_l[0]),
+        (surface_r[3], surface_r[0], surface_indices[3]),
+        (surface_l[3], surface_indices[0], surface_indices[3], surface_r[0]),
+        (surface_indices[1], surface_l[1], surface_l[2]),
+        (surface_r[1], surface_r[2], surface_indices[2]),
+        (surface_indices[1], surface_l[2], surface_r[1], surface_indices[2]),
+        (surface_l[2], surface_l[3], surface_r[0], surface_r[1]),
+    ])
+
+    return [vertices, edges, faces]
 
 def create_object(
     e, f, s, t, it, wh, x, y, z,

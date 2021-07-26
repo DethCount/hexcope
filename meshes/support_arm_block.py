@@ -3,6 +3,7 @@ import math
 from mathutils import Vector
 
 from optics import get_support_arm_point, hex2xy, hex2xyz
+from meshes import half_hex
 
 support_arm_block_name = 'support_arm_block'
 
@@ -12,7 +13,8 @@ def create_mesh(
     e, f, n, r, t, m, wl, p,
     hex_thickness, hex_interior_thickness, hex_walls_height,
     primary_thickness,
-    arm_radius
+    arm_radius,
+    clip_depth, clip_thickness, clip_height, clip_precision
 ):
     mesh = bpy.data.meshes.new(
         support_arm_block_name
@@ -20,7 +22,8 @@ def create_mesh(
             e, f, n, r, t, m, wl, p,
             hex_thickness, hex_interior_thickness, hex_walls_height,
             primary_thickness,
-            arm_radius
+            arm_radius,
+            clip_depth, clip_thickness, clip_height, clip_precision
         ))
     )
 
@@ -29,19 +32,22 @@ def create_mesh(
     fit = hex_thickness + hex_interior_thickness
 
     if n % 2 == 0:
-        p2 = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 4, 2))
-        p3 = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 0, 1))
-        p5 = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 0, 2))
+        face_l = Vector((0.5 * n + 1, 0, 3))
+        face_r = Vector((face_l.x, face_l.y, 2))
 
-        p2o = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 4, 1))
-        p3o = Vector(hex2xyz(f, r, math.floor(0.5 * n), 1, 0, 0))
+        p5 = Vector(hex2xyz(f, r, face_r.x - 1, face_r.y + 1, 0, 2))
+        p2o = Vector(hex2xyz(f, r, face_r.x - 1, face_r.y + 1, 4, 1))
+        p3o = Vector(hex2xyz(f, r, face_r.x - 1, face_r.y + 1, 5, 0))
     else:
-        p2 = Vector(hex2xyz(f, r, math.ceil(0.5 * n), 0, 0, 1))
-        p3 = Vector(hex2xyz(f, r, math.ceil(0.5 * n), 0, 1, 1))
-        p5 = Vector(hex2xyz(f, r, math.ceil(0.5 * n) - 1, 2, 0, 1))
+        face_l = Vector((math.ceil(0.5 * n) + 1, -1, 2))
+        face_r = Vector((face_l.x - 1, face_l.y + 2, 3))
 
-        p2o = Vector(hex2xyz(f, r, math.ceil(0.5 * n), 0, 0, 0))
-        p3o = Vector(hex2xyz(f, r, math.ceil(0.5 * n), 0, 1, 2))
+        p5 = Vector(hex2xyz(f, r, face_r.x - 1, face_r.y + 1, 0, 1))
+        p2o = Vector(hex2xyz(f, r, face_r.x, face_r.y - 1, 0, 0))
+        p3o = Vector(hex2xyz(f, r, face_r.x, face_r.y - 1, 1, 2))
+
+    p2 = Vector(hex2xyz(f, r, face_r.x, face_r.y, face_r.z, 2))
+    p3 = Vector(hex2xyz(f, r, face_r.x, face_r.y, face_r.z, 1))
 
     v2on = (p2o - p2).normalized()
     v3on = (p3o - p3).normalized()
@@ -67,6 +73,11 @@ def create_mesh(
     v3 = Vector((p3.x, p3.y, p3.z + z_displacement))
     v4 = Vector((p4.x, p4.y, p4.z + z_displacement))
 
+    v12 = v2 - v1
+    v23 = v3 - v2
+    v12mid = v2 - 0.5 * v12
+    v23mid = v2 + 0.5 * v23
+
     v0o = v0 + v0on * fit
     v1o = v1 + v1on * fit
     v2o = v2 + v2on * fit
@@ -78,6 +89,9 @@ def create_mesh(
     h2 = h1 + t
     h3 = min(v2.z, v3.z, v4.z)
     h4 = max(v2.z, v3.z, v4.z) + h2
+    h5 = h0 + hex_walls_height
+
+    vh5 = Vector((0, 0, h5))
 
     ar = arm_radius + 0.5 * e
 
@@ -89,27 +103,30 @@ def create_mesh(
 
         (v1.x, v1.y, h3),
         (v1.x, v1.y, v1.z + h0),
+        (v1.x, v1.y, v1.z + h5),
         (v1.x, v1.y, v1.z + h1),
         (v1.x, v1.y, h4),
 
-        # 8
+        # 9
         (v2.x, v2.y, h3),
         (v2.x, v2.y, v2.z + h0),
+        (v2.x, v2.y, v2.z + h5),
         (v2.x, v2.y, v2.z + h1),
         (v2.x, v2.y, h4),
 
         (v3.x, v3.y, h3),
         (v3.x, v3.y, v3.z + h0),
+        (v3.x, v3.y, v3.z + h5),
         (v3.x, v3.y, v3.z + h1),
         (v3.x, v3.y, h4),
 
-        # 16
+        # 19
         (v4.x, v4.y, h3),
         (v4.x, v4.y, v4.z + h0),
         (v4.x, v4.y, v4.z + h1),
         (v4.x, v4.y, h4),
 
-        # 20
+        # 23
         (v0o.x, v0o.y, v0o.z),
         (v0o.x, v0o.y, v0o.z + h0),
         (v0o.x, v0o.y, v0o.z + h1),
@@ -120,7 +137,7 @@ def create_mesh(
         (v1o.x, v1o.y, v1o.z + h1),
         (v1o.x, v1o.y, v1o.z + h2),
 
-        # 28
+        # 31
         (v2o.x, v2o.y, v2o.z),
         (v2o.x, v2o.y, v2o.z + h0),
         (v2o.x, v2o.y, v2o.z + h1),
@@ -131,13 +148,13 @@ def create_mesh(
         (v3o.x, v3o.y, v3o.z + h1),
         (v3o.x, v3o.y, v3o.z + h2),
 
-        # 36
+        # 39
         (v4o.x, v4o.y, v4o.z),
         (v4o.x, v4o.y, v4o.z + h0),
         (v4o.x, v4o.y, v4o.z + h1),
         (v4o.x, v4o.y, v4o.z + h2),
 
-        # 40
+        # 43
         (arm_points[0][0] - ar, arm_points[0][1] - ar, h3),
         (arm_points[0][0] - ar, arm_points[0][1] - ar, h4),
 
@@ -150,7 +167,7 @@ def create_mesh(
         (arm_points[0][0] + ar, arm_points[0][1] + ar, h3),
         (arm_points[0][0] + ar, arm_points[0][1] + ar, h4),
 
-        # 48
+        # 51
         (arm_points[1][0] - ar, arm_points[1][1] - ar, h3),
         (arm_points[1][0] - ar, arm_points[1][1] - ar, h4),
 
@@ -163,11 +180,11 @@ def create_mesh(
         (arm_points[1][0] + ar, arm_points[1][1] + ar, h3),
         (arm_points[1][0] + ar, arm_points[1][1] + ar, h4),
 
-        # 56
+        # 59
         (arc_string_x, 0, h3),
         (arc_string_x, 0, h4),
 
-        # 58
+        # 61
         (arm_points[0][0] - ar, arm_points[0][1] + m, h3),
         (arm_points[0][0] - ar, arm_points[0][1] + m, h4),
 
@@ -180,11 +197,11 @@ def create_mesh(
         (arm_points[1][0] + ar, arm_points[1][1] - m, h3),
         (arm_points[1][0] + ar, arm_points[1][1] - m, h4),
 
-        # 66
+        # 69
         (v2.x + hex_thickness, v2.y, h3),
         (v2.x + hex_thickness, v2.y, h4),
 
-        # 68
+        # 71
         (arm_points[0][0] - ar + hex_thickness, arm_points[0][1] + m, h3),
         (arm_points[0][0] - ar + hex_thickness, arm_points[0][1] + m, h4),
 
@@ -195,66 +212,69 @@ def create_mesh(
     edges = [
         (0, 3),
         (0, 3),
-        (4, 7),
-        (8, 11),
-        (12, 15),
-        (16, 19),
-        (0, 4), (4, 8), (8, 12), (12, 16),
-        (3, 7), (7, 11), (11, 15), (15, 19),
+        (4, 8),
+        (9, 13),
+        (14, 18),
+        (19, 22),
+        (0, 4), (4, 9), (9, 14), (14, 19),
+        (3, 8), (8, 13), (13, 18), (18, 22),
 
-        (0, 20), (4, 24), (8, 28), (12, 32), (16, 36),
-        (1, 21), (5, 25), (9, 29), (13, 33), (17, 37),
-        (2, 22), (6, 26), (10, 30), (14, 34), (18, 38),
-        (3, 23), (7, 27), (11, 31), (15, 35), (19, 39),
+        (0, 23), (4, 27), (9, 31), (14, 35), (19, 39),
+        (1, 24), (5, 28), (10, 32), (15, 36), (20, 40),
+        (2, 25), (7, 29), (12, 33), (17, 37), (21, 41),
+        (3, 26), (8, 30), (13, 34), (18, 38), (22, 42),
 
-        (20, 21), (24, 25), (28, 29), (32, 33), (36, 37),
-        (22, 23), (26, 27), (30, 31), (34, 35), (38, 39),
+        (23, 24), (27, 28), (31, 32), (35, 36), (39, 40),
+        (25, 26), (29, 30), (33, 34), (37, 38), (41, 42),
 
-        (20, 24), (24, 28), (28, 32), (32, 36),
-        (21, 25), (25, 29), (29, 33), (33, 37),
-        (22, 26), (26, 30), (30, 34), (34, 38),
         (23, 27), (27, 31), (31, 35), (35, 39),
+        (24, 28), (28, 32), (32, 36), (36, 40),
+        (25, 29), (29, 33), (33, 37), (37, 41),
+        (26, 30), (30, 34), (34, 38), (38, 42),
 
-        (58, 59), (60, 61), (62, 63), (64, 65),
-        (58, 60), (62, 64), (59, 61), (63, 65),
+        (61, 62), (63, 64), (65, 66), (67, 68),
+        (71, 63), (73, 67), (72, 64), (74, 68),
     ]
 
     faces = [
-        (20, 21, 25, 24), (24, 25, 29, 28), (28, 29, 33, 32), (32, 33, 37, 36),
-        (1, 2, 6, 5), (5, 6, 10, 9), (9, 10, 14, 13), (13, 14, 18, 17),
-        (22, 23, 27, 26), (26, 27, 31, 30), (30, 31, 35, 34), (34, 35, 39, 38),
-        (0, 1, 21, 20), (17, 16, 36, 37),
-        (2, 3, 23, 22), (19, 18, 38, 39),
-        (4, 0, 20, 24), (8, 4, 24, 28), (12, 8, 28, 32), (16, 12, 32, 36),
-        (1, 5, 25, 21), (5, 9, 29, 25), (9, 13, 33, 29), (13, 17, 37, 33),
-        (6, 2, 22, 26), (10, 6, 26, 30), (14, 10, 30, 34), (18, 14, 34, 38),
-        (3, 7, 27, 23), (7, 11, 31, 27), (11, 15, 35, 31), (15, 19, 39, 35),
+        (23, 24, 28, 27), (27, 28, 32, 31), (31, 32, 36, 35), (35, 36, 40, 39),
+        (1, 2, 7, 5),
+        (6, 7, 12, 11),
+        (11, 12, 17, 16),
+        (15, 17, 21, 20),
+        (25, 26, 30, 29), (29, 30, 34, 33), (33, 34, 38, 37), (37, 38, 42, 41),
+        (0, 1, 24, 23), (20, 19, 39, 40),
+        (2, 3, 26, 25), (22, 21, 41, 42),
+        (4, 0, 23, 27), (9, 4, 27, 31), (14, 9, 31, 35), (19, 14, 35, 39),
+        (1, 5, 28, 24), (5, 10, 32, 28), (10, 15, 36, 32), (15, 20, 40, 36),
+        (7, 2, 25, 29), (12, 7, 29, 33), (17, 12, 33, 37), (21, 17, 37, 41),
+        (3, 8, 30, 26), (8, 13, 34, 30), (13, 18, 38, 34), (18, 22, 42, 38),
 
-        (0, 4, 42, 40),
-        (7, 3, 41, 43),
+        (0, 4, 45, 43),
+        (8, 3, 44, 46),
 
-        (12, 16, 50, 48),
-        (19, 15, 49, 51),
+        (14, 19, 53, 51),
+        (22, 18, 52, 54),
 
-        (42, 4, 58),
-        (7, 43, 59),
+        (45, 4, 61),
+        (8, 46, 62),
 
-        (12, 48, 62),
-        (49, 15, 63),
+        (14, 51, 65),
+        (52, 18, 66),
 
-        (46, 42, 58, 60), (43, 47, 61, 59),
-        (48, 52, 64, 62), (53, 49, 63, 65),
+        (49, 45, 61, 63), (46, 50, 64, 62),
+        (51, 55, 67, 65), (56, 52, 66, 68),
 
-        (59, 58, 66, 67),
-        (62, 63, 67, 66),
+        (63, 64, 60, 59),
+        (68, 67, 59, 60),
 
-        (60, 61, 57, 56),
-        (65, 64, 56, 57),
+        (49, 63, 59),
+        (50, 60, 64),
+        (55, 59, 67),
+        (56, 68, 60),
 
-        (46, 60, 56),
-        (47, 57, 61),
-        (52, 56, 64),
-        (53, 65, 57),
+        (69, 70, 72, 71),
+        (70, 69, 73, 74),
     ]
 
     nb_verts = len(vertices)
@@ -314,98 +334,134 @@ def create_mesh(
                 (ltv - nbidx, ltv, lbv, lbv - nbidx),
                 (lctv - nbidx, lctv, lcbv, lcbv - nbidx),
                 (rctv - nbidx, rctv, rcbv, rcbv - nbidx),
-                (rtv - nbidx, rtv, 57),
-                (rbv, rbv - nbidx, 56),
-                (ltv, ltv - nbidx, 57),
-                (lbv - nbidx, lbv, 56),
+                (rtv - nbidx, rtv, 60),
+                (rbv, rbv - nbidx, 59),
+                (ltv, ltv - nbidx, 60),
+                (lbv - nbidx, lbv, 59),
             ])
 
             if beta < math.pi / 2:
                 faces.extend([
-                    (rctv, rctv - nbidx, 55),
-                    (rcbv - nbidx, rcbv, 54),
-                    (lctv, lctv - nbidx, 47),
-                    (lcbv - nbidx, lcbv, 46),
+                    (rctv, rctv - nbidx, 58),
+                    (rcbv - nbidx, rcbv, 57),
+                    (lctv, lctv - nbidx, 50),
+                    (lcbv - nbidx, lcbv, 49),
                 ])
             elif beta < math.pi:
                 faces.extend([
-                    (rctv, rctv - nbidx, 51),
-                    (rcbv - nbidx, rcbv, 50),
-                    (lctv, lctv - nbidx, 43),
-                    (lcbv - nbidx, lcbv, 42),
+                    (rctv, rctv - nbidx, 54),
+                    (rcbv - nbidx, rcbv, 53),
+                    (lctv, lctv - nbidx, 46),
+                    (lcbv - nbidx, lcbv, 45),
                 ])
             elif beta < 3 * math.pi / 2:
                 faces.extend([
-                    (rctv, rctv - nbidx, 49),
-                    (rcbv - nbidx, rcbv, 48),
-                    (lctv, lctv - nbidx, 41),
-                    (lcbv - nbidx, lcbv, 40),
+                    (rctv, rctv - nbidx, 52),
+                    (rcbv - nbidx, rcbv, 51),
+                    (lctv, lctv - nbidx, 44),
+                    (lcbv - nbidx, lcbv, 43),
                 ])
             else:
                 faces.extend([
-                    (rctv, rctv - nbidx, 53),
-                    (rcbv - nbidx, rcbv, 52),
-                    (lctv, lctv - nbidx, 45),
-                    (lcbv - nbidx, lcbv, 44),
+                    (rctv, rctv - nbidx, 56),
+                    (rcbv - nbidx, rcbv, 55),
+                    (lctv, lctv - nbidx, 48),
+                    (lcbv - nbidx, lcbv, 47),
                 ])
 
     edges.extend([
-        (rtv, 19),
-        (rbv, 16),
+        (rtv, 22),
+        (rbv, 19),
         (ltv, 3),
         (lbv, 0),
     ])
 
     faces.extend([
         (3, 0, lbv, ltv),
-        (16, 19, rtv, rbv),
+        (19, 22, rtv, rbv),
 
-        (ltv, 45, 41, 3),
-        (44, lbv, 0, 40),
+        (ltv, 48, 44, 3),
+        (47, lbv, 0, 43),
 
-        (55, rtv, 19, 51),
-        (rbv, 54, 50, 16),
+        (58, rtv, 22, 54),
+        (rbv, 57, 53, 19),
     ])
 
     if n % 2 == 0:
         faces.extend([
-            (66, 58, 4, 8),
-            (7, 59, 67, 11),
+            (69, 61, 4, 9),
+            (8, 62, 70, 13),
 
-            (8, 12, 62, 66),
-            (15, 11, 67, 63),
+            (9, 14, 65, 69),
+            (18, 13, 70, 66),
 
-            (58, 59, 61, 60),
-            (63, 62, 64, 65),
+            (61, 62, 64, 63),
+            (66, 65, 67, 68),
 
-            (ltv, 47, 45),
-            (lbv, 44, 46),
-            (rtv, 55, 53),
-            (rbv, 52, 54),
-            (ltv, 57, 47),
-            (rtv, 53, 57),
-            (lbv, 46, 56),
-            (rbv, 56, 52),
+            (61, 69, 71),
+            (62, 72, 70),
+            (65, 73, 69),
+            (66, 70, 74),
+
+            (ltv, 50, 48),
+            (lbv, 47, 49),
+            (rtv, 58, 56),
+            (rbv, 55, 57),
+            (ltv, 60, 50),
+            (rtv, 56, 60),
+            (lbv, 49, 59),
+            (rbv, 59, 55),
         ])
     else:
         faces.extend([
-            (8, 66, 68, 58),
-            (67, 11, 59, 69),
+            (9, 69, 71, 61),
+            (70, 13, 62, 72),
 
-            (66, 8, 62, 70),
-            (11, 67, 71, 63),
+            (69, 9, 65, 73),
+            (13, 70, 74, 66),
 
-            (66, 67, 69, 68),
-            (67, 66, 70, 71),
+            (64, 63, 71, 72),
+            (67, 68, 74, 73),
 
-            (61, 60, 68, 69),
-            (64, 65, 71, 70),
-
-            (45, ltv, 57, 47),
-            (rtv, 55, 53, 57),
-            (lbv, 44, 46, 56),
-            (54, rbv, 56, 52),
+            (48, ltv, 60, 50),
+            (rtv, 58, 56, 60),
+            (lbv, 47, 49, 59),
+            (57, rbv, 59, 55),
         ])
+
+    ret = half_hex.create_clip_face(
+        f,
+        r,
+        clip_depth,
+        clip_thickness,
+        clip_height,
+        clip_precision,
+        face_l,
+        hex_walls_height,
+        1,
+        len(vertices),
+        v12mid + vh5
+    )
+    vertices.extend(ret[0])
+    edges.extend(ret[1])
+    faces.extend(ret[2])
+
+    ret = half_hex.create_clip_face(
+        f,
+        r,
+        clip_depth,
+        clip_thickness,
+        clip_height,
+        clip_precision,
+        face_r,
+        hex_walls_height,
+        1,
+        len(vertices),
+        v23mid + vh5
+    )
+    vertices.extend(ret[0])
+    edges.extend(ret[1])
+    faces.extend(ret[2])
 
     mesh.from_pydata(vertices, edges, faces)
     mesh.update()

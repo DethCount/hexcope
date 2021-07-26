@@ -9,7 +9,8 @@ dir = os.path.dirname(bpy.data.filepath)
 if not dir in sys.path:
     sys.path.append(dir)
 
-from hyperparameters import r, h, p, e, trig_h
+from hyperparameters import f, r, h, p, e, trig_h, \
+    clip_depth, clip_thickness, clip_height, clip_precision
 from optics import hex2xy
 from meshes import \
     basis_arm, \
@@ -23,12 +24,17 @@ from meshes import \
     basis_wheel
 
 basis_wheel_e = e
+basis_wheel_f = f
 basis_wheel_t = h
 basis_wheel_h = 1.7
 basis_wheel_r = r
 basis_wheel_p = p # wheel precision
 basis_wheel_wr = 0.8 * r # wheel radius
 basis_wheel_mr = 0.2 * r
+basis_wheel_clip_depth = clip_depth
+basis_wheel_clip_thickness = clip_thickness
+basis_wheel_clip_height = clip_height
+basis_wheel_clip_precision = clip_precision
 basis_wheel_arm_t = 0.1
 basis_wheel_top_z = 0
 basis_wheel_bottom_z = -basis_wheel_wr * math.sin(math.pi / 3)
@@ -116,7 +122,7 @@ basis_plate_top_foot_w2 = basis_foot_w2
 basis_plate_top_foot_thickness = basis_foot_t
 
 basis_plate_axis_e = basis_plate_top_e
-basis_plate_axis_t = h
+basis_plate_axis_t = 0.04
 basis_plate_axis_r = basis_plate_top_r * math.cos(math.pi / 6)
 basis_plate_axis_p = basis_plate_top_p
 basis_plate_axis_x = basis_plate_top_x - (math.sqrt(3) / 2) * r + 0.5 * h
@@ -136,18 +142,18 @@ basis_plate_bottom_z = basis_plate_axis_z - basis_plate_axis_t - basis_plate_bot
 basis_plate_bottom_hex_side = basis_plate_top_hex_side
 basis_plate_bottom_top_plate_thickness = basis_plate_top_t
 
-def move_basis_to(obj, hex):
-    hex_1 = hex2xy(r, 0, 0, hex, 1)
-    hex_2 = hex2xy(r, 0, 0, hex, 2)
+def move_basis_to(obj, z):
+    v1 = hex2xy(r, 0, 0, z, 1)
+    v2 = hex2xy(r, 0, 0, z, 2)
     hex_mid = (
-        0.5 * (hex_1[0] + hex_2[0]),
-        0.5 * (hex_1[1] + hex_2[1])
+        0.5 * (v1[0] + v2[0]),
+        0.5 * (v1[1] + v2[1])
     )
 
     obj.location.x = hex_mid[0]
     obj.location.y = hex_mid[1]
     obj.location.z = h
-    obj.rotation_euler = Euler((0, 0, (hex + 0.5) * (math.pi / 3)), 'XYZ')
+    obj.rotation_euler = Euler((0, 0, (z + 0.5) * (math.pi / 3)), 'XYZ')
 
     return
 
@@ -156,8 +162,9 @@ bpy.context.scene.collection.children.link(basis_collection)
 
 hex_arrows = [(0, 1), (-1, 2), (-1, 1), (0, -1), (1, -2), (1, -1)]
 
-basis_wheel_mesh = basis_wheel.create_mesh(
+basis_wheel_mesh_r = basis_wheel.create_mesh(
     basis_wheel_e,
+    basis_wheel_f,
     basis_wheel_t,
     basis_wheel_h,
     basis_wheel_r,
@@ -167,7 +174,32 @@ basis_wheel_mesh = basis_wheel.create_mesh(
     basis_wheel_top_z,
     h,
     trig_h,
-    basis_wheel_arm_t,
+    Vector((0, 0, 0)),
+    basis_wheel_clip_depth,
+    basis_wheel_clip_thickness,
+    basis_wheel_clip_height,
+    basis_wheel_clip_precision,
+    basis_wheel_arm_t
+)
+
+basis_wheel_mesh_l = basis_wheel.create_mesh(
+    basis_wheel_e,
+    basis_wheel_f,
+    basis_wheel_t,
+    basis_wheel_h,
+    basis_wheel_r,
+    basis_wheel_p,
+    basis_wheel_wr,
+    basis_wheel_mr,
+    basis_wheel_top_z,
+    h,
+    trig_h,
+    Vector((0, 0, 3)),
+    basis_wheel_clip_depth,
+    basis_wheel_clip_thickness,
+    basis_wheel_clip_height,
+    basis_wheel_clip_precision,
+    basis_wheel_arm_t
 )
 
 basis_wheel_screw_mesh = basis_screw.create_mesh(
@@ -318,7 +350,7 @@ basis_plate_bottom_mesh = basis_plate_bottom.create_mesh(
 )
 
 # print('basis wheel mesh created: ' + str(basis_wheel_mesh))
-basis_wheel_object_r = bpy.data.objects.new('basis_wheel_r', basis_wheel_mesh)
+basis_wheel_object_r = bpy.data.objects.new('basis_wheel_r', basis_wheel_mesh_r)
 basis_collection.objects.link(basis_wheel_object_r)
 move_basis_to(basis_wheel_object_r, 0)
 
@@ -359,7 +391,7 @@ basis_collection.objects.link(basis_plate_axis)
 move_basis_to(basis_plate_axis, 0)
 
 
-basis_wheel_object_l = bpy.data.objects.new('basis_wheel_l', basis_wheel_mesh)
+basis_wheel_object_l = bpy.data.objects.new('basis_wheel_l', basis_wheel_mesh_l)
 basis_collection.objects.link(basis_wheel_object_l)
 move_basis_to(basis_wheel_object_l, 3)
 

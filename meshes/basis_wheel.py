@@ -1,23 +1,32 @@
 import bpy
 import math
+from mathutils import Vector
+
+from meshes import half_hex
 
 # e: epsilon, smallest change in position
+# f: primary mirror focal length
 # t: thickness
 # h: height
 # r: hex side length
 # p: precision in number of parts of 1
 # wr: wheel radius
 # mr: middle bar radius
+# z: z position
 # hex_thickness: mirror hex thickness
-# hex_walls_height : mirror hex walls height
+# hex_walls_height: mirror hex walls height
+# hex_face: primary mirror face to fix on
+# arm_t: arm thickness
 def create_mesh(
-    e, t, h, r, p, wr, mr, z,
-    hex_thickness, hex_walls_height,
+    e, f, t, h, r, p, wr, mr, z,
+    hex_thickness, hex_walls_height, hex_face,
+    clip_depth, clip_thickness, clip_height, clip_precision,
     arm_t
 ):
     mesh = bpy.data.meshes.new('basis_wheel_mesh' + str((
-        e, t, h, r, p, wr, mr, z,
-        hex_thickness, hex_walls_height,
+        e, f, t, h, r, p, wr, mr, z,
+        hex_thickness, hex_walls_height, hex_face,
+        clip_depth, clip_thickness, clip_height, clip_precision,
         arm_t
     )))
 
@@ -32,11 +41,10 @@ def create_mesh(
     z0 = z - hex_thickness - e
     z1 = z0 - hex_thickness
     z0o = z0 - hex_walls_height
-    z1o = z1 - hex_walls_height
     z2 = z - wr * math.sin(pi3)
     z3 = z0o - hex_thickness
 
-    xr0 = e
+    xr0 = 0
     xl0 = -hex_thickness
     xr1 = xr0 + hex_thickness
     xl1 = xl0 - hex_thickness
@@ -118,6 +126,18 @@ def create_mesh(
         (xl3, yt0, z0o),
         (xr2, yb0, z0o),
         (xl3, yb0, z0o),
+
+        # 48
+        (xr0, yt0, z0),
+        (xr1, yt0, z0),
+        (xr1, yb0, z0),
+        (xr0, yb0, z0),
+
+        #52
+        (xr2, yt0, z0),
+        (xl3, yt0, z0),
+        (xl3, yb0, z0),
+        (xr2, yb0, z0),
     ]
 
     edges = [
@@ -144,15 +164,16 @@ def create_mesh(
 
         (4, 5, 6, 7),
         (2, 1, 4, 7),
-        (11, 8, 19, 20),
+        # (11, 8, 19, 20),
 
         (6, 5, 9, 10),
         (5, 4, 8, 9),
         (7, 6, 10, 11),
 
-        (1, 0, 18, 19),
-        (3, 2, 20, 21),
-        (0, 3, 15, 12),
+        (1, 0, 26, 8),
+        (3, 2, 11, 27),
+
+        (0, 3, 51, 48),
 
         (13, 12, 15, 14),
 
@@ -160,6 +181,9 @@ def create_mesh(
         (31, 29, 13, 14),
 
         (33, 32, 34, 35),
+
+        # (45, 44, 52, 53),
+        # (47, 46, 55, 54),
     ]
 
     nb_verts = len(vertices)
@@ -354,6 +378,26 @@ def create_mesh(
                 (llslv, llslv - nbidx, llsrv - nbidx, llsrv),
                 (lrslv - nbidx, lrslv, lrsrv, lrsrv - nbidx),
             ])
+
+    ret = half_hex.create_clip_face(
+        f,
+        r,
+        clip_depth,
+        clip_thickness,
+        clip_height,
+        clip_precision,
+        hex_face,
+        hex_walls_height,
+        1,
+        len(vertices),
+        Vector((xr0, 0, z0)),
+        -math.pi / 2,
+        'Z'
+    )
+
+    vertices.extend(ret[0])
+    edges.extend(ret[1])
+    faces.extend(ret[2])
 
     mesh.from_pydata(vertices, edges, faces)
     mesh.update()

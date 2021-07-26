@@ -1,5 +1,5 @@
+from optics import hex2xyz
 import bpy
-import bmesh
 import math
 from mathutils import Matrix, Vector
 
@@ -21,17 +21,19 @@ def get_triangle_h(triangle_side_length):
 def get_clip_radius(triangle_side_length):
     return 1.0 * triangle_side_length
 
-def create_mesh(depth, thickness, height, precision):
-    mesh = bpy.data.meshes.new(clip_name + str((
-        depth, thickness, height, precision
-    )))
-
+# fvi: first vertex index
+def create_clip_mesh_data(
+    depth, thickness, height, precision, fvi
+):
     triangle_side_length = get_triangle_side_length(depth, thickness)
     triangle_h = get_triangle_h(triangle_side_length)
 
     hs = 0.5 * triangle_side_length
     hh = 0.5 * height
 
+    sx = hs + thickness - triangle_side_length * math.cos(start_angle + arc_angle)
+
+    v_border = Vector((sx, 0, 0))
     vt = Vector((thickness, 0, 0))
     vz = Vector((0, 0, hh))
 
@@ -48,32 +50,74 @@ def create_mesh(depth, thickness, height, precision):
     v4o = v4 + vt
 
     vertices = [
+        -v_border + vz,
+        -v_border - vz,
+        v_border - vz,
+        v_border + vz,
+
         v0 + vz, v1 + vz, v2 + vz, v3 + vz, v4 + vz,
         v0 - vz, v1 - vz, v2 - vz, v3 - vz, v4 - vz,
         v0o + vz, v1o + vz, v2o + vz, v3o + vz, v4o + vz,
         v0o - vz, v1o - vz, v2o - vz, v3o - vz, v4o - vz
     ]
-    edges = [
-        (0, 1), (0, 1), (3, 4),
-        (5, 6), (8, 9),
-        (10, 11), (13, 14),
-        (15, 16), (18, 19),
 
-        (0, 5), (4, 9),
-        (5, 15), (9, 19),
-        (15, 10), (19, 14),
-        (10, 0), (14, 4),
+    surface_verts = [fvi, fvi + 1, fvi + 2, fvi + 3]
+
+    nb_verts = len(vertices)
+
+    edges = [
+        (fvi, fvi + 1),
+        (fvi, fvi + 1),
+        (fvi + 1, fvi + 2),
+        (fvi + 2, fvi + 3),
+        (fvi + 3, fvi),
+
+        (fvi + 4, fvi + 5),
+        (fvi + 7, fvi + 8),
+
+        (fvi + 9, fvi + 10),
+        (fvi + 12, fvi + 13),
+
+        (fvi + 14, fvi + 15),
+        (fvi + 17, fvi + 18),
+
+        (fvi + 19, fvi + 20),
+        (fvi + 22, fvi + 23),
+
+        (fvi + 4, fvi + 9),
+        (fvi + 8, fvi + 13),
+
+        (fvi + 9, fvi + 19),
+        (fvi + 13, fvi + 23),
+
+        (fvi + 19, fvi + 14),
+        (fvi + 23, fvi + 18),
+
+        (fvi + 14, fvi + 4),
+        (fvi + 18, fvi + 8),
     ]
+
     faces = [
-        (0, 5, 15, 10),
-        (4, 9, 19, 14),
-        (0, 1, 11, 10), (10, 11, 16, 15), (15, 16, 6, 5), (5, 6, 1, 0),
-        (3, 4, 14, 13), (13, 14, 19, 18), (18, 19, 9, 8), (8, 9, 4, 3),
+        (fvi + 1, fvi, fvi + 14, fvi + 19),
+        (fvi + 3, fvi + 2, fvi + 23, fvi + 18),
+        (fvi + 9, fvi + 4, fvi + 8, fvi + 13),
+
+        (fvi + 4, fvi + 9, fvi + 19, fvi + 14),
+        (fvi + 8, fvi + 13, fvi + 23, fvi + 18),
+
+        (fvi + 4, fvi + 5, fvi + 15, fvi + 14),
+        (fvi + 14, fvi + 15, fvi + 20, fvi + 19),
+        (fvi + 19, fvi + 20, fvi + 10, fvi + 9),
+        (fvi + 9, fvi + 10, fvi + 5, fvi + 4),
+
+        (fvi + 7, fvi + 8, fvi + 18, fvi + 17),
+        (fvi + 17, fvi + 18, fvi + 23, fvi + 22),
+        (fvi + 22, fvi + 23, fvi + 13, fvi + 12),
+        (fvi + 12, fvi + 13, fvi + 8, fvi + 7),
     ]
 
     c1 = (-hs, 2 * triangle_h)
     c2 = (hs, 2 * triangle_h)
-    nb_verts = len(vertices)
 
     r = get_clip_radius(triangle_side_length)
     ro = r + thickness
@@ -120,7 +164,8 @@ def create_mesh(depth, thickness, height, precision):
         vertices.extend(verts)
 
         nbidx = 8
-        idx = nb_verts + i * nbidx
+        nvi = fvi + nb_verts
+        idx = nvi + i * nbidx
 
         if i > 0:
             edges.extend([
@@ -170,57 +215,52 @@ def create_mesh(depth, thickness, height, precision):
 
             if i == precision and max_idx != None:
                 edges.extend([
-                    (idx, 1),
-                    (idx + 1, 6),
-                    (max_idx + 2, 16),
-                    (max_idx + 3, 11),
+                    (idx, fvi + 5),
+                    (idx + 1, fvi + 10),
+                    (max_idx + 2, fvi + 20),
+                    (max_idx + 3, fvi + 15),
 
-                    (idx + 4, 3),
-                    (idx + 5, 8),
-                    (max_idx + 6, 18),
-                    (max_idx + 7, 13),
+                    (idx + 4, fvi + 7),
+                    (idx + 5, fvi + 12),
+                    (max_idx + 6, fvi + 22),
+                    (max_idx + 7, fvi + 17),
 
-                    (nb_verts, 2),
-                    (nb_verts + 1, 7),
-                    (nb_verts + 2, 17),
-                    (nb_verts + 3, 12),
+                    (nvi, fvi + 6),
+                    (nvi + 1, fvi + 11),
+                    (nvi + 2, fvi + 21),
+                    (nvi + 3, fvi + 16),
 
-                    (nb_verts + 4, 2),
-                    (nb_verts + 5, 7),
-                    (nb_verts + 6, 17),
-                    (nb_verts + 7, 12),
+                    (nvi + 4, fvi + 6),
+                    (nvi + 5, fvi + 11),
+                    (nvi + 6, fvi + 21),
+                    (nvi + 7, fvi + 16),
                 ])
 
                 faces.extend([
-                    (idx, 1, 11, max_idx + 3),
-                    (11, max_idx + 3, max_idx + 2, 16),
-                    (max_idx + 2, 16, 6, idx + 1),
-                    (idx + 1, 6, 1, idx),
+                    (idx, fvi + 5, fvi + 15, max_idx + 3),
+                    (fvi + 15, max_idx + 3, max_idx + 2, fvi + 20),
+                    (max_idx + 2, fvi + 20, fvi + 10, idx + 1),
+                    (idx + 1, fvi + 10, fvi + 5, idx),
 
-                    (idx + 4, 3, 13, max_idx + 7),
-                    (max_idx + 7, 13, 18, max_idx + 6),
-                    (max_idx + 6, 18, 8, idx + 5),
-                    (idx + 5, 8, 3, idx + 4),
+                    (idx + 4, fvi + 7, fvi + 17, max_idx + 7),
+                    (max_idx + 7, fvi + 17, fvi + 22, max_idx + 6),
+                    (max_idx + 6, fvi + 22, fvi + 12, idx + 5),
+                    (idx + 5, fvi + 12, fvi + 7, idx + 4),
 
-                    (2, nb_verts, nb_verts + 1, 7),
-                    (7, nb_verts + 1, nb_verts + 2, 17),
-                    (17, nb_verts + 2, nb_verts + 3, 12),
-                    (12, nb_verts + 3, nb_verts, 2),
+                    (fvi + 6, nvi, nvi + 1, fvi + 11),
+                    (fvi + 11, nvi + 1, nvi + 2, fvi + 21),
+                    (fvi + 21, nvi + 2, nvi + 3, fvi + 16),
+                    (fvi + 16, nvi + 3, nvi, fvi + 6),
 
-                    (nb_verts + 4, 2, 7, nb_verts + 5),
-                    (nb_verts + 5, 7, 17, nb_verts + 6),
-                    (nb_verts + 6, 17, 12, nb_verts + 7),
-                    (nb_verts + 7, 12, 2, nb_verts + 4),
+                    (nvi + 4, fvi + 6, fvi + 11, nvi + 5),
+                    (nvi + 5, fvi + 11, fvi + 21, nvi + 6),
+                    (nvi + 6, fvi + 21, fvi + 16, nvi + 7),
+                    (nvi + 7, fvi + 16, fvi + 6, nvi + 4),
                 ])
 
+    return [vertices, edges, faces, surface_verts]
 
-
-    mesh.from_pydata(vertices, edges, faces)
-    mesh.update()
-
-    return mesh
-
-def make_hole(vec, angle, axis, depth, thickness, height, first_vert_idx):
+def create_clip_hole_mesh_data(depth, thickness, height, fvi):
     triangle_side_length = get_triangle_side_length(depth, thickness)
     triangle_h = get_triangle_h(triangle_side_length)
 
@@ -228,89 +268,134 @@ def make_hole(vec, angle, axis, depth, thickness, height, first_vert_idx):
     hh = 0.5 * height
 
     sx = hs + thickness - triangle_side_length * math.cos(start_angle + arc_angle)
-    sx2 = sx + triangle_side_length * math.cos(math.pi / 6)
+    sx2 = sx + triangle_side_length * math.cos(math.pi - arc_angle)
 
     y1 = -triangle_h
     y2 = -depth
 
-    rot = Matrix.Rotation(angle, 3, axis)
-
     vertices = [
-        vec + rot @ Vector((-sx, 0, hh)),
-        vec + rot @ Vector((-sx, 0, -hh)),
-        vec + rot @ Vector((sx, 0, -hh)),
-        vec + rot @ Vector((sx, 0, hh)),
+        Vector((-sx, 0, hh)),
+        Vector((-sx, 0, -hh)),
+        Vector((sx, 0, -hh)),
+        Vector((sx, 0, hh)),
 
-        vec + rot @ Vector((-sx, y1, hh)),
-        vec + rot @ Vector((-sx, y1, -hh)),
-        vec + rot @ Vector((sx, y1, -hh)),
-        vec + rot @ Vector((sx, y1, hh)),
+        Vector((-sx, y1, hh)),
+        Vector((-sx, y1, -hh)),
+        Vector((sx, y1, -hh)),
+        Vector((sx, y1, hh)),
 
-        vec + rot @ Vector((-sx2, y1, hh)),
-        vec + rot @ Vector((-sx2, y1, -hh)),
-        vec + rot @ Vector((sx2, y1, -hh)),
-        vec + rot @ Vector((sx2, y1, hh)),
+        Vector((-sx2, y1, hh)),
+        Vector((-sx2, y1, -hh)),
+        Vector((sx2, y1, -hh)),
+        Vector((sx2, y1, hh)),
 
-        vec + rot @ Vector((-sx2, y2, hh)),
-        vec + rot @ Vector((-sx2, y2, -hh)),
-        vec + rot @ Vector((sx2, y2, -hh)),
-        vec + rot @ Vector((sx2, y2, hh)),
+        Vector((-sx2, y2, hh)),
+        Vector((-sx2, y2, -hh)),
+        Vector((sx2, y2, -hh)),
+        Vector((sx2, y2, hh)),
     ]
 
+    surface_verts = [fvi, fvi + 1, fvi + 2, fvi + 3]
+
     edges = [
-        (first_vert_idx, first_vert_idx + 1),
-        (first_vert_idx + 1, first_vert_idx + 2),
-        (first_vert_idx + 2, first_vert_idx + 3),
-        (first_vert_idx + 3, first_vert_idx),
+        (fvi, fvi + 1),
+        (fvi + 1, fvi + 2),
+        (fvi + 2, fvi + 3),
+        (fvi + 3, fvi),
 
-        (first_vert_idx + 4, first_vert_idx + 5),
-        (first_vert_idx + 5, first_vert_idx + 6),
-        (first_vert_idx + 6, first_vert_idx + 7),
-        (first_vert_idx + 7, first_vert_idx + 4),
+        (fvi + 4, fvi + 5),
+        (fvi + 5, fvi + 6),
+        (fvi + 6, fvi + 7),
+        (fvi + 7, fvi + 4),
 
-        (first_vert_idx + 8, first_vert_idx + 9),
-        (first_vert_idx + 9, first_vert_idx + 10),
-        (first_vert_idx + 10, first_vert_idx + 11),
-        (first_vert_idx + 11, first_vert_idx + 8),
+        (fvi + 8, fvi + 9),
+        (fvi + 9, fvi + 10),
+        (fvi + 10, fvi + 11),
+        (fvi + 11, fvi + 8),
 
-        (first_vert_idx + 12, first_vert_idx + 13),
-        (first_vert_idx + 13, first_vert_idx + 14),
-        (first_vert_idx + 14, first_vert_idx + 15),
-        (first_vert_idx + 15, first_vert_idx + 12),
+        (fvi + 12, fvi + 13),
+        (fvi + 13, fvi + 14),
+        (fvi + 14, fvi + 15),
+        (fvi + 15, fvi + 12),
 
-        (first_vert_idx, first_vert_idx + 4),
-        (first_vert_idx + 1, first_vert_idx + 5),
-        (first_vert_idx + 2, first_vert_idx + 6),
-        (first_vert_idx + 3, first_vert_idx + 7),
+        (fvi, fvi + 4),
+        (fvi + 1, fvi + 5),
+        (fvi + 2, fvi + 6),
+        (fvi + 3, fvi + 7),
 
-        (first_vert_idx + 4, first_vert_idx + 8),
-        (first_vert_idx + 5, first_vert_idx + 9),
-        (first_vert_idx + 6, first_vert_idx + 10),
-        (first_vert_idx + 7, first_vert_idx + 11),
+        (fvi + 4, fvi + 8),
+        (fvi + 5, fvi + 9),
+        (fvi + 6, fvi + 10),
+        (fvi + 7, fvi + 11),
 
-        (first_vert_idx + 8, first_vert_idx + 12),
-        (first_vert_idx + 9, first_vert_idx + 13),
-        (first_vert_idx + 10, first_vert_idx + 14),
-        (first_vert_idx + 11, first_vert_idx + 15),
+        (fvi + 8, fvi + 12),
+        (fvi + 9, fvi + 13),
+        (fvi + 10, fvi + 14),
+        (fvi + 11, fvi + 15),
     ]
 
     faces = [
-        (first_vert_idx, first_vert_idx + 4, first_vert_idx + 5, first_vert_idx + 1),
-        (first_vert_idx + 1, first_vert_idx + 5, first_vert_idx + 6, first_vert_idx + 2),
-        (first_vert_idx + 2, first_vert_idx + 6, first_vert_idx + 7, first_vert_idx + 3),
-        (first_vert_idx + 3, first_vert_idx + 7, first_vert_idx + 4, first_vert_idx),
+        (fvi, fvi + 4, fvi + 5, fvi + 1),
+        (fvi + 1, fvi + 5, fvi + 6, fvi + 2),
+        (fvi + 2, fvi + 6, fvi + 7, fvi + 3),
+        (fvi + 3, fvi + 7, fvi + 4, fvi),
 
-        (first_vert_idx + 4, first_vert_idx + 8, first_vert_idx + 9, first_vert_idx + 5),
-        (first_vert_idx + 5, first_vert_idx + 9, first_vert_idx + 10, first_vert_idx + 6),
-        (first_vert_idx + 6, first_vert_idx + 10, first_vert_idx + 11, first_vert_idx + 7),
-        (first_vert_idx + 7, first_vert_idx + 11, first_vert_idx + 8, first_vert_idx + 4),
+        (fvi + 4, fvi + 8, fvi + 9, fvi + 5),
+        (fvi + 5, fvi + 9, fvi + 10, fvi + 6),
+        (fvi + 6, fvi + 10, fvi + 11, fvi + 7),
+        (fvi + 7, fvi + 11, fvi + 8, fvi + 4),
 
-        (first_vert_idx + 8, first_vert_idx + 12, first_vert_idx + 13, first_vert_idx + 9),
-        (first_vert_idx + 9, first_vert_idx + 13, first_vert_idx + 14, first_vert_idx + 10),
-        (first_vert_idx + 10, first_vert_idx + 14, first_vert_idx + 15, first_vert_idx + 11),
-        (first_vert_idx + 11, first_vert_idx + 15, first_vert_idx + 12, first_vert_idx + 8),
+        (fvi + 8, fvi + 12, fvi + 13, fvi + 9),
+        (fvi + 9, fvi + 13, fvi + 14, fvi + 10),
+        (fvi + 10, fvi + 14, fvi + 15, fvi + 11),
+        (fvi + 11, fvi + 15, fvi + 12, fvi + 8),
 
-        (first_vert_idx + 13, first_vert_idx + 12, first_vert_idx + 15, first_vert_idx + 14),
+        (fvi + 13, fvi + 12, fvi + 15, fvi + 14),
     ]
 
-    return [vertices, edges, faces, vertices[0:4]]
+    return [vertices, edges, faces, surface_verts]
+
+def is_clip_face(face, w_l):
+    return (face.z % 2 == 0 and w_l != 0) or w_l == 2
+
+
+# surface_indices: expected (tl, bl, br, tr)
+def get_clip(
+    depth,
+    thickness,
+    height,
+    precision,
+    face,
+    fvi = 0,
+    face_w_l = 1,
+    position = None,
+    angle = None,
+    axis = None
+):
+    vertices = []
+    edges = []
+    faces = []
+
+    surface = []
+
+    if is_clip_face(face, face_w_l):
+        ret = create_clip_mesh_data(depth, thickness, height, precision, fvi)
+        vertices.extend(ret[0])
+        edges.extend(ret[1])
+        faces.extend(ret[2])
+        surface = ret[3]
+    else:
+        ret = create_clip_hole_mesh_data(depth, thickness, height, fvi)
+        vertices.extend(ret[0])
+        edges.extend(ret[1])
+        faces.extend(ret[2])
+        surface = ret[3]
+
+    if (angle != None and axis != None) or position != None:
+        for i in range(0, len(vertices)):
+            if (angle != None and axis != None):
+                vertices[i] = Matrix.Rotation(angle, 3, axis) @ vertices[i]
+            if position != None:
+                vertices[i] += position
+
+    return [vertices, edges, faces, surface]
