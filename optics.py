@@ -125,7 +125,12 @@ def get_support_arm_points(n, r, m, arm_n, arm_omega):
     points = []
     for i in range(0, arm_n):
         points.append(
-            get_support_arm_point(n, r, m, arm_omega + i * math.tau / arm_n)
+            get_support_arm_point(
+                n,
+                r,
+                m,
+                arm_omega + i * math.tau / arm_n
+            )
         )
 
     return points

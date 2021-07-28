@@ -1,81 +1,78 @@
 import bpy
+import bmesh
 import math
+from meshes import screw
 
 support_arm_name = 'arm'
 
-# r: external radius
-# t: thickness
-# h: height
-# rp: circles precision
-# hp: number of inner circles
+# h: total height
+# outer_r: external radius
+# inner_r: internal radius
+# precision: circles precision
 def create_mesh(
-    r, t, h, rp, hp
+    h,
+    outer_r,
+    inner_r,
+    screw_length,
+    precision,
+    bm = None,
+    D = None,
+    P = None
 ):
-    mesh = bpy.data.meshes.new(
-        support_arm_name + '_' + str((r, t, h, rp, hp))
+    if bm == None:
+        bm = bmesh.new()
+
+    d = D if D != None else screw.get_D(2 * inner_r)
+    print('d', str(d))
+    step_h = 0.5 * d
+    step_w = P if P != None else screw.get_P(d)
+
+    screw_in_ret = screw.screw_in(
+        inner_r,
+        screw_length + 2 * step_w,
+        precision,
+        bm,
+        z_start = 0.001,
+        z_scale = -1,
+        fill_end=True,
+        D = d,
+        P = step_w
     )
 
-    vertices = []
-    edges = []
-    faces = []
+    screw_ret = screw.screw(
+        outer_r,
+        screw_length,
+        precision,
+        bm,
+        z_top = 0,
+        top_length=h - screw_length - step_w,
+        tip_r = 0.5 * step_h,
+        tip_length = step_w,
+        fill_tip=True,
+        D = d,
+        P = step_w
+    )
 
-    hs = h / (hp + 1)
-    ri = r - t
+    bmesh.ops.bridge_loops(
+        bm,
+        edges = screw_in_ret[2]
+            + screw_ret[2]
+    )
 
-    nb_verts = len(vertices)
+    mesh = bpy.data.meshes.new(
+        support_arm_name + '_' + str((
+            h,
+            outer_r,
+            inner_r,
+            screw_length,
+            precision,
+            bm,
+            D,
+            P
+        ))
+    )
 
-    for i in range(0, hp + 2):
-        for j in range(0, rp + 1):
-            alpha = j * math.tau / rp
-
-            nbidx = 2
-
-            trv = nb_verts + i * nbidx * (rp + 1) + j * nbidx
-            trvi = trv + 1
-            tlv = trv - nbidx
-            tlvi = tlv + 1
-
-            brv = trv - nbidx * (rp + 1)
-            brvi = brv + 1
-            blv = brv - nbidx
-            blvi = blv + 1
-
-            vertices.extend([
-                (
-                    r * math.cos(alpha),
-                    r * math.sin(alpha),
-                    hs * i
-                ),
-                (
-                    ri * math.cos(alpha),
-                    ri * math.sin(alpha),
-                    hs * i
-                ),
-            ])
-
-            if i == 0 or i == hp + 1:
-                edges.extend([
-                    #(trv, trvi),
-                ])
-
-                if j > 0:
-                    if i == 0:
-                        faces.extend([
-                            (trvi, trv, tlv, tlvi),
-                        ])
-                    else:
-                        faces.extend([
-                            (trv, trvi, tlvi, tlv),
-                        ])
-
-
-            if j > 0 and i > 0:
-                faces.extend([
-                    (blv, brv, trv, tlv),
-                    (brvi, blvi, tlvi, trvi),
-                ])
-
-    mesh.from_pydata(vertices, edges, faces)
-    mesh.update()
+    bm.to_mesh(mesh)
+    bm.free()
 
     return mesh

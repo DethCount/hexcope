@@ -26,8 +26,6 @@ def create_mesh(
     mesh_name = half_hex_name + '_' + str((e, f, s, t, it, wh, x, y, z))
     mesh = bpy.data.meshes.new(mesh_name)
 
-    hwh = 0.5 * wh
-
     te = t + e
     fit = t + it
 
@@ -73,10 +71,10 @@ def create_mesh(
     n340 = w34.cross(w40).length
     n403 = w40.cross(w03).length
 
-    d1 = t * (v12 - v01) / n1
-    d2 = t * (v23 - v12) / n2
-    d3 = t * (v34 - v23) / n3
-    d4 = t * (v40 - v34) / n4
+    d1 = t * (v12n - v01n) / n1
+    d2 = t * (v23n - v12n) / n2
+    d3 = t * (v34n - v23n) / n3
+    d4 = t * (v40n - v34n) / n4
 
     d0 = tuple(t * (Vector(d1) + Vector(d4)).normalized())
 
@@ -89,7 +87,6 @@ def create_mesh(
     i5 = fit * (w40 - w34) / n340
 
     ecpi3 = e * math.cos(math.pi / 3)
-    d4x = 0.5 * (te + ecpi3)
 
     if x == 0 and y == 0:
         v1 = (
@@ -117,10 +114,6 @@ def create_mesh(
             v5[1],
             v5[2]
         )
-
-    # print(str(x), str(y), str(z))
-    # if x == 1 and y == 0 and z == 1:
-    # print(str(v1), str(v2), str(v3), str(v4), str(v5))
 
     vertices = [
         (v0[0], v0[1], v0[2] + t),
@@ -426,7 +419,9 @@ def create_clip_face(
     return [vertices, edges, faces]
 
 def create_object(
-    e, f, s, t, it, wh, x, y, z,
+    e, f, s, t, it, wh,
+    font_size, font_extrusion,
+    x, y, z,
     clip_depth,
     clip_height,
     clip_thickness,
@@ -461,6 +456,7 @@ def create_object(
     bpy.context.object.data.body = str(half_hex_num)
     bpy.context.object.data.align_x = 'CENTER'
     bpy.context.object.data.align_y = 'CENTER'
+    bpy.context.object.data.size = font_size
 
     text_name = bpy.context.object.name
 
@@ -490,13 +486,13 @@ def create_object(
     bpy.context.object.location.y = mid[1]
     bpy.context.object.location.z = obj.location.z + mid[2]
 
-    bpy.ops.transform.resize(value=(-0.25, 0.25, 0.25))
+    bpy.ops.transform.resize(value=(-1, 1, 1))
     bpy.ops.object.convert(target='MESH', keep_original=False)
 
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.select_all( action = 'SELECT' )   # Select all mesh elements
     bpy.ops.mesh.extrude_region_move(
-        TRANSFORM_OT_translate={"value":(0, 0, -t)} # Extrude by 1 BU on Z axis
+        TRANSFORM_OT_translate={"value":(0, 0, -font_extrusion)} # Extrude by 1 BU on Z axis
     )
     bpy.ops.object.mode_set( mode = 'OBJECT' )
 

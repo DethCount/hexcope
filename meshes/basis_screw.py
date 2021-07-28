@@ -8,20 +8,16 @@ basis_screw_name = 'basis_screw'
 
 def create_mesh(
     r,
+    length,
     start_h,
-    iterations,
-    step_h,
-    step_w,
     head_r,
     head_h,
-    bottom_r,
-    bottom_h,
     p
 ):
     bm = bmesh.new()
 
     z_head_top = -head_h
-    z_head_bottom = -0.01
+    z_head_bottom = -0.001 * head_h
 
     head_top = bmesh.ops.create_circle(
         bm,
@@ -59,19 +55,18 @@ def create_mesh(
         verts = head_bottom['verts']
     )
 
+    screw_P = screw.get_P(2.0 * r)
     screw_ret = screw.screw(
         r,
-        iterations,
-        step_h,
-        step_w,
+        length,
         p,
         bm,
         z_top = z_head_bottom,
-        ccw = False,
         top_length = start_h,
-        bottom_length = bottom_h,
-        tip_r = r - 2 * step_h,
-        tip_length = step_w
+        tip_r = r - 2 * screw_P,
+        tip_length = screw_P,
+        fill_tip = True,
+        P = screw_P
     )
 
     bmesh.ops.bridge_loops(
@@ -111,14 +106,10 @@ def create_mesh(
         basis_screw_name
         + '_' + str((
             r,
+            length,
             start_h,
-            iterations,
-            step_h,
-            step_w,
             head_r,
             head_h,
-            bottom_r,
-            bottom_h,
             p
         ))
     )

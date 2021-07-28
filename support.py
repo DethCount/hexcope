@@ -12,7 +12,7 @@ if not dir in sys.path:
 from hyperparameters import n, r, h, f, p, e, trig_h, \
     primary_t, support_secondary_is_newton, \
     clip_depth, clip_thickness, clip_height, clip_precision
-from optics import parabolic_z, spherical_z, hex2xy, hex2xyz, get_support_arm_points
+from optics import parabolic_z, hex2xyz, get_support_arm_points
 from meshes import \
     primary_mirror_normals, \
         half_hex, \
@@ -26,27 +26,30 @@ from meshes import \
 #n = 0
 p = 25
 fw = 0.05 * r # fixation half width
-fd = 0.03 # fixation hole diameter
+fd = 0.003 # fixation hole diameter
 
 current_triangle_num = 0
 trig_name = 'tri'
+draw_rays = False
 
-support_half_hex_e = 0.015
+support_half_hex_e = 0.0015
 support_half_hex_f = f
 support_half_hex_s = r
 support_half_hex_t = h
 support_half_hex_it = 0.25 * support_half_hex_t
 support_half_hex_walls_height = trig_h
+support_half_hex_font_size = 0.01
+support_half_hex_font_extrusion = 0.002
 support_half_hex_clip_depth = clip_depth
 support_half_hex_clip_height = clip_height
 support_half_hex_clip_thickness = clip_thickness
 support_half_hex_clip_precision = clip_precision
 
-support_spider_t = 0.03
-support_spider_h = 0.1
-support_spider_w = 2.0
+support_spider_t = 0.003
+support_spider_h = 0.01
+support_spider_w = 0.20
 
-support_secondary_z = 12
+support_secondary_z = 1.2
 
 support_spherical_secondary_name = 'spherical_secondary_mirror'
 support_spherical_secondary_t = support_spider_h
@@ -60,7 +63,9 @@ support_newton_secondary_t = support_spider_h
 support_newton_secondary_rx = r
 support_newton_secondary_ry = support_newton_secondary_rx
 support_newton_secondary_rp = 25
-support_newton_secondary_z = support_secondary_z + support_newton_secondary_rx * math.cos(math.pi / 4) + support_newton_secondary_t
+support_newton_secondary_z = support_secondary_z \
+    + support_newton_secondary_rx * math.cos(math.pi / 4) \
+    + support_newton_secondary_t
 
 support_secondary_final_name = support_spherical_secondary_name
 support_secondary_final_z = support_spherical_secondary_z
@@ -69,20 +74,35 @@ if support_secondary_is_newton:
     support_secondary_final_name = support_newton_secondary_name
     support_secondary_final_z = support_newton_secondary_z
 
-support_arm_e = e
-support_arm_r = 0.1
-support_arm_t = 0.03
-support_arm_h = 2
-support_arm_rp = 25
-support_arm_hp = 18
+support_arm_h = 0.2
+support_arm_outer_r = 0.01
+support_arm_inner_r = 0.006
+support_arm_screw_length = 0.02
+support_arm_precision = 50
+support_arm_D = None
+support_arm_P = None
+
 support_arm_n = 3
 support_arm_omega = 0
 support_arm_margin = 0.25 * r
-support_arm_points = get_support_arm_points(n, r, support_arm_margin, support_arm_n, support_arm_omega)
-support_arm_d = math.sqrt(support_arm_points[0][1][0] ** 2 + support_arm_points[0][1][1] ** 2)
-support_arm_rld = math.sqrt((support_arm_points[0][1][0] - support_arm_points[0][0][0]) ** 2 + (support_arm_points[0][1][1] - support_arm_points[0][0][1]) ** 2)
-support_arm_z = parabolic_z(f, support_arm_d) - h
-support_arm_nz = math.ceil(support_secondary_z / support_arm_h)
+support_arm_points = get_support_arm_points(
+    n,
+    r,
+    support_arm_margin,
+    support_arm_n,
+    support_arm_omega
+)
+support_arm_d = math.sqrt(
+    support_arm_points[0][1][0] ** 2
+    + support_arm_points[0][1][1] ** 2
+)
+support_arm_rld = math.sqrt(
+    (support_arm_points[0][1][0] - support_arm_points[0][0][0]) ** 2 \
+    + (support_arm_points[0][1][1] - support_arm_points[0][0][1]) ** 2
+)
+support_arm_outer_length = support_arm_h - support_arm_screw_length
+support_arm_nz = math.ceil((support_secondary_final_z + 0.5 * support_arm_outer_length) / support_arm_outer_length)
+support_arm_z = support_secondary_final_z - support_arm_nz * support_arm_outer_length
 
 support_arm_block_e = e
 support_arm_block_f = f
@@ -90,25 +110,25 @@ support_arm_block_n = n
 support_arm_block_r = r
 support_arm_block_t = h
 support_arm_block_m = support_arm_margin
-support_arm_block_wl = 0.17
+support_arm_block_wl = 0.017
 support_arm_block_p = p
 support_arm_block_hex_thickness = support_half_hex_t
 support_arm_block_hex_interior_thickness = support_half_hex_it
 support_arm_block_hex_walls_height = trig_h
 support_arm_block_hex_primary_thickness = primary_t
-support_arm_block_arm_radius = support_arm_r
+support_arm_block_arm_radius = support_arm_outer_r
 support_arm_block_clip_depth = support_half_hex_clip_depth
 support_arm_block_clip_thickness = support_half_hex_clip_thickness
 support_arm_block_clip_height = support_half_hex_clip_height
 support_arm_block_clip_precision = support_half_hex_clip_precision
 
-support_arm_head_e = support_arm_e
-support_arm_head_t = 0.05
+support_arm_head_e = e
+support_arm_head_t = 0.005
 support_arm_head_h = support_spider_h
 support_arm_head_z = support_secondary_final_z
 support_arm_head_arm_d = support_arm_rld
-support_arm_head_arm_r = support_arm_r
-support_arm_head_arm_rp = support_arm_rp
+support_arm_head_arm_r = support_arm_outer_r
+support_arm_head_arm_rp = support_arm_precision
 support_arm_spider_thickness = support_spider_t
 support_arm_spider_length = 1.5 * r
 
@@ -128,6 +148,8 @@ if support_secondary_is_newton:
         support_half_hex_t,
         support_half_hex_it,
         support_half_hex_walls_height,
+        support_half_hex_font_size,
+        support_half_hex_font_extrusion,
         0,
         0,
         0,
@@ -143,6 +165,8 @@ if support_secondary_is_newton:
         support_half_hex_t,
         support_half_hex_it,
         support_half_hex_walls_height,
+        support_half_hex_font_size,
+        support_half_hex_font_extrusion,
         0,
         0,
         3,
@@ -168,6 +192,8 @@ for i in range(0, n + 1):
                 support_half_hex_t,
                 support_half_hex_it,
                 support_half_hex_walls_height,
+                support_half_hex_font_size,
+                support_half_hex_font_extrusion,
                 x,
                 y,
                 0,
@@ -184,6 +210,8 @@ for i in range(0, n + 1):
                 support_half_hex_t,
                 support_half_hex_it,
                 support_half_hex_walls_height,
+                support_half_hex_font_size,
+                support_half_hex_font_extrusion,
                 x,
                 y,
                 3,
@@ -198,44 +226,47 @@ for i in range(0, n + 1):
     hexes.extend(curr_hexes)
     curr_hexes = []
 
-ray_collection = bpy.data.collections.new('ray_collection')
-bpy.context.scene.collection.children.link(ray_collection)
+if draw_rays:
+    ray_collection = bpy.data.collections.new('ray_collection')
+    bpy.context.scene.collection.children.link(ray_collection)
 
-for i in range(0, len(hexes)):
-    e = 0.05
-    normal_mesh = primary_mirror_normals.create_mesh(
-        e,
-        f,
-        r,
-        hexes[i][0],
-        hexes[i][1],
-        0
-    )
-
-    normal_object = bpy.data.objects.new('primary_mirror_normal_' + str(hexes[i][0]) + '_' + str(hexes[i][1]) + '_0', normal_mesh)
-    ray_collection.objects.link(normal_object)
-
-    if not support_secondary_is_newton:
-        ray_mesh = secondary_mirror_spherical_rays.create_mesh(
-            e,
-            support_spherical_secondary_z,
-            support_spherical_secondary_r,
-            support_spherical_secondary_f,
+    for i in range(0, len(hexes)):
+        normal_mesh = primary_mirror_normals.create_mesh(
+            0.005,
+            f,
+            r,
             hexes[i][0],
             hexes[i][1],
-            0,
-            f,
-            r
+            0
         )
-        ray_object = bpy.data.objects.new('ray_' + str(hexes[i][0]) + '_' + str(hexes[i][1]) + '_0', ray_mesh)
-        ray_collection.objects.link(ray_object)
+
+        normal_object = bpy.data.objects.new('primary_mirror_normal_' + str(hexes[i][0]) + '_' + str(hexes[i][1]) + '_0', normal_mesh)
+        ray_collection.objects.link(normal_object)
+
+        if not support_secondary_is_newton:
+            ray_mesh = secondary_mirror_spherical_rays.create_mesh(
+                0.005,
+                support_spherical_secondary_z,
+                support_spherical_secondary_r,
+                support_spherical_secondary_f,
+                hexes[i][0],
+                hexes[i][1],
+                0,
+                f,
+                r
+            )
+            ray_object = bpy.data.objects.new('ray_' + str(hexes[i][0]) + '_' + str(hexes[i][1]) + '_0', ray_mesh)
+            ray_collection.objects.link(ray_object)
 
 arm_mesh = support_arm.create_mesh(
-    support_arm_r,
-    support_arm_t,
     support_arm_h,
-    support_arm_rp,
-    support_arm_hp
+    support_arm_outer_r,
+    support_arm_inner_r,
+    support_arm_screw_length,
+    support_arm_precision,
+    bm = None,
+    D = support_arm_D,
+    P = support_arm_P
 )
 
 arm_block_mesh = support_arm_block.create_mesh(
@@ -304,7 +335,7 @@ for z in range(0, support_arm_nz):
         beta = support_arm_omega + alpha
         rot = Euler((0, 0, beta), 'XYZ')
 
-        sz = support_arm_z + z * (support_arm_h + support_arm_e)
+        sz = support_arm_z + z * support_arm_outer_length
 
         if z == 0:
             arm_block = bpy.data.objects.new(
@@ -343,6 +374,6 @@ secondary_object = bpy.data.objects.new(support_secondary_final_name, secondary_
 arm_collection.objects.link(secondary_object)
 secondary_object.location.z = support_secondary_z
 
-# bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\support_", check_existing=True, filter_glob='*.stl', use_selection=False, global_scale=100.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z')
+# bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\support_", check_existing=True, filter_glob='*.stl', use_selection=False, global_scale=1000.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z')
 
 print("\nDONE\n\n\n")

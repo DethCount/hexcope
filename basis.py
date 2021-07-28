@@ -26,7 +26,7 @@ from meshes import \
 basis_wheel_e = e
 basis_wheel_f = f
 basis_wheel_t = h
-basis_wheel_h = 1.7
+basis_wheel_h = 0.17
 basis_wheel_r = r
 basis_wheel_p = p # wheel precision
 basis_wheel_wr = 0.8 * r # wheel radius
@@ -35,7 +35,7 @@ basis_wheel_clip_depth = clip_depth
 basis_wheel_clip_thickness = clip_thickness
 basis_wheel_clip_height = clip_height
 basis_wheel_clip_precision = clip_precision
-basis_wheel_arm_t = 0.1
+basis_wheel_arm_t = 0.01
 basis_wheel_top_z = 0
 basis_wheel_bottom_z = -basis_wheel_wr * math.sin(math.pi / 3)
 
@@ -49,29 +49,23 @@ basis_arm_wheel_thickness = basis_wheel_t
 basis_arm_wheel_radius = basis_wheel_wr
 basis_arm_middle_bar_radius = basis_wheel_mr
 basis_arm_teeth_width = r
-basis_arm_teeth_height = 0.2
+basis_arm_teeth_height = 0.02
 basis_arm_teeth_thickness = 0.8 * basis_arm_t
 
 basis_screw_r = basis_wheel_mr - e
-basis_screw_start_e = 0.03
-basis_screw_start = 2 * basis_wheel_t + basis_wheel_arm_t + basis_screw_start_e
-basis_screw_iterations = 3
-basis_screw_step_h = 0.02
-basis_screw_step_w = 0.03
-basis_screw_head_r = basis_screw_r + 0.03
-basis_screw_head_h = 0.03
-basis_screw_bottom_r = basis_screw_r - 2 * basis_screw_step_h
-basis_screw_bottom_h = basis_screw_step_w
+basis_screw_length = 0.01
+basis_screw_start = 2 * basis_wheel_t + basis_wheel_arm_t
+basis_screw_head_r = basis_screw_r + 0.003
+basis_screw_head_h = 0.003
 basis_screw_p = 100
 
 basis_cap_r = basis_screw_r
-basis_cap_t = basis_screw_step_h
-basis_cap_iterations = basis_screw_iterations + 1
-basis_cap_bottom_h = basis_screw_start_e
-basis_cap_h = basis_cap_bottom_h + (basis_cap_iterations + 1) * basis_screw_step_w + basis_cap_t
-basis_cap_step_h = basis_screw_step_h
-basis_cap_step_w = basis_screw_step_w
+basis_cap_t = 0.003
+basis_cap_bottom_h = 0.003
+basis_cap_h = basis_cap_bottom_h + 1.5 * basis_screw_length + basis_cap_t
 basis_cap_p = basis_screw_p
+basis_cap_head_r = basis_cap_r + 0.01
+basis_cap_head_length = 0.01
 
 basis_leg_e = basis_arm_e
 basis_leg_t = 2 * basis_arm_t + 2 * basis_arm_e
@@ -82,15 +76,15 @@ basis_leg_z = basis_arm_z - basis_arm_h
 basis_leg_teeth_width = basis_arm_teeth_width
 basis_leg_teeth_height = basis_arm_teeth_height
 basis_leg_teeth_thickness = basis_arm_teeth_thickness
-basis_leg_side_teeth_width = 0.1
-basis_leg_side_teeth_height = 0.15
+basis_leg_side_teeth_width = 0.01
+basis_leg_side_teeth_height = 0.015
 basis_leg_side_teeth_thickness = 0.6 * basis_leg_t
-basis_leg_side_teeth_z = 0.5 * (2 * 0.04 + basis_leg_side_teeth_width)
+basis_leg_side_teeth_z = 0.5 * (2 * 0.004 + basis_leg_side_teeth_width)
 
 basis_foot_e = basis_leg_e
 basis_foot_t = basis_leg_t
 basis_foot_h = 2 * basis_leg_side_teeth_z
-basis_foot_w1 = 0.1
+basis_foot_w1 = 0.01
 basis_foot_w2 = 0.4 * basis_leg_w
 basis_foot_x = basis_leg_x
 basis_foot_y = -0.5 * basis_leg_w
@@ -122,7 +116,7 @@ basis_plate_top_foot_w2 = basis_foot_w2
 basis_plate_top_foot_thickness = basis_foot_t
 
 basis_plate_axis_e = basis_plate_top_e
-basis_plate_axis_t = 0.04
+basis_plate_axis_t = 0.004
 basis_plate_axis_r = basis_plate_top_r * math.cos(math.pi / 6)
 basis_plate_axis_p = basis_plate_top_p
 basis_plate_axis_x = basis_plate_top_x - (math.sqrt(3) / 2) * r + 0.5 * h
@@ -204,19 +198,21 @@ basis_wheel_mesh_l = basis_wheel.create_mesh(
 
 basis_wheel_screw_mesh = basis_screw.create_mesh(
     basis_screw_r,
+    basis_screw_length,
     basis_screw_start,
-    basis_screw_iterations,
-    basis_screw_step_h,
-    basis_screw_step_w,
     basis_screw_head_r,
     basis_screw_head_h,
-    basis_screw_bottom_r,
-    basis_screw_bottom_h,
     basis_screw_p
 )
 basis_wheel_screw_mesh.transform(
     Matrix.Translation(
-        Vector((-0.5 * basis_wheel_t - 0.5 * basis_wheel_arm_t - basis_wheel_t, 0, basis_wheel_bottom_z))
+        Vector((
+            -0.5 * basis_wheel_t \
+                - 0.5 * basis_wheel_arm_t \
+                - basis_wheel_t,
+            0,
+            basis_wheel_bottom_z
+        ))
     )
 )
 
@@ -224,15 +220,19 @@ basis_wheel_screw_cap_mesh = basis_cap.create_mesh(
     basis_cap_r,
     basis_cap_t,
     basis_cap_h,
-    basis_cap_iterations,
-    basis_cap_step_h,
-    basis_cap_step_w,
     basis_cap_bottom_h,
-    basis_cap_p
+    basis_cap_p,
+    bm = None,
+    head_r = basis_cap_head_r,
+    head_length = basis_cap_head_length
 )
 basis_wheel_screw_cap_mesh.transform(
     Matrix.Translation(
-        Vector((0.5 * basis_wheel_arm_t + basis_wheel_t, 0, basis_wheel_bottom_z))
+        Vector((
+            basis_wheel_arm_t + e,
+            0,
+            basis_wheel_bottom_z
+        ))
     )
 )
 
@@ -428,4 +428,4 @@ basis_collection.objects.link(basis_plate_bottom_l)
 move_basis_to(basis_plate_bottom_l, 3)
 
 print('done')
-# bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\", check_existing=True, filter_glob='*.stl', use_selection=False, global_scale=100.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z')
+# bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\", check_existing=True, filter_glob='*.stl', use_selection=False, global_scale=1000.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z')
