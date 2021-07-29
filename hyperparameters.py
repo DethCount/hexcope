@@ -5,7 +5,7 @@ f = 1.6 # focal length
 p = 100 # precision in parts of 1
 e = 0.0004 # epsilon margin
 
-trig_h = 2 * h # triangle walls height
+trig_h = 1.5 * h # triangle walls height
 primary_t = 0.0008
 
 support_secondary_is_newton = True
