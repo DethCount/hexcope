@@ -12,6 +12,7 @@ half_hex_num = 0
 # f : focal length
 # s : hex side length
 # t : half hex thickness
+# it : inner thickness
 # wh : half hex walls height
 # x : cartesian (1, 0)
 # y : cartesian (math.cos(math.pi/6), math.sin(math.pi/6))
@@ -21,7 +22,7 @@ def create_mesh(
     clip_depth,
     clip_height,
     clip_thickness,
-    clip_precision
+    clip_e
 ):
     mesh_name = half_hex_name + '_' + str((e, f, s, t, it, wh, x, y, z))
     mesh = bpy.data.meshes.new(mesh_name)
@@ -272,12 +273,12 @@ def create_mesh(
                     else (Vector(v0) - 0.5 * v40)
 
             ret = create_clip_face(
+                clip_e,
                 f,
                 s,
                 clip_depth,
                 clip_thickness,
                 clip_height,
-                clip_precision,
                 Vector((x, y, z + dz)),
                 wh,
                 w_l,
@@ -296,12 +297,12 @@ def create_mesh(
 
 
 def create_clip_face(
+    e,
     f,
     r,
     depth,
     thickness,
     height,
-    precision,
     face,
     face_height,
     face_w_l = 1,
@@ -358,13 +359,14 @@ def create_clip_face(
     faces = []
 
     ret = clip.get_clip(
+        e,
         depth,
         thickness,
         height,
-        precision,
         face,
         fvi + len(vertices),
-        face_w_l
+        face_w_l,
+        is_left_clip = True
     )
 
     for i in range(0, len(ret[0])):
@@ -378,13 +380,14 @@ def create_clip_face(
     surface_l = ret[3]
 
     ret = clip.get_clip(
+        e,
         depth,
         thickness,
         height,
-        precision,
         face,
         fvi + len(vertices),
-        face_w_l
+        face_w_l,
+        is_left_clip = False
     )
 
     for i in range(0, len(ret[0])):
@@ -425,7 +428,7 @@ def create_object(
     clip_depth,
     clip_height,
     clip_thickness,
-    clip_precision
+    clip_e
 ):
     global half_hex_num
     half_hex_num += 1
@@ -439,7 +442,7 @@ def create_object(
             clip_depth,
             clip_height,
             clip_thickness,
-            clip_precision
+            clip_e
         )
     )
 

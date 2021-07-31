@@ -20,13 +20,13 @@ from meshes import half_hex
 def create_mesh(
     e, f, t, h, r, p, wr, mr, z,
     hex_thickness, hex_walls_height, hex_face,
-    clip_depth, clip_thickness, clip_height, clip_precision,
+    clip_depth, clip_thickness, clip_height, clip_e,
     arm_t
 ):
     mesh = bpy.data.meshes.new('basis_wheel_mesh' + str((
         e, f, t, h, r, p, wr, mr, z,
         hex_thickness, hex_walls_height, hex_face,
-        clip_depth, clip_thickness, clip_height, clip_precision,
+        clip_depth, clip_thickness, clip_height, clip_e,
         arm_t
     )))
 
@@ -380,12 +380,12 @@ def create_mesh(
             ])
 
     ret = half_hex.create_clip_face(
+        clip_e,
         f,
         r,
         clip_depth,
         clip_thickness,
         clip_height,
-        clip_precision,
         hex_face,
         hex_walls_height,
         1,

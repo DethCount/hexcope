@@ -14,7 +14,7 @@ def create_mesh(
     hex_thickness, hex_interior_thickness, hex_walls_height,
     primary_thickness,
     arm_radius,
-    clip_depth, clip_thickness, clip_height, clip_precision
+    clip_depth, clip_thickness, clip_height, clip_e
 ):
     mesh = bpy.data.meshes.new(
         support_arm_block_name
@@ -23,7 +23,7 @@ def create_mesh(
             hex_thickness, hex_interior_thickness, hex_walls_height,
             primary_thickness,
             arm_radius,
-            clip_depth, clip_thickness, clip_height, clip_precision
+            clip_depth, clip_thickness, clip_height, clip_e
         ))
     )
 
@@ -430,12 +430,12 @@ def create_mesh(
         ])
 
     ret = half_hex.create_clip_face(
+        clip_e,
         f,
         r,
         clip_depth,
         clip_thickness,
         clip_height,
-        clip_precision,
         face_l,
         hex_walls_height,
         1,
@@ -447,12 +447,12 @@ def create_mesh(
     faces.extend(ret[2])
 
     ret = half_hex.create_clip_face(
+        clip_e,
         f,
         r,
         clip_depth,
         clip_thickness,
         clip_height,
-        clip_precision,
         face_r,
         hex_walls_height,
         1,

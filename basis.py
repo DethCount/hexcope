@@ -10,7 +10,7 @@ if not dir in sys.path:
     sys.path.append(dir)
 
 from hyperparameters import f, r, h, p, e, trig_h, \
-    clip_depth, clip_thickness, clip_height, clip_precision
+    clip_depth, clip_thickness, clip_height, clip_e
 from optics import hex2xy
 from meshes import \
     basis_arm, \
@@ -34,7 +34,7 @@ basis_wheel_mr = 0.2 * r
 basis_wheel_clip_depth = clip_depth
 basis_wheel_clip_thickness = clip_thickness
 basis_wheel_clip_height = clip_height
-basis_wheel_clip_precision = clip_precision
+basis_wheel_clip_e = clip_e
 basis_wheel_arm_t = 0.01
 basis_wheel_top_z = 0
 basis_wheel_bottom_z = -basis_wheel_wr * math.sin(math.pi / 3)
@@ -172,7 +172,7 @@ basis_wheel_mesh_r = basis_wheel.create_mesh(
     basis_wheel_clip_depth,
     basis_wheel_clip_thickness,
     basis_wheel_clip_height,
-    basis_wheel_clip_precision,
+    basis_wheel_clip_e,
     basis_wheel_arm_t
 )
 
@@ -192,7 +192,7 @@ basis_wheel_mesh_l = basis_wheel.create_mesh(
     basis_wheel_clip_depth,
     basis_wheel_clip_thickness,
     basis_wheel_clip_height,
-    basis_wheel_clip_precision,
+    basis_wheel_clip_e,
     basis_wheel_arm_t
 )
 

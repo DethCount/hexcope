@@ -11,7 +11,7 @@ if not dir in sys.path:
 
 from hyperparameters import n, r, h, f, p, e, trig_h, \
     primary_t, support_secondary_is_newton, \
-    clip_depth, clip_thickness, clip_height, clip_precision
+    clip_depth, clip_thickness, clip_height, clip_e
 from optics import parabolic_z, hex2xyz, get_support_arm_points
 from meshes import \
     primary_mirror_normals, \
@@ -39,11 +39,11 @@ support_half_hex_t = h
 support_half_hex_it = 0.25 * support_half_hex_t
 support_half_hex_walls_height = trig_h
 support_half_hex_font_size = 0.01
-support_half_hex_font_extrusion = 0.002
+support_half_hex_font_extrusion = 0.001
 support_half_hex_clip_depth = clip_depth
 support_half_hex_clip_height = clip_height
 support_half_hex_clip_thickness = clip_thickness
-support_half_hex_clip_precision = clip_precision
+support_half_hex_clip_e = clip_e
 
 support_spider_t = 0.003
 support_spider_h = 0.01
@@ -120,7 +120,7 @@ support_arm_block_arm_radius = support_arm_outer_r
 support_arm_block_clip_depth = support_half_hex_clip_depth
 support_arm_block_clip_thickness = support_half_hex_clip_thickness
 support_arm_block_clip_height = support_half_hex_clip_height
-support_arm_block_clip_precision = support_half_hex_clip_precision
+support_arm_block_clip_e = support_half_hex_clip_e
 
 support_arm_head_e = e
 support_arm_head_t = 0.005
@@ -156,7 +156,7 @@ if support_secondary_is_newton:
         support_half_hex_clip_depth,
         support_half_hex_clip_height,
         support_half_hex_clip_thickness,
-        support_half_hex_clip_precision
+        support_half_hex_clip_e
     )
     half_hex.create_object(
         support_half_hex_e,
@@ -173,7 +173,7 @@ if support_secondary_is_newton:
         support_half_hex_clip_depth,
         support_half_hex_clip_height,
         support_half_hex_clip_thickness,
-        support_half_hex_clip_precision
+        support_half_hex_clip_e
     )
 
 for i in range(0, n + 1):
@@ -200,7 +200,7 @@ for i in range(0, n + 1):
                 support_half_hex_clip_depth,
                 support_half_hex_clip_height,
                 support_half_hex_clip_thickness,
-                support_half_hex_clip_precision
+                support_half_hex_clip_e
             )
 
             half_hex.create_object(
@@ -218,7 +218,7 @@ for i in range(0, n + 1):
                 support_half_hex_clip_depth,
                 support_half_hex_clip_height,
                 support_half_hex_clip_thickness,
-                support_half_hex_clip_precision
+                support_half_hex_clip_e
             )
 
             curr_hexes.append((x, y))
@@ -286,7 +286,7 @@ arm_block_mesh = support_arm_block.create_mesh(
     support_arm_block_clip_depth,
     support_arm_block_clip_thickness,
     support_arm_block_clip_height,
-    support_arm_block_clip_precision
+    support_arm_block_clip_e
 )
 arm_block_mesh.transform(
     Matrix.Translation(

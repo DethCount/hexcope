@@ -13,4 +13,4 @@ support_secondary_is_newton = True
 clip_depth = h - 0.002
 clip_height = 0.5 * trig_h
 clip_thickness = 0.0015
-clip_precision = 25
+clip_e = 0.001

@@ -23,7 +23,6 @@ def create_mesh(
         bm = bmesh.new()
 
     d = D if D != None else screw.get_D(2 * inner_r)
-    print('d', str(d))
     step_h = 0.5 * d
     step_w = P if P != None else screw.get_P(d)
 
