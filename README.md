@@ -68,14 +68,14 @@ Skirt distance: 2mm \
     - 4 x foot: 10g, 4m, 0h30
     - 2 x arm: 79g, 27m, 3h30
     - 2 x wheel: 135g, 46m, 10h30 (print vertically, bottom up)
-    - 2 x screw: 16g, 6m, 2h (0.1mm layer height, 100% speed)
-    - 2 x screw cap: 9g, 4m, 2h30  (0.1mm layer height, 100% speed)
-- Primary mirror (n=0, newton): 1280g, 444m, 51h
+    - 2 x screw: 16g, 6m, 2h (0.1mm layer height)
+    - 2 x screw cap: 9g, 4m, 2h30  (0.1mm layer height)
+- Primary mirror (n=0, newton): 1152g, 396m, 59h
     - 2 x center half hex: 47g, 16m, 1h30
-    - 16 x half hex: 75g, 26m, 3h
-- Secondary mirror support (f=16, arm_n=3, newton): 1,518kg, 642m, 66h
+    - 16 x half hex: 67g, 23m, 3h30
+- Secondary mirror support (f=16, arm_n=3, newton): 1,548kg, 552m, 192h
     - 3 x arm block: 177g, 60m, 6h30
-    - 42 x arm: 21g, 8m, 1h
+    - 48 x arm: 19g, 7m, 3h30 (layer height: 0.1mm, support: disabled)
     - 3 x arm head: 35g, 12m, 1h30
     - 3 x spider arms: unknown
 - Secondary mirror (f=16, arm_n=3, newton): 217g, 74m, 13h (disable support)

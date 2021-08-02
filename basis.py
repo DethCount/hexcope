@@ -53,7 +53,7 @@ basis_arm_teeth_height = 0.02
 basis_arm_teeth_thickness = 0.8 * basis_arm_t
 
 basis_screw_r = basis_wheel_mr - e
-basis_screw_length = 0.02
+basis_screw_length = 0.015
 basis_screw_start = 2 * basis_wheel_t + basis_wheel_arm_t
 basis_screw_head_r = basis_screw_r + 0.003
 basis_screw_head_h = 0.003
@@ -61,8 +61,9 @@ basis_screw_p = 100
 
 basis_cap_r = basis_screw_r
 basis_cap_t = 0.003
-basis_cap_bottom_h = 0.003
-basis_cap_h = basis_cap_bottom_h + 1.5 * basis_screw_length + basis_cap_t
+basis_cap_top_h = 0.005
+basis_cap_bottom_h = 0.0001
+basis_cap_h = basis_cap_bottom_h + 1.5 * basis_screw_length + basis_cap_top_h + basis_cap_t
 basis_cap_p = basis_screw_p
 basis_cap_head_r = basis_cap_r + 0.01
 basis_cap_head_length = 0.01
@@ -220,8 +221,9 @@ basis_wheel_screw_cap_mesh = basis_cap.create_mesh(
     basis_cap_r,
     basis_cap_t,
     basis_cap_h,
-    basis_cap_bottom_h,
     basis_cap_p,
+    basis_cap_top_h,
+    basis_cap_bottom_h,
     bm = None,
     head_r = basis_cap_head_r,
     head_length = basis_cap_head_length
