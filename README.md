@@ -27,6 +27,10 @@ Launch Blender (throw a terminal if you need to debug) \
 in the Scripting tab open support.py and run it \
 then open basis.py and run it
 
+OR
+in terminal:
+blender.exe -P support.py -P basis.py
+
 ## Gcode files
 DM_ is for Dagoma Magis 3d printer
 DD_ is for Dagoma DiscoEasy200
@@ -41,7 +45,9 @@ e.g : support_arm_n = 6 \
 ![Capture](https://github.com/Dethcount/hexcope/blob/main/img/snapshot_scaling_arms.png?raw=true)
 
 ## Assembling
-Primary mirror requires soldering PLA parts using filament \
+Just clip parts together. For mirror parts, use horizontal lines, not numbers.
+
+Primary mirror PLA parts can be soldered using filament \
 https://youtu.be/Q-PgjTYsAFY
 
 ## Printing
@@ -54,31 +60,40 @@ Outer wall speed: 50 mm/s \
 Inner wall speed: 70 mm/s \
 Top / Bottom speed: 70 mm/s \
 Travel speed: 100 mm/s \
-Initial layer speed: 15 mm/s \
+Initial layer speed: 20 mm/s \
+Number of slower layers: 1 \
 Support: touching buildplate \
 Build plate adhesion type: skirt \
 Skirt line count: 3 \
 Skirt distance: 2mm \
 
-- Basis: 1.290kg, 480m, 68h30
+- Basis: 1.326kg, 490m, 64h30
     - 2 x plate bottom: 96g, 33m, 3h30
     - 1 x plate axis: 205g, 70m, 7h
     - 2 x plate top: 96g, 33m, 3h30
-    - 2 x leg: 113g, 39m, 4h30  (support: everywhere)
+    - 2 x leg: 113g, 39m, 5h  (support: everywhere)
     - 4 x foot: 10g, 4m, 0h30
-    - 2 x arm: 79g, 27m, 3h30
-    - 2 x wheel: 135g, 46m, 10h30 (print vertically, bottom up)
-    - 2 x screw: 16g, 6m, 2h (0.1mm layer height)
-    - 2 x screw cap: 9g, 4m, 2h30  (0.1mm layer height)
-- Primary mirror (n=0, newton): 1152g, 396m, 59h
+    - 2 x arm: 79g, 27m, 4h
+    - 2 x wheel: 135g, 46m, 6h (print vertically, bottom up)
+    - 2 x screw: 18g, 6m, 2h30 (0.1mm layer height)
+    - 2 x screw cap: 25g, 9m, 3h30  (0.1mm layer height)
+- Primary mirror (n=0, newton): 1152g, 396m, 51h
     - 2 x center half hex: 47g, 16m, 1h30
-    - 16 x half hex: 67g, 23m, 3h30
-- Secondary mirror support (f=16, arm_n=3, newton): 1,548kg, 552m, 192h
-    - 3 x arm block: 177g, 60m, 6h30
-    - 48 x arm: 19g, 7m, 3h30 (layer height: 0.1mm, support: disabled)
-    - 3 x arm head: 35g, 12m, 1h30
-    - 3 x spider arms: unknown
-- Secondary mirror (f=16, arm_n=3, newton): 217g, 74m, 13h (disable support)
+    - 16 x half hex: 67g, 23m, 3h
+- OR Primary mirror (n=1, newton): 2506g, 860m, 111h
+    - 2 x center half hex: 47g, 16m, 1h30
+    - 36 x half hex: 67g, 23m, 3h
+- Secondary mirror support (n=0, f=16, arm_n=2, newton): 0,734kg, 280m, 103h
+    - 4 x arm block: 22g, 8m, 1h
+    - 32 x arm: 18g, 7m, 3h (layer height: 0.1mm, support: disabled)
+    - 2 x arm head: 35g, 12m, 1h30
+    - 2 x spider arms: unknown
+- OR Secondary mirror support (n=1, f=16, arm_n=2, newton): 0,734kg, 280m, 103h
+    - 4 x arm block: 22g, 8m, 1h
+    - 32 x arm: 18g, 7m, 3h (layer height: 0.1mm, support: disabled)
+    - 2 x arm head: 35g, 12m, 1h30
+    - 2 x spider arms: unknown
+- Secondary mirror (f=16, arm_n=2, newton): 217g, 74m, 13h (disable support)
 - Eyepiece support: unknown
 
 ## Current prototype state

@@ -5,6 +5,9 @@ import math
 from mathutils import Matrix, Vector
 from meshes import screw
 
+import importlib
+importlib.reload(screw)
+
 basis_cap_name = 'basis_cap'
 
 def create_mesh(
@@ -47,12 +50,6 @@ def create_mesh(
         for edg in vec.link_edges)
     )
 
-    bmesh.ops.translate(
-        bm,
-        vec = Vector((0, 0, zz_top)),
-        verts = circle_top['verts']
-    )
-
     circle_head_start = bmesh.ops.create_circle(
         bm,
         segments = p,
@@ -65,12 +62,6 @@ def create_mesh(
         for edg in vec.link_edges)
     )
 
-    bmesh.ops.translate(
-        bm,
-        vec = Vector((0, 0, zz_top)),
-        verts = circle_head_start['verts']
-    )
-
     circle_head_end = bmesh.ops.create_circle(
         bm,
         segments = p,
@@ -81,12 +72,6 @@ def create_mesh(
         edg
         for vec in circle_head_end['verts']
         for edg in vec.link_edges)
-    )
-
-    bmesh.ops.translate(
-        bm,
-        vec = Vector((0, 0, zz_top + head_length)),
-        verts = circle_head_end['verts']
     )
 
     circle_head_end_bottom = bmesh.ops.create_circle(
@@ -135,6 +120,24 @@ def create_mesh(
         bm,
         edges = circle_head_end_bottom_edges
             + circle_bottom_edges
+    )
+
+    bmesh.ops.translate(
+        bm,
+        vec = Vector((0, 0, zz_top)),
+        verts = circle_top['verts']
+    )
+
+    bmesh.ops.translate(
+        bm,
+        vec = Vector((0, 0, zz_top)),
+        verts = circle_head_start['verts']
+    )
+
+    bmesh.ops.translate(
+        bm,
+        vec = Vector((0, 0, zz_top + head_length)),
+        verts = circle_head_end['verts']
     )
 
     bmesh.ops.translate(

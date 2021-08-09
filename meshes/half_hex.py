@@ -310,6 +310,8 @@ def create_clip_face(
     position = None,
     angle = None,
     axis = 'Z',
+    padding_x = 0,
+    padding_z = 0,
 ):
     vl = Vector(hex2xyz(
         f,
@@ -325,19 +327,22 @@ def create_clip_face(
         round(face.x),
         round(face.y),
         round(face.z),
-        ((round(face_w_l) + 1) % 3)
+        (round(face_w_l) + 1) % 3
     ))
 
     dv = vl - vr
-    dvn = Vector((r, 0, dv.z)).normalized()
-    # displ = dvn * 0.25 * r
-    displ = dvn * 0.25 * r
 
-    vxz = 0.5 * r * dvn
-    vz = Vector((0, 0, face_height))
-    hvz = 0.5 * vz
-    half_face_length = 0.5 * (vr - vl).length
-    vhfl = Vector((half_face_length * dvn.x, 0, 0))
+    dvxyl = math.sqrt(dv.x ** 2 + dv.y ** 2)
+    dvxz = Vector((dvxyl, 0, dv.z))
+    lf = dvxz.length / r
+    dvn = dvxz.normalized()
+    displ = dvn * 0.25 * dvxz.length
+
+    vxz = (0.5 * dvxz.length  - padding_x) * dvn
+    voz = Vector((0, 0, face_height))
+    pz = Vector((0, 0, padding_z))
+    viz = voz - 2 * pz
+    hvz = 0.5 * viz
 
     if angle == None:
         angle = ((face.z + 2 * face_w_l) - 3) * math.pi / 3
@@ -347,10 +352,10 @@ def create_clip_face(
     vpos = position if position != None else Vector(0, 0, 0)
 
     vertices = [
-        vpos + (rot @ -vxz),
-        vpos + (rot @ (-vxz - vz)),
-        vpos + (rot @ (vxz - vz)),
-        vpos + (rot @ vxz)
+        vpos + (rot @ -vxz - pz),
+        vpos + (rot @ (-vxz - pz - viz)),
+        vpos + (rot @ (vxz - pz - viz)),
+        vpos + (rot @ vxz - pz)
     ]
 
     surface_indices = [fvi, fvi + 1, fvi + 2, fvi + 3]
@@ -500,7 +505,9 @@ def create_object(
     bpy.ops.object.mode_set( mode = 'OBJECT' )
 
     hex_collection.objects.link(bpy.context.object)
-    bpy.data.collections.get('Collection').objects.unlink(bpy.context.object)
+    coll = bpy.data.collections.get('Collection')
+    if bpy.context.object in coll.items():
+        coll.objects.unlink(bpy.context.object)
 
     bpy.context.view_layer.objects.active = bpy.data.objects[obj_name]
 

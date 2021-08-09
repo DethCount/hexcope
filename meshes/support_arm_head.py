@@ -1,226 +1,304 @@
 import bpy
+import bmesh
 import math
+from mathutils import Matrix, Vector
+from meshes import screw
 
 support_arm_head_name = 'arm_head_'
+support_arm_head_screw_in_name = 'arm_head_screw_in'
 
 # e: margin
 # t: head thickness arround arms
 # h: head height
-# d: distance between arms
+# arm_d: distance between arms
 # arm_r: arm radius
 # arm_rp: arm circles precision
 # spider_thickness: spider leg thickness
 # spider_length: spider leg length
-def create_mesh(e, t, h, arm_d, arm_r, arm_rp, spider_thickness, spider_length):
+def create_mesh(
+    t, p,
+    arm_dist, arm_rp, arm_outer_r, arm_inner_r, arm_screw_length, arm_D, arm_P,
+    spider_r, spider_screw_length, spider_D, spider_P
+):
+    hw = 0.5 * arm_dist
+    p1 = p + 1 if p % 2 == 0 else p
+    base_circle_r = arm_outer_r + t
+    total_h = 2 * t + arm_screw_length
+
+    arm_hole_p = arm_rp + (4 - arm_rp % 4)
+    arm_hole_cuts = 0.25 * (arm_hole_p - 4)
+
+    bm = bmesh.new()
+
+    square_size = arm_outer_r + t
+    circle_radius = arm_inner_r
+
+    bmesh.ops.create_grid(
+        bm,
+        x_segments=2,
+        y_segments=2,
+        size=square_size,
+    )
+
+    bm.faces.remove(bm.faces[:].pop())
+    bmesh.ops.subdivide_edges(
+        bm,
+        edges=bm.edges,
+        cuts=arm_hole_cuts,
+        )
+
+    left_base_verts = list(
+        v
+        for v in bm.verts
+        if v.co.y < 0
+    )
+
+    base_edges = list(set(
+        edg
+        for v in bm.verts
+        for edg in v.link_edges
+    ))
+
+    bmesh.ops.create_circle(
+        bm,
+        segments=4 * (arm_hole_cuts + 1),
+        radius=circle_radius,
+        )
+
+    bmesh.ops.bridge_loops(bm, edges=bm.edges)
+
+    top = bmesh.ops.extrude_edge_only(
+        bm,
+        edges = base_edges
+    )
+
+    top_verts = set()
+    left_top_verts = set()
+    top_edges = set()
+    for geom in top['geom']:
+        if isinstance(geom, bmesh.types.BMVert):
+            top_verts.add(geom)
+            if geom.co.y < 0:
+                left_top_verts.add(geom)
+                print('added', str(geom))
+        if isinstance(geom, bmesh.types.BMEdge) and geom.is_boundary:
+            top_edges.add(geom)
+
+    to_dissolve_edges = set()
+    for edg in bm.edges:
+        print('edg comp', str(edg.verts[0].co), str(edg.verts[1].co), str(edg.verts[0].co.x == edg.verts[1].co.x), str(edg.verts[0].co.y == edg.verts[1].co.y))
+        if edg.verts[0].co.x == edg.verts[1].co.x \
+            and edg.verts[0].co.y == edg.verts[1].co.y:
+            print('edg added', str(edg))
+            to_dissolve_edges.add(edg)
+            top_verts.discard(edg.verts[0])
+            print('removed 0', str(edg.verts[0]))
+            top_verts.discard(edg.verts[1])
+            print('removed 1', str(edg.verts[1]))
+            left_top_verts.discard(edg.verts[0])
+            left_top_verts.discard(edg.verts[1])
+
+    top_verts = list(top_verts)
+    left_top_verts = list(left_top_verts)
+    top_edges = list(top_edges)
+    to_dissolve_edges = list(to_dissolve_edges)
+
+    bmesh.ops.translate(
+        bm,
+        vec = (0, 0, total_h),
+        verts = top_verts
+    )
+
+    ret = bmesh.ops.subdivide_edges(
+        bm,
+        edges = to_dissolve_edges
+    )
+
+    bmesh.ops.delete(
+        bm,
+        geom = ret['geom_inner'],
+        context = 'VERTS'
+    )
+
+    bmesh.ops.edgeloop_fill(
+        bm,
+        edges = top_edges
+    )
+
+    ret = screw.screw_in(
+        arm_inner_r,
+        arm_screw_length,
+        arm_hole_p,
+        bm = bm,
+        z_start = 0,
+        z_scale = -1,
+        fill_end=True,
+        D=arm_D,
+        P=arm_P,
+        start_h=0,
+        end_h=0.5 * t
+    )
+
+    bmesh.ops.translate(
+        bm,
+        vec = (0, hw, 0),
+        verts = bm.verts
+    )
+
+    bmesh.ops.translate(
+        bm,
+        vec = (0, -hw + square_size, 0),
+        verts = left_top_verts + left_base_verts
+    )
+
+
+
+    print(str(hw))
+    bevel_edges = set()
+    for v in bm.verts:
+        print(str(v.co))
+        if v.co.y >= hw:
+            for edg in v.link_edges:
+                #if edg.is_boundary:
+                dv = edg.verts[1].co - edg.verts[0].co
+                if dv.cross(Vector((0, 0, 1))).length == 0:
+                    bevel_edges.add(edg)
+    bevel_edges = list(bevel_edges)
+
+    print(str(bevel_edges))
+
+
+    bmesh.ops.bevel(
+        bm,
+        geom=bevel_edges,
+        loop_slide=True,
+        profile=0.5, # round
+        offset=arm_outer_r + t,
+        segments=p
+    )
+
+    # create half circle
+    # base_grid_verts = bmesh.ops.create_grid(
+    #     bm,
+    #     x_segments = 2,
+    #     y_segments = 2,
+    #     size = arm_outer_r + t
+    # )['verts']
+    # bm.faces.remove(bm.faces[:].pop())
+    # bmesh.ops.subdivide_edges(
+    #     bm,
+    #     edges=bm.edges,
+    #     cuts=arm_hole_cuts,
+    #     )
+
+    # bmesh.ops.bridge_loops(bm, edges = bm.edges)
+
+    # base_flat_edges = list([
+    #     bm.edges.new((base_flat_top_left_vert, base_flat_bottom_left_vert)),
+    #     bm.edges.new((base_flat_top_right_vert, base_flat_middle_right_vert)),
+    #     bm.edges.new((base_flat_middle_right_vert, base_flat_bottom_right_vert)),
+    #     bm.edges.new((base_flat_top_left_vert, base_flat_top_right_vert)),
+    #     bm.edges.new((base_flat_bottom_left_vert, base_flat_bottom_right_vert)),
+    # ])
+
+    # bmesh.ops.holes_fill(
+    #     bm,
+    #     edges = base_circle_left_edges
+    #         + base_flat_edges
+    # )
+
+    # # bm.edges.remove(base_flat_edges[1])
+
+    # # translate 0.5 * arm_dist
+    # bmesh.ops.translate(
+    #     bm,
+    #     verts = base_circle_verts,
+    #     vec = (0, 0.5 * arm_dist, 0),
+    # )
+
+    # # extrude
+    # ret = bmesh.ops.extrude_edge_only(
+    #     bm,
+    #     edges = bm.edges
+    # )
+
+    # top_edges = list(set(
+    #     geom
+    #     for geom in ret['geom']
+    #     if isinstance(geom, bmesh.types.BMEdge)
+    # ))
+
+    # bmesh.ops.holes_fill(
+    #     bm,
+    #     edges = top_edges
+    # )
+
+    # # top_faces = list(set(
+    # #     face
+    # #     for edg in top_edges
+    # #     for face in edg.link_faces
+    # #     if face.normal.cross(Vector((0, 0, 1))).length == 0 # normal in z direction
+    # # ))
+
+    # # translate 2 * t + arm_screw_length
+    # bmesh.ops.translate(
+    #     bm,
+    #     verts = list(
+    #         geom
+    #         for geom in ret['geom']
+    #         if isinstance(geom, bmesh.types.BMVert)
+    #     ),
+    #     vec = (0, 0, total_h)
+    # )
+
+    # bmesh.ops.translate(
+    #     bm,
+    #     verts = bm.verts[:],
+    #     vec = (0, -0.5 * arm_dist, 0)
+    # )
+
+
+    # bmesh.ops.translate(
+    #     bm,
+    #     verts = bm.verts[:],
+    #     vec = (0, 0.5 * arm_dist, 0)
+    # )
+
+    # # screw_in arms with r = arm_r, z_start = t
+
+    # # bmesh.ops.bridge_loops(
+    # #     bm,
+    # #     edges = base_circle_edges
+    # #         + base_left_flat_edges
+    # #         + ret[2]
+    # # )
+
+    # mirror x
+    ret = bmesh.ops.mirror(
+        bm,
+        geom = bm.faces[:] + bm.verts[:] + bm.edges[:],
+        axis = 'Y'
+    )
+
+    # bmesh.ops.reverse_faces(
+    #     bm,
+    #     faces = list(set(
+    #         face
+    #         for geom in ret['geom']
+    #         if isinstance(geom, bmesh.types.BMEdge)
+    #         for face in geom.link_faces
+    #     ))
+    # )
+
+    # screw_in front face
+    # screw back face
+
     mesh = bpy.data.meshes.new(support_arm_head_name + str((
-        e, t, h,
-        arm_d, arm_r, arm_rp,
-        spider_thickness, spider_length
+        t, p,
+        arm_dist, arm_rp, arm_outer_r, arm_inner_r, arm_screw_length, arm_D, arm_P,
+        spider_r, spider_screw_length, spider_D, spider_P
     )))
 
-    pi4 = math.pi / 4
-
-    hd = 0.5 * arm_d
-    hst = 0.5 * spider_thickness
-    hsl = 0.5 * spider_length
-
-    ri = arm_r + e
-    re = ri + t
-
-    vertices = [
-        (0, -hd + re, 0),
-        (0, hd - re, 0),
-
-        (re, -hd, 0),
-        (re, hd, 0),
-
-        (-re, hd, 0),
-        (-re, -hd, 0),
-
-        (0, -hd + re, -h),
-        (0, hd - re, -h),
-
-        # 8
-        (re, -hd, -h),
-        (re, hd, -h),
-
-        (-re, hd, -h),
-        (-re, -hd, -h),
-
-        (ri * math.cos(pi4), -hd + ri * math.sin(pi4), 0),
-        (ri * math.cos(pi4), hd - ri * math.sin(pi4), 0),
-
-        (ri * math.cos(pi4), -hd + ri * math.sin(pi4), -h),
-        (ri * math.cos(pi4), hd - ri * math.sin(pi4), -h),
-
-        # 16
-        (ri * math.cos(3 * pi4), -hd + ri * math.sin(3 * pi4), 0),
-        (ri * math.cos(3 * pi4), hd - ri * math.sin(3 * pi4), 0),
-
-        (ri * math.cos(3 * pi4), -hd + ri * math.sin(3 * pi4), -h),
-        (ri * math.cos(3 * pi4), hd - ri * math.sin(3 * pi4), -h),
-
-        (-re, -hst, 0),
-        (-re, hst, 0),
-
-        (-re, -hst, -h - t),
-        (-re, hst, -h - t),
-
-        # 24
-        (0, -hst, -h - t),
-        (0, hst, -h - t),
-
-        (re, -hst, 0),
-        (re, hst, 0),
-
-        (re, -hst, -h),
-        (re, hst, -h),
-
-        (-re - spider_length, -hst, 0),
-        (-re - spider_length, hst, 0),
-
-        # 32
-        (-re - spider_length, -hst, -h),
-        (-re - spider_length, hst, -h),
-
-        (-re - hsl, -hst, -h),
-        (-re - hsl, hst, -h),
-    ]
-
-    edges = []
-
-    faces = [
-        (0, 2, 3, 1),
-        (5, 0, 1, 4),
-
-        (8, 6, 24, 28),
-        (25, 7, 9, 29),
-        (24, 6, 11, 22),
-        (7, 25, 23, 10),
-        (28, 24, 25, 29),
-        (24, 22, 23, 25),
-
-        (21, 4, 10, 23),
-        (5, 20, 22, 11),
-
-        (30, 20, 21, 31),
-        (22, 34, 35, 23),
-        (30, 31, 33, 32),
-        (34, 32, 33, 35),
-        (20, 30, 32, 28),
-        (22, 28, 34),
-        (31, 21, 29, 33),
-        (29, 23, 35),
-
-        (9, 3, 2, 8),
-
-        (0, 12, 2),
-        (3, 13, 1),
-        (8, 14, 6),
-        (7, 15, 9),
-
-        (5, 16, 0),
-        (1, 17, 4),
-        (6, 18, 11),
-        (10, 19, 7),
-    ]
-
-    nb_verts = len(vertices)
-
-    for i in range(0, arm_rp + 1):
-        alpha = i * math.pi / arm_rp
-        beta = 0 + alpha
-
-        cb = math.cos(beta)
-        sb = math.sin(beta)
-
-        recb = re * cb
-        resb = re * sb
-
-        ricb = ri * cb
-        risb = ri * sb
-
-        nbidx = 12
-
-        trv = nb_verts + i * nbidx
-        tlv = trv + 1
-        brv = trv + 2
-        blv = trv + 3
-
-        trvi = trv + 4
-        tlvi = trv + 5
-        brvi = trv + 6
-        blvi = trv + 7
-
-        trvii = trv + 8
-        tlvii = trv + 9
-        brvii = trv + 10
-        blvii = trv + 11
-
-        vertices.extend([
-            (recb, -hd - resb, 0),
-            (recb, hd + resb, 0),
-
-            (recb, -hd - resb, -h),
-            (recb, hd + resb, -h),
-
-            (ricb, -hd - risb, 0),
-            (ricb, hd + risb, 0),
-
-            (ricb, -hd - risb, -h),
-            (ricb, hd + risb, -h),
-
-            (ricb, -hd + risb, 0),
-            (ricb, hd - risb, 0),
-
-            (ricb, -hd + risb, -h),
-            (ricb, hd - risb, -h),
-        ])
-
-        if i > 0:
-            faces.extend([
-                (trv - nbidx, trv, brv, brv - nbidx),
-                (tlv, tlv - nbidx, blv - nbidx, blv),
-
-                (trvi, trvi - nbidx, brvi - nbidx, brvi),
-                (tlvi - nbidx, tlvi, blvi, blvi - nbidx),
-
-                (trvi, trv, trv - nbidx, trvi - nbidx),
-                (tlv, tlvi, tlvi - nbidx, tlv - nbidx),
-
-                (brv, brvi, brvi - nbidx, brv - nbidx),
-                (blvi, blv, blv - nbidx, blvi - nbidx),
-
-                (trvii - nbidx, trvii, brvii, brvii - nbidx),
-                (tlvii, tlvii - nbidx, blvii - nbidx, blvii),
-            ])
-
-            if alpha < pi4:
-                faces.extend([
-                    (trvii - nbidx, 2, trvii),
-                    (tlvii - nbidx, tlvii, 3),
-
-                    (brvii - nbidx, brvii, 8),
-                    (blvii - nbidx, 9, blvii),
-                ])
-            elif alpha < 3 * pi4:
-                faces.extend([
-                    (trvii - nbidx, 0, trvii),
-                    (tlvii - nbidx, tlvii, 1),
-
-                    (brvii - nbidx, brvii, 6),
-                    (blvii - nbidx, 7, blvii),
-                ])
-            else:
-                faces.extend([
-                    (trvii - nbidx, 5, trvii),
-                    (tlvii - nbidx, tlvii, 4),
-
-                    (brvii - nbidx, brvii, 11),
-                    (blvii - nbidx, 10, blvii),
-                ])
-
-    mesh.from_pydata(vertices, edges, faces)
-    mesh.update()
+    bm.to_mesh(mesh)
 
     return mesh

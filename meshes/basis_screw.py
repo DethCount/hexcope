@@ -4,6 +4,9 @@ import math
 from mathutils import Matrix, Vector
 from meshes import screw
 
+import importlib
+importlib.reload(screw)
+
 basis_screw_name = 'basis_screw'
 
 def create_mesh(

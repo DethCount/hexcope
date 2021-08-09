@@ -70,7 +70,7 @@ def get_D(d):
 def get_P(D):
     d = get_D(D)
     if d != None:
-        return DEFAULT_P[str(d)]
+        return 1.75 * DEFAULT_P[str(d)]
 
     return None
 
@@ -84,6 +84,7 @@ def screw_in(
     fill_end = False,
     D = None,
     P = None,
+    start_h = 0,
     end_h = 0,
     max_screw_top_precision = 5
 ):
@@ -93,26 +94,26 @@ def screw_in(
     d = D if D != None else get_D(2.0 * r)
     step_w = (P if P != None else get_P(d))
     step_h = get_H(step_w)
-    step_w *= z_scale
-    iterations = max(0, abs(math.floor(length / step_w)))
+    iterations = math.floor(length / step_w)
 
     r0 = 0.5 * d
     r1 = r0 - (1 - 0.125 - 0.25) * step_h
-    screw_top_r = 0.0625 * abs(step_w)
-    screw_bottom_r = 0.125 * abs(step_w)
+    screw_top_r = 0.0625 * step_w
+    screw_bottom_r = 0.125 * step_w
     r2 = r0 + math.sqrt(3) * screw_top_r
 
-    z_rot_scale = -1
+    z_rot_scale = -z_scale
 
     z_te = z_scale * screw_top_r
-    z_bs = 0.5 * step_w - z_scale * screw_bottom_r
-    z_be = 0.5 * step_w + z_scale * screw_bottom_r
-    z_ts = step_w - z_scale * screw_top_r
+    z_bs = z_scale * (0.5 * step_w - screw_bottom_r)
+    z_be = z_scale * (0.5 * step_w + screw_bottom_r)
+    z_ts = z_scale * (step_w - screw_top_r)
 
     z0 = z_scale * z_start
-    z_screw_end = z0 - iterations * step_w
+    z1 = z0 - z_scale * (0 if start_h <= 0 else start_h)
+    z_screw_end = z1 - z_scale * iterations * step_w
     z_end = z_screw_end - z_scale * end_h
-    z_last_start = z_screw_end# - z_scale * 2 * screw_top_r - 0.5 * step_w
+    z_last_start = z_screw_end
 
     start = bmesh.ops.create_circle(
         bm,
@@ -126,9 +127,34 @@ def screw_in(
         for edg in vec.link_edges)
     )
 
+    if start_h > 0:
+        before_start = bmesh.ops.create_circle(
+            bm,
+            segments = precision,
+            radius = r
+        )
+
+        before_start_edges = list(set(
+            edg
+            for vec in before_start['verts']
+            for edg in vec.link_edges)
+        )
+
+        bmesh.ops.translate(
+            bm,
+            vec = Vector((0, 0, z0)),
+            verts = before_start['verts']
+        )
+
+        bmesh.ops.bridge_loops(
+            bm,
+            edges = before_start_edges
+                + start_edges
+        )
+
     bmesh.ops.translate(
         bm,
-        vec = Vector((0, 0, z0)),
+        vec = Vector((0, 0, z1)),
         verts = start['verts']
     )
 
@@ -210,15 +236,16 @@ def screw_in(
             alpha = z_rot_scale * ip * math.tau
             ca = math.cos(alpha)
             sa = math.sin(alpha)
-            z = z0 - ip * step_w
-            z_last = z_last_start - ip * step_w
+            z = z1 - z_scale * ip * step_w
+            z_last = z_last_start - z_scale * ip * step_w
 
             bmesh.ops.translate(
                 bm,
                 vec = Vector((
                     -start_first_loop['verts'][i].co[0] + r0 * ca,
                     -start_first_loop['verts'][i].co[1] + r0 * sa,
-                    z + z_scale * screw_top_r
+                    min(z1, z + z_scale * screw_top_r) if z_scale >= 0
+                        else max(z1, z + z_scale * screw_top_r)
                 )),
                 verts = [start_first_loop['verts'][i]]
             )
@@ -238,7 +265,8 @@ def screw_in(
                 vec = Vector((
                     -start_first_loop_c['verts'][i].co[0] + r0 * ca,
                     -start_first_loop_c['verts'][i].co[1] + r0 * sa,
-                    z - z_scale * screw_top_r
+                    min(z1, z - z_scale * screw_top_r) if z_scale >= 0
+                        else max(z1, z - z_scale * screw_top_r)
                 )),
                 verts = [start_first_loop_c['verts'][i]]
             )
@@ -284,7 +312,7 @@ def screw_in(
                 d1ca = r1 * ca
                 d1sa = r1 * sa
 
-                z = z0 - (i + jp) * step_w
+                z = z1 - z_scale * (i + jp) * step_w
 
                 ret = bmesh.ops.create_vert(
                     bm,
@@ -390,9 +418,8 @@ def screw_in(
                 + screw_top_start_edges
         )
 
-        bm.faces.new(first_verts)
+        first_face = bm.faces.new(first_verts)
         last_face = bm.faces.new(last_verts)
-        last_face.normal_flip()
 
     bmesh.ops.bridge_loops(
         bm,
@@ -432,11 +459,25 @@ def screw_in(
                 + start_first_loop_b_edges
                 + start_first_loop_c_edges
                 + stop_last_loop_edges
+                + screw_top_end_edges
+                + screw_bottom_start_edges
+                + screw_bottom_end_edges
+                + screw_top_start_edges
                 + end_edges
             for f in edg.link_faces
         )))
 
-    return [bm, start, start_edges, end, end_edges]
+        first_face.normal_flip()
+    else:
+        last_face.normal_flip()
+
+    return [
+        bm,
+        before_start if start_h > 0 else start,
+        before_start_edges if start_h > 0 else start_edges,
+        end,
+        end_edges
+    ]
 
 def screw(
     r,

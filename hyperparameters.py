@@ -8,7 +8,7 @@ e = 0.0004 # epsilon margin
 trig_h = 1.5 * h # triangle walls height
 primary_t = 0.0008
 
-support_secondary_is_newton = True
+support_secondary_is_newton = False
 
 clip_depth = h - 0.002
 clip_height = 0.5 * trig_h

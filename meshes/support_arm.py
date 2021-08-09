@@ -3,6 +3,9 @@ import bmesh
 import math
 from meshes import screw
 
+import importlib
+importlib.reload(screw)
+
 support_arm_name = 'arm'
 
 # h: total height
@@ -10,6 +13,7 @@ support_arm_name = 'arm'
 # inner_r: internal radius
 # precision: circles precision
 def create_mesh(
+    e,
     h,
     outer_r,
     inner_r,
@@ -24,9 +28,10 @@ def create_mesh(
 
     d = D if D != None else screw.get_D(2 * inner_r)
     step_w = P if P != None else screw.get_P(d)
+    outer_r_e = outer_r - e
 
     screw_in_length = screw_length + 2 * step_w
-    screw_in_z_start = 0.0001
+    screw_in_z_start = 0
 
     screw_in_ret = screw.screw_in(
         inner_r,
@@ -42,7 +47,7 @@ def create_mesh(
     )
 
     screw_ret = screw.screw(
-        outer_r,
+        outer_r_e,
         screw_length,
         precision,
         bm,
@@ -63,12 +68,12 @@ def create_mesh(
 
     mesh = bpy.data.meshes.new(
         support_arm_name + '_' + str((
+            e,
             h,
-            outer_r,
+            outer_r_e,
             inner_r,
             screw_length,
             precision,
-            bm,
             D,
             P
         ))

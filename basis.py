@@ -23,6 +23,14 @@ from meshes import \
     basis_screw, \
     basis_wheel
 
+import importlib
+importlib.reload(basis_screw)
+importlib.reload(basis_cap)
+
+if bpy.context.scene.objects.get('Camera'):
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete()
+
 basis_wheel_e = e
 basis_wheel_f = f
 basis_wheel_t = h
@@ -430,4 +438,4 @@ basis_collection.objects.link(basis_plate_bottom_l)
 move_basis_to(basis_plate_bottom_l, 3)
 
 print('done')
-# bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\", check_existing=True, filter_glob='*.stl', use_selection=False, global_scale=1000.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z')
+# bpy.ops.export_mesh.stl(filepath="C:\\Users\\Count\\Documents\\projects\\hexcope\\stl\\", check_existing=True, filter_glob='*.stl', global_scale=1000.0, use_scene_unit=False, ascii=False, use_mesh_modifiers=True, batch_mode='OBJECT', axis_forward='Y', axis_up='Z', use_selection=False)
