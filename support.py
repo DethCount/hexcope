@@ -54,7 +54,8 @@ support_half_hex_clip_thickness = clip_thickness
 support_half_hex_clip_e = clip_e
 
 support_spider_w = 0.20
-support_spider_r = 0.0015
+support_spider_rp = 25 # precision
+support_spider_r = 0.0025
 support_spider_screw_length = 0.005
 support_spider_D = None
 support_spider_P = None
@@ -140,6 +141,7 @@ support_arm_block_clip_padding_z = 0
 
 support_arm_head_t = 0.005
 support_arm_head_p = 25
+support_arm_head_with_top_screw = False
 support_arm_head_arm_dist = support_arm_rld
 support_arm_head_arm_rp = support_arm_precision
 support_arm_head_arm_outer_r = support_arm_outer_r
@@ -147,6 +149,7 @@ support_arm_head_arm_inner_r = support_arm_inner_r
 support_arm_head_arm_screw_length = support_arm_screw_length
 support_arm_head_arm_D = support_arm_D
 support_arm_head_arm_P = support_arm_P
+support_arm_spider_rp = support_spider_rp
 support_arm_spider_r = support_spider_r
 support_arm_spider_screw_length = support_spider_screw_length
 support_arm_spider_D = support_spider_D
@@ -362,21 +365,23 @@ arm_block_mesh_r.transform(
     )
 )
 
-# arm_head_mesh = support_arm_head.create_mesh(
-#     support_arm_head_t,
-#     support_arm_head_p,
-#     support_arm_head_arm_dist,
-#     support_arm_head_arm_rp,
-#     support_arm_head_arm_outer_r,
-#     support_arm_head_arm_inner_r,
-#     support_arm_head_arm_screw_length,
-#     support_arm_head_arm_D,
-#     support_arm_head_arm_P,
-#     support_arm_spider_r,
-#     support_arm_spider_screw_length,
-#     support_arm_spider_D,
-#     support_arm_spider_P
-# )
+arm_head_mesh = support_arm_head.create_mesh(
+    support_arm_head_t,
+    support_arm_head_p,
+    support_arm_head_with_top_screw,
+    support_arm_head_arm_dist,
+    support_arm_head_arm_rp,
+    support_arm_head_arm_outer_r,
+    support_arm_head_arm_inner_r,
+    support_arm_head_arm_screw_length,
+    support_arm_head_arm_D,
+    support_arm_head_arm_P,
+    support_arm_spider_rp,
+    support_arm_spider_r,
+    support_arm_spider_screw_length,
+    support_arm_spider_D,
+    support_arm_spider_P
+)
 
 if support_secondary_is_newton:
     secondary_mesh = secondary_mirror_newton.create_mesh(
@@ -436,13 +441,13 @@ for z in range(0, support_arm_nz):
         if z != support_arm_nz - 1:
             continue
 
-        # arm_head_object = bpy.data.objects.new('arm_head_' + str(i), arm_head_mesh)
-        # arm_collection.objects.link(arm_head_object)
+        arm_head_object = bpy.data.objects.new('arm_head_' + str(i), arm_head_mesh)
+        arm_collection.objects.link(arm_head_object)
 
-        # arm_head_object.location.x = 0.5 * (support_arm_points[i][0][0] + support_arm_points[i][1][0])
-        # arm_head_object.location.y = 0.5 * (support_arm_points[i][0][1] + support_arm_points[i][1][1])
-        # arm_head_object.location.z = support_arm_head_z
-        # arm_head_object.rotation_euler = rot
+        arm_head_object.location.x = 0.5 * (support_arm_points[i][0][0] + support_arm_points[i][1][0])
+        arm_head_object.location.y = 0.5 * (support_arm_points[i][0][1] + support_arm_points[i][1][1])
+        arm_head_object.location.z = support_arm_head_z
+        arm_head_object.rotation_euler = rot
 
 secondary_object = bpy.data.objects.new(support_secondary_final_name, secondary_mesh)
 arm_collection.objects.link(secondary_object)

@@ -7,271 +7,283 @@ from meshes import screw
 support_arm_head_name = 'arm_head_'
 support_arm_head_screw_in_name = 'arm_head_screw_in'
 
-# e: margin
 # t: head thickness arround arms
-# h: head height
-# arm_d: distance between arms
-# arm_r: arm radius
-# arm_rp: arm circles precision
-# spider_thickness: spider leg thickness
-# spider_length: spider leg length
+# p: circular precision
+# with_top_screw: adds screws allowing to fix support arms on top
+# arm_dist: distance between arms
+# arm_rp: arm circular precision
+# arm_outer_r: arm radius
+# arm_inner_r: arm screw radius
+# arm_screw_length: arm screw length
+# arm_D: arm metric thread diameter
+# arm_P: arm metric thread pitch
+# spider_rp: spider circular precision
+# spider_r: spider radius
+# spider_screw_length: spider screw length
+# spider_D: spider metric thread diameter
+# spider_p: spider metric thread pitch
 def create_mesh(
-    t, p,
+    t, p, with_top_screw,
     arm_dist, arm_rp, arm_outer_r, arm_inner_r, arm_screw_length, arm_D, arm_P,
-    spider_r, spider_screw_length, spider_D, spider_P
+    spider_rp, spider_r, spider_screw_length, spider_D, spider_P
 ):
     hw = 0.5 * arm_dist
-    p1 = p + 1 if p % 2 == 0 else p
-    base_circle_r = arm_outer_r + t
-    total_h = 2 * t + arm_screw_length
+    base_width = arm_outer_r + t
+    screw_in_end_h = 0.5 * t
+    total_h = t + arm_screw_length + screw_in_end_h
+    ro = arm_outer_r + t
+    ri = arm_inner_r
 
-    arm_hole_p = arm_rp + (4 - arm_rp % 4)
-    arm_hole_cuts = 0.25 * (arm_hole_p - 4)
+    # arm_hole_p = arm_rp + (4 - arm_rp % 4)
+    # arm_hole_cuts = 0.25 * (arm_hole_p - 4)
+
+    x0 = base_width
+    y0 = spider_r
+    y1 = hw - arm_outer_r
+    y2 = hw
+
+    zmid = 0.5 * total_h
+    zst = zmid + spider_r
+    zsb = zmid - spider_r
+
+    mesh = bpy.data.meshes.new('tmp_arm_head')
+
+    vertices = [
+        (x0, 0, 0),
+        (-x0, 0, 0),
+
+        (x0, y0, 0),
+        (-x0, y0, 0),
+
+        (x0, y1, 0),
+        (-x0, y1, 0),
+
+        # 6
+        (x0, 0, total_h),
+        (-x0, 0, total_h),
+
+        (x0, y0, total_h),
+        (-x0, y0, total_h),
+
+        (x0, y1, total_h),
+        (-x0, y1, total_h),
+
+        # 12
+        (0, y2, 0),
+        (0, y2, total_h),
+
+        # 14
+        (x0, y0, zst),
+        (-x0, y0, zst),
+
+        (x0, y0, zsb),
+        (-x0, y0, zsb),
+    ]
+
+    edges = [
+        (1, 3), (3, 2), (2, 0),
+        (3, 5), (5, 4), (4, 2),
+
+        (7, 9), (9, 8), (8, 6),
+        (9, 11), (11, 10), (10, 8),
+
+        (2, 8), (3, 9), (4, 10), (5, 11),
+    ]
+
+    faces = [
+        (0, 1, 3, 2),
+        (2, 3, 5, 4),
+
+        (7, 6, 8, 9),
+        (9, 8, 10, 11),
+
+        (2, 4, 10, 8),
+        (5, 3, 9, 11),
+    ]
+
+    ri2mid = None
+    obv_start = None
+    obv_stop = None
+    top_screw_circle = list()
+    bottom_screw_circle = list()
+    for i in range(0, arm_rp + 1):
+        alpha = i * math.pi / arm_rp
+        beta = math.pi + alpha
+
+        roca = ro * math.cos(alpha)
+        rosa = ro * math.sin(alpha)
+        rica = ri * math.cos(alpha)
+        risa = ri * math.sin(alpha)
+        ricb = ri * math.cos(beta)
+        risb = ri * math.sin(beta)
+
+        verts = [
+            (roca, y2 + rosa, 0),
+            (roca, y2 + rosa, total_h),
+
+            (rica, y2 + risa, 0),
+            (rica, y2 + risa, total_h),
+
+            (ricb, y2 + risb, 0),
+            (ricb, y2 + risb, total_h),
+        ]
+
+        nbidx = len(verts)
+        obv = len(vertices)
+        otv = obv + 1
+        ibv = obv + 2
+        itv = obv + 3
+        i2bv = obv + 4
+        i2tv = obv + 5
+
+        vertices.extend(verts)
+
+        edges.extend([
+            (obv, otv),
+        ])
+
+        if i > 0:
+            edges.extend([
+                (obv, obv - nbidx),
+                (otv, otv - nbidx),
+            ])
+
+            faces.extend([
+                (obv - nbidx, obv, otv, otv - nbidx),
+                (itv, itv - nbidx, otv - nbidx, otv),
+                (ibv - nbidx, ibv, obv, obv - nbidx),
+            ])
+
+            if alpha < math.pi / 2:
+                faces.extend([
+                    (i2bv - nbidx, i2bv, 5),
+                    (i2tv, i2tv - nbidx, 11),
+                ])
+            else:
+                if ri2mid == None:
+                    ri2mid = i2bv - nbidx
+
+                faces.extend([
+                    (i2bv - nbidx, i2bv, 4),
+                    (i2tv, i2tv - nbidx, 10),
+                ])
+
+            if not with_top_screw:
+                faces.extend([
+                    (13, itv - nbidx, itv),
+                    (13, i2tv - nbidx, i2tv),
+                ])
+
+            if i == arm_rp:
+                obv_stop = obv
+        else:
+            obv_start = obv
+
+    faces.extend([
+        (5, ri2mid, 4),
+        (10, ri2mid + 1, 11),
+
+        (4, obv_stop + 4, obv_start),
+        (5, obv_stop, obv_start + 4),
+
+        (10, obv_start + 1, obv_stop + 5),
+        (11, obv_start + 5, obv_stop + 1),
+
+        (4, obv_start, obv_start + 1, 10),
+        (obv_stop, 5, 11, obv_stop + 1),
+    ])
+
+    nb_verts = len(vertices)
+
+    for i in range(0, spider_rp + 1):
+        alpha = i * math.pi / spider_rp
+        beta = -0.5 * math.pi + alpha
+        y = spider_r * math.cos(beta)
+        z =  zmid + spider_r * math.sin(beta)
+
+        verts = [
+            (-x0, y, z),
+            (x0, y, z),
+        ]
+
+        nbidx = len(verts)
+        bv = len(vertices)
+        tv = bv + 1
+
+        vertices.extend(verts)
+
+        if i > 0:
+            edges.extend([
+                (bv - nbidx, bv),
+                (tv - nbidx, tv),
+            ])
+
+            if alpha < math.pi / 2:
+                faces.extend([
+                    (bv - nbidx, bv, 17),
+                    (tv, tv - nbidx, 16),
+                ])
+            else:
+                faces.extend([
+                    (bv - nbidx, bv, 15),
+                    (tv, tv - nbidx, 14),
+                ])
+
+    faces.extend([
+        (1, nb_verts, 17, 3),
+        (nb_verts + 1, 0, 2, 16),
+
+        (15, bv, 7, 9),
+        (bv + 1, 14, 8, 6),
+    ])
+
+
+    mesh.from_pydata(vertices, edges, faces)
 
     bm = bmesh.new()
-
-    square_size = arm_outer_r + t
-    circle_radius = arm_inner_r
-
-    bmesh.ops.create_grid(
-        bm,
-        x_segments=2,
-        y_segments=2,
-        size=square_size,
-    )
-
-    bm.faces.remove(bm.faces[:].pop())
-    bmesh.ops.subdivide_edges(
-        bm,
-        edges=bm.edges,
-        cuts=arm_hole_cuts,
-        )
-
-    left_base_verts = list(
-        v
-        for v in bm.verts
-        if v.co.y < 0
-    )
-
-    base_edges = list(set(
-        edg
-        for v in bm.verts
-        for edg in v.link_edges
-    ))
-
-    bmesh.ops.create_circle(
-        bm,
-        segments=4 * (arm_hole_cuts + 1),
-        radius=circle_radius,
-        )
-
-    bmesh.ops.bridge_loops(bm, edges=bm.edges)
-
-    top = bmesh.ops.extrude_edge_only(
-        bm,
-        edges = base_edges
-    )
-
-    top_verts = set()
-    left_top_verts = set()
-    top_edges = set()
-    for geom in top['geom']:
-        if isinstance(geom, bmesh.types.BMVert):
-            top_verts.add(geom)
-            if geom.co.y < 0:
-                left_top_verts.add(geom)
-                print('added', str(geom))
-        if isinstance(geom, bmesh.types.BMEdge) and geom.is_boundary:
-            top_edges.add(geom)
-
-    to_dissolve_edges = set()
-    for edg in bm.edges:
-        print('edg comp', str(edg.verts[0].co), str(edg.verts[1].co), str(edg.verts[0].co.x == edg.verts[1].co.x), str(edg.verts[0].co.y == edg.verts[1].co.y))
-        if edg.verts[0].co.x == edg.verts[1].co.x \
-            and edg.verts[0].co.y == edg.verts[1].co.y:
-            print('edg added', str(edg))
-            to_dissolve_edges.add(edg)
-            top_verts.discard(edg.verts[0])
-            print('removed 0', str(edg.verts[0]))
-            top_verts.discard(edg.verts[1])
-            print('removed 1', str(edg.verts[1]))
-            left_top_verts.discard(edg.verts[0])
-            left_top_verts.discard(edg.verts[1])
-
-    top_verts = list(top_verts)
-    left_top_verts = list(left_top_verts)
-    top_edges = list(top_edges)
-    to_dissolve_edges = list(to_dissolve_edges)
-
-    bmesh.ops.translate(
-        bm,
-        vec = (0, 0, total_h),
-        verts = top_verts
-    )
-
-    ret = bmesh.ops.subdivide_edges(
-        bm,
-        edges = to_dissolve_edges
-    )
-
-    bmesh.ops.delete(
-        bm,
-        geom = ret['geom_inner'],
-        context = 'VERTS'
-    )
-
-    bmesh.ops.edgeloop_fill(
-        bm,
-        edges = top_edges
-    )
+    bm.from_mesh(mesh)
 
     ret = screw.screw_in(
         arm_inner_r,
         arm_screw_length,
-        arm_hole_p,
-        bm = bm,
+        arm_rp,
+        bm = None,
         z_start = 0,
         z_scale = -1,
         fill_end=True,
         D=arm_D,
         P=arm_P,
         start_h=0,
-        end_h=0.5 * t
+        end_h=screw_in_end_h
     )
 
-    bmesh.ops.translate(
-        bm,
-        vec = (0, hw, 0),
-        verts = bm.verts
-    )
+    bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((0, hw, 0)))
+    mesh_screw_in = bpy.data.meshes.new('tmp_arm_head_screw_in')
+    ret[0].to_mesh(mesh_screw_in)
+    bm.from_mesh(mesh_screw_in)
+    del mesh_screw_in
 
-    bmesh.ops.translate(
-        bm,
-        vec = (0, -hw + square_size, 0),
-        verts = left_top_verts + left_base_verts
-    )
+    if with_top_screw:
+        ret = screw.screw(
+            arm_inner_r,
+            arm_screw_length,
+            arm_rp,
+            bm = None,
+            # z_top = 0,
+            # top_length = 0,
+            tip_r = 0.5 * arm_inner_r,
+            #tip_length = 0,
+            fill_tip = True,
+            D=arm_D,
+            P=arm_P,
+            # max_screw_bottom_precision = 10
+        )
 
-
-
-    print(str(hw))
-    bevel_edges = set()
-    for v in bm.verts:
-        print(str(v.co))
-        if v.co.y >= hw:
-            for edg in v.link_edges:
-                #if edg.is_boundary:
-                dv = edg.verts[1].co - edg.verts[0].co
-                if dv.cross(Vector((0, 0, 1))).length == 0:
-                    bevel_edges.add(edg)
-    bevel_edges = list(bevel_edges)
-
-    print(str(bevel_edges))
-
-
-    bmesh.ops.bevel(
-        bm,
-        geom=bevel_edges,
-        loop_slide=True,
-        profile=0.5, # round
-        offset=arm_outer_r + t,
-        segments=p
-    )
-
-    # create half circle
-    # base_grid_verts = bmesh.ops.create_grid(
-    #     bm,
-    #     x_segments = 2,
-    #     y_segments = 2,
-    #     size = arm_outer_r + t
-    # )['verts']
-    # bm.faces.remove(bm.faces[:].pop())
-    # bmesh.ops.subdivide_edges(
-    #     bm,
-    #     edges=bm.edges,
-    #     cuts=arm_hole_cuts,
-    #     )
-
-    # bmesh.ops.bridge_loops(bm, edges = bm.edges)
-
-    # base_flat_edges = list([
-    #     bm.edges.new((base_flat_top_left_vert, base_flat_bottom_left_vert)),
-    #     bm.edges.new((base_flat_top_right_vert, base_flat_middle_right_vert)),
-    #     bm.edges.new((base_flat_middle_right_vert, base_flat_bottom_right_vert)),
-    #     bm.edges.new((base_flat_top_left_vert, base_flat_top_right_vert)),
-    #     bm.edges.new((base_flat_bottom_left_vert, base_flat_bottom_right_vert)),
-    # ])
-
-    # bmesh.ops.holes_fill(
-    #     bm,
-    #     edges = base_circle_left_edges
-    #         + base_flat_edges
-    # )
-
-    # # bm.edges.remove(base_flat_edges[1])
-
-    # # translate 0.5 * arm_dist
-    # bmesh.ops.translate(
-    #     bm,
-    #     verts = base_circle_verts,
-    #     vec = (0, 0.5 * arm_dist, 0),
-    # )
-
-    # # extrude
-    # ret = bmesh.ops.extrude_edge_only(
-    #     bm,
-    #     edges = bm.edges
-    # )
-
-    # top_edges = list(set(
-    #     geom
-    #     for geom in ret['geom']
-    #     if isinstance(geom, bmesh.types.BMEdge)
-    # ))
-
-    # bmesh.ops.holes_fill(
-    #     bm,
-    #     edges = top_edges
-    # )
-
-    # # top_faces = list(set(
-    # #     face
-    # #     for edg in top_edges
-    # #     for face in edg.link_faces
-    # #     if face.normal.cross(Vector((0, 0, 1))).length == 0 # normal in z direction
-    # # ))
-
-    # # translate 2 * t + arm_screw_length
-    # bmesh.ops.translate(
-    #     bm,
-    #     verts = list(
-    #         geom
-    #         for geom in ret['geom']
-    #         if isinstance(geom, bmesh.types.BMVert)
-    #     ),
-    #     vec = (0, 0, total_h)
-    # )
-
-    # bmesh.ops.translate(
-    #     bm,
-    #     verts = bm.verts[:],
-    #     vec = (0, -0.5 * arm_dist, 0)
-    # )
-
-
-    # bmesh.ops.translate(
-    #     bm,
-    #     verts = bm.verts[:],
-    #     vec = (0, 0.5 * arm_dist, 0)
-    # )
-
-    # # screw_in arms with r = arm_r, z_start = t
-
-    # # bmesh.ops.bridge_loops(
-    # #     bm,
-    # #     edges = base_circle_edges
-    # #         + base_left_flat_edges
-    # #         + ret[2]
-    # # )
+        bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((0, hw, total_h)))
+        mesh_screw = bpy.data.meshes.new('tmp_arm_head_top_screw')
+        ret[0].to_mesh(mesh_screw)
+        bm.from_mesh(mesh_screw)
+        del mesh_screw
 
     # mirror x
     ret = bmesh.ops.mirror(
@@ -280,15 +292,57 @@ def create_mesh(
         axis = 'Y'
     )
 
-    # bmesh.ops.reverse_faces(
-    #     bm,
-    #     faces = list(set(
-    #         face
-    #         for geom in ret['geom']
-    #         if isinstance(geom, bmesh.types.BMEdge)
-    #         for face in geom.link_faces
-    #     ))
-    # )
+    bmesh.ops.reverse_faces(
+        bm,
+        faces = list(set(
+            geom
+            for geom in ret['geom']
+            if isinstance(geom, bmesh.types.BMFace)
+        ))
+    )
+
+    ret = screw.screw_in(
+        spider_r,
+        spider_screw_length,
+        spider_rp,
+        bm = None,
+        z_start = 0,
+        z_scale = -1,
+        fill_end=True,
+        D=spider_D,
+        P=spider_P,
+        start_h=0,
+        end_h=spider_r
+    )
+
+    bmesh.ops.rotate(ret[0], verts = ret[0].verts, matrix = Matrix.Rotation(-0.5 * math.pi, 3, 'Y'))
+    bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((x0, 0, zmid)))
+    mesh_screw_in = bpy.data.meshes.new('tmp_arm_head_spider_screw_in')
+    ret[0].to_mesh(mesh_screw_in)
+    bm.from_mesh(mesh_screw_in)
+    del mesh_screw_in
+
+    ret = screw.screw(
+        spider_r,
+        spider_screw_length,
+        spider_rp,
+        bm = None,
+        # z_top = 0,
+        # top_length = 0,
+        tip_r = 0.5 * spider_r,
+        # tip_length = 0,
+        fill_tip=True,
+        D=spider_D,
+        P=spider_P,
+        #max_screw_bottom_precision=10
+    )
+
+    bmesh.ops.rotate(ret[0], verts = ret[0].verts, matrix = Matrix.Rotation(-0.5 * math.pi, 3, 'Y'))
+    bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((-x0, 0, zmid)))
+    mesh_screw = bpy.data.meshes.new('tmp_arm_head_spider_screw')
+    ret[0].to_mesh(mesh_screw)
+    bm.from_mesh(mesh_screw)
+    del mesh_screw
 
     # screw_in front face
     # screw back face

@@ -83,15 +83,15 @@ Skirt distance: 2mm \
 - OR Primary mirror (n=1, newton): 2506g, 860m, 111h
     - 2 x center half hex: 47g, 16m, 1h30
     - 36 x half hex: 67g, 23m, 3h
-- Secondary mirror support (n=0, f=16, arm_n=2, newton): 0,734kg, 280m, 103h
+- Secondary mirror support (n=0, f=16, arm_n=2, newton): 0,732kg, 280m, 109h
     - 4 x arm block: 22g, 8m, 1h
     - 32 x arm: 18g, 7m, 3h (layer height: 0.1mm, support: disabled)
-    - 2 x arm head: 35g, 12m, 1h30
+    - 2 x arm head: 34g, 12m, 4h30 (orientation: little spider screw down, layer height: 0.1mm, support: touching buildplate, support X/Y dist: 1mm)
     - 2 x spider arms: unknown
-- OR Secondary mirror support (n=1, f=16, arm_n=2, newton): 0,734kg, 280m, 103h
+- OR Secondary mirror support (n=1, f=16, arm_n=2, newton): 0,732kg, 280m, 109h
     - 4 x arm block: 22g, 8m, 1h
     - 32 x arm: 18g, 7m, 3h (layer height: 0.1mm, support: disabled)
-    - 2 x arm head: 35g, 12m, 1h30
+    - 2 x arm head: 34g, 12m, 4h30 (orientation: little spider screw down, layer height: 0.1mm, support: touching buildplate, support X/Y dist: 1mm)
     - 2 x spider arms: unknown
 - Secondary mirror (f=16, arm_n=2, newton): 217g, 74m, 13h (disable support)
 - Eyepiece support: unknown

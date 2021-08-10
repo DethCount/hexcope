@@ -512,7 +512,7 @@ def screw(
     z_te = 0.5 * step_w + screw_top_r
     z_bs = step_w - screw_bottom_r
 
-    z_top_end = z_top + top_length - step_w
+    z_top_end = (z_top + top_length - step_w) if top_length > 0 else 0
     z_start = z_top_end + step_w
     z_stop = z_start + (iterations + 1) * step_w + screw_bottom_r
     z_tip = z_stop + (tip_length if tip_length != None else step_w)
@@ -535,23 +535,24 @@ def screw(
         verts = top['verts']
     )
 
-    top_end = bmesh.ops.create_circle(
-        bm,
-        segments = precision,
-        radius = r
-    )
+    if top_length > 0:
+        top_end = bmesh.ops.create_circle(
+            bm,
+            segments = precision,
+            radius = r
+        )
 
-    top_end_edges = list(set(
-        edg
-        for vec in top_end['verts']
-        for edg in vec.link_edges)
-    )
+        top_end_edges = list(set(
+            edg
+            for vec in top_end['verts']
+            for edg in vec.link_edges)
+        )
 
-    bmesh.ops.translate(
-        bm,
-        vec = Vector((0, 0, z_top_end)),
-        verts = top_end['verts']
-    )
+        bmesh.ops.translate(
+            bm,
+            vec = Vector((0, 0, z_top_end)),
+            verts = top_end['verts']
+        )
 
     start = bmesh.ops.create_circle(
         bm,
@@ -873,17 +874,24 @@ def screw(
         last_face = bm.faces.new(last_verts)
         last_face.normal_flip()
 
-    bmesh.ops.bridge_loops(
-        bm,
-        edges = top_edges
-            + top_end_edges
-    )
+    if top_length > 0:
+        bmesh.ops.bridge_loops(
+            bm,
+            edges = top_edges
+                + top_end_edges
+        )
 
-    bmesh.ops.bridge_loops(
-        bm,
-        edges = top_end_edges
-            + start_edges
-    )
+        bmesh.ops.bridge_loops(
+            bm,
+            edges = top_end_edges
+                + start_edges
+        )
+    else:
+        bmesh.ops.bridge_loops(
+            bm,
+            edges = top_edges
+                + start_edges
+        )
 
     bmesh.ops.bridge_loops(
         bm,
