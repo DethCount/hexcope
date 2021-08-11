@@ -87,7 +87,7 @@ def create_full_arm(
 
         length = arm_points_x[i] - (arm_points_x[i - 1] if i > 0 else (secondary_dist_to_spider_arm + hahw))
 
-        print(str(i), str(length), str(secondary_dist_to_spider_arm), str(arm_points_x[i]), str(hahw))
+        # print(str(i), str(length), str(secondary_dist_to_spider_arm), str(arm_points_x[i]), str(hahw))
 
         mesh = create_mesh(
             r,
