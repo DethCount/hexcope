@@ -85,7 +85,7 @@ def hex2xyz(f, r, x, y, z, w):
 # mx: margin over x axis between hex side and arm point
 # my: margin over y axis between hex side and arm point
 # alpha: arm position around mirror
-def get_support_arm_point(n, r, mx, my, alpha):
+def get_support_arm_point(n, r, mx, my, alpha = 0):
     support_arm_point = hex2xy(
         r,
         math.floor(0.5 * (n + 1)),

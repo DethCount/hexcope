@@ -23,28 +23,32 @@ support_arm_head_screw_in_name = 'arm_head_screw_in'
 # spider_D: spider metric thread diameter
 # spider_p: spider metric thread pitch
 def create_mesh(
-    t, p, with_top_screw,
-    arm_dist, arm_rp, arm_outer_r, arm_inner_r, arm_screw_length, arm_D, arm_P,
-    spider_rp, spider_r, spider_screw_length, spider_D, spider_P
+    t, p, height, width, with_top_screw, ocular_r, ocular_z,
+    arm_dist, arm_rp, arm_outer_r, arm_inner_r, arm_screw_length, arm_D, arm_P, arm_screw_in_end_h,
+    spider_rp, spider_r, spider_screw_length, spider_screw_z, spider_D, spider_P
 ):
     hw = 0.5 * arm_dist
-    base_width = arm_outer_r + t
-    screw_in_end_h = 0.5 * t
-    total_h = t + arm_screw_length + screw_in_end_h
     ro = arm_outer_r + t
     ri = arm_inner_r
 
     # arm_hole_p = arm_rp + (4 - arm_rp % 4)
     # arm_hole_cuts = 0.25 * (arm_hole_p - 4)
 
-    x0 = base_width
+    x0 = 0.5 * width
     y0 = spider_r
     y1 = hw - arm_outer_r
     y2 = hw
+    y3 = ocular_r
 
-    zmid = 0.5 * total_h
-    zst = zmid + spider_r
-    zsb = zmid - spider_r
+    zsmid = spider_screw_z
+    zst = spider_screw_z + spider_r
+    zsb = spider_screw_z - spider_r
+
+    zoct = None
+    zocb = None
+    if ocular_r > 0:
+        zoct = ocular_z + ocular_r
+        zocb = ocular_z - ocular_r
 
     mesh = bpy.data.meshes.new('tmp_arm_head')
 
@@ -59,18 +63,18 @@ def create_mesh(
         (-x0, y1, 0),
 
         # 6
-        (x0, 0, total_h),
-        (-x0, 0, total_h),
+        (x0, 0, height),
+        (-x0, 0, height),
 
-        (x0, y0, total_h),
-        (-x0, y0, total_h),
+        (x0, y0, height),
+        (-x0, y0, height),
 
-        (x0, y1, total_h),
-        (-x0, y1, total_h),
+        (x0, y1, height),
+        (-x0, y1, height),
 
         # 12
         (0, y2, 0),
-        (0, y2, total_h),
+        (0, y2, height),
 
         # 14
         (x0, y0, zst),
@@ -87,7 +91,7 @@ def create_mesh(
         (7, 9), (9, 8), (8, 6),
         (9, 11), (11, 10), (10, 8),
 
-        (2, 8), (3, 9), (4, 10), (5, 11),
+        (4, 10), (5, 11),
     ]
 
     faces = [
@@ -96,16 +100,42 @@ def create_mesh(
 
         (7, 6, 8, 9),
         (9, 8, 10, 11),
-
-        (2, 4, 10, 8),
-        (5, 3, 9, 11),
     ]
+
+    nb_verts0 = len(vertices)
+
+    if ocular_r > 0:
+        vertices.extend([
+            (x0, y3, zoct),
+            (-x0, y3, zoct),
+
+            (x0, y3, zocb),
+            (-x0, y3, zocb),
+        ])
+
+        faces.extend([
+            (8, 16, 10),
+            (9, 17, 11),
+
+            (10, 16, nb_verts0),
+            (11, 17, nb_verts0 + 1),
+
+            (4, nb_verts0 + 2, nb_verts0, 10),
+            (5, nb_verts0 + 3, nb_verts0 + 1, 11),
+        ])
+    else:
+        edges.extend([
+            (2, 8), (3, 9),
+        ])
+
+        faces.extend([
+            (2, 4, 10, 8),
+            (5, 3, 9, 11),
+        ])
 
     ri2mid = None
     obv_start = None
     obv_stop = None
-    top_screw_circle = list()
-    bottom_screw_circle = list()
     for i in range(0, arm_rp + 1):
         alpha = i * math.pi / arm_rp
         beta = math.pi + alpha
@@ -119,13 +149,13 @@ def create_mesh(
 
         verts = [
             (roca, y2 + rosa, 0),
-            (roca, y2 + rosa, total_h),
+            (roca, y2 + rosa, height),
 
             (rica, y2 + risa, 0),
-            (rica, y2 + risa, total_h),
+            (rica, y2 + risa, height),
 
             (ricb, y2 + risb, 0),
-            (ricb, y2 + risb, total_h),
+            (ricb, y2 + risb, height),
         ]
 
         nbidx = len(verts)
@@ -199,7 +229,7 @@ def create_mesh(
         alpha = i * math.pi / spider_rp
         beta = -0.5 * math.pi + alpha
         y = spider_r * math.cos(beta)
-        z =  zmid + spider_r * math.sin(beta)
+        z =  zsmid + spider_r * math.sin(beta)
 
         verts = [
             (-x0, y, z),
@@ -230,12 +260,66 @@ def create_mesh(
                 ])
 
     faces.extend([
-        (1, nb_verts, 17, 3),
-        (nb_verts + 1, 0, 2, 16),
-
         (15, bv, 7, 9),
         (bv + 1, 14, 8, 6),
     ])
+
+    nb_verts2 = len(vertices)
+
+    if ocular_r > 0:
+        for i in range(0, p + 1):
+            alpha = i * math.pi / p
+            beta = -0.5 * math.pi + alpha
+            rcb = ocular_r * math.cos(beta)
+            rsb = ocular_r * math.sin(beta)
+
+            verts = [
+                (-x0, rcb, ocular_z + rsb),
+                (x0, rcb, ocular_z + rsb),
+            ]
+
+            nbidx = len(verts)
+            obv = len(vertices)
+            otv = obv + 1
+
+            vertices.extend(verts)
+
+            edges.extend([
+                (obv, otv)
+            ])
+
+            if i > 0:
+                edges.extend([
+                    (obv - nbidx, obv),
+                    (otv - nbidx, otv)
+                ])
+
+                faces.extend([
+                    (obv - nbidx, obv, otv, otv - nbidx),
+                ])
+
+                if alpha < 0.5 * math.pi:
+                    faces.extend([
+                        (obv - nbidx, obv, nb_verts0 + 3),
+                        (otv, otv - nbidx, nb_verts0 + 2),
+                    ])
+                else:
+                    faces.extend([
+                        (obv - nbidx, obv, nb_verts0 + 1),
+                        (otv, otv - nbidx, nb_verts0 + 0),
+                    ])
+
+        faces.extend([
+            (nb_verts0, 16, nb_verts + 1, otv),
+            (nb_verts0 + 1, 17, nb_verts, obv),
+            (nb_verts2 + 1, 0, 4, nb_verts0 + 2),
+            (nb_verts2, 1, 5, nb_verts0 + 3),
+        ])
+    else:
+        faces.extend([
+            (1, nb_verts, 17, 3),
+            (nb_verts + 1, 0, 2, 16),
+        ])
 
 
     mesh.from_pydata(vertices, edges, faces)
@@ -254,7 +338,7 @@ def create_mesh(
         D=arm_D,
         P=arm_P,
         start_h=0,
-        end_h=screw_in_end_h
+        end_h=arm_screw_in_end_h
     )
 
     bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((0, hw, 0)))
@@ -279,7 +363,7 @@ def create_mesh(
             # max_screw_bottom_precision = 10
         )
 
-        bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((0, hw, total_h)))
+        bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((0, hw, height)))
         mesh_screw = bpy.data.meshes.new('tmp_arm_head_top_screw')
         ret[0].to_mesh(mesh_screw)
         bm.from_mesh(mesh_screw)
@@ -316,7 +400,7 @@ def create_mesh(
     )
 
     bmesh.ops.rotate(ret[0], verts = ret[0].verts, matrix = Matrix.Rotation(-0.5 * math.pi, 3, 'Y'))
-    bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((x0, 0, zmid)))
+    bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((x0, 0, zsmid)))
     mesh_screw_in = bpy.data.meshes.new('tmp_arm_head_spider_screw_in')
     ret[0].to_mesh(mesh_screw_in)
     bm.from_mesh(mesh_screw_in)
@@ -338,7 +422,7 @@ def create_mesh(
     )
 
     bmesh.ops.rotate(ret[0], verts = ret[0].verts, matrix = Matrix.Rotation(-0.5 * math.pi, 3, 'Y'))
-    bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((-x0, 0, zmid)))
+    bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((-x0, 0, zsmid)))
     mesh_screw = bpy.data.meshes.new('tmp_arm_head_spider_screw')
     ret[0].to_mesh(mesh_screw)
     bm.from_mesh(mesh_screw)

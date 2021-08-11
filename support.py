@@ -12,7 +12,7 @@ if not dir in sys.path:
 from hyperparameters import n, r, h, f, p, e, trig_h, \
     primary_t, support_secondary_is_newton, \
     clip_depth, clip_thickness, clip_height, clip_e
-from optics import hex2xyz, get_support_arm_points
+from optics import hex2xyz, get_support_arm_point, get_support_arm_points
 from meshes import \
     primary_mirror_normals, \
         half_hex, \
@@ -21,11 +21,13 @@ from meshes import \
         secondary_mirror_newton, \
     support_arm_block, \
         support_arm, \
-        support_arm_head \
+        support_arm_head, \
+    spider_arm \
 
 import importlib
 importlib.reload(half_hex)
 importlib.reload(support_arm)
+importlib.reload(spider_arm)
 
 if bpy.context.scene.objects.get('Camera'):
     bpy.ops.object.select_all(action='SELECT')
@@ -59,6 +61,7 @@ support_spider_r = 0.0025
 support_spider_screw_length = 0.005
 support_spider_D = None
 support_spider_P = None
+support_spider_screw_end_h = support_spider_r
 
 support_secondary_z = 1.2
 
@@ -70,20 +73,13 @@ support_spherical_secondary_f = 10.0 * r
 support_spherical_secondary_rp = 25
 
 support_newton_secondary_name = 'newton_secondary_mirror'
-support_newton_secondary_t = 2 * support_spider_r
+support_newton_secondary_t = support_spider_r + support_spider_screw_length
 support_newton_secondary_rx = r
 support_newton_secondary_ry = support_newton_secondary_rx
 support_newton_secondary_rp = 25
 support_newton_secondary_z = support_secondary_z \
     + support_newton_secondary_rx * math.cos(math.pi / 4) \
-    + support_newton_secondary_t
-
-support_secondary_final_name = support_spherical_secondary_name
-support_secondary_final_z = support_spherical_secondary_z
-
-if support_secondary_is_newton:
-    support_secondary_final_name = support_newton_secondary_name
-    support_secondary_final_z = support_newton_secondary_z
+    + 0.5 * support_newton_secondary_t
 
 support_arm_e = e
 support_arm_h = 0.2
@@ -115,8 +111,38 @@ support_arm_rld = math.sqrt(
     + (support_arm_points[0][1][1] - support_arm_points[0][0][1]) ** 2
 )
 support_arm_outer_length = support_arm_h - support_arm_screw_length
-support_arm_nz = math.ceil((support_secondary_final_z + 0.5 * support_arm_outer_length) / support_arm_outer_length)
-support_arm_z = support_secondary_final_z - support_arm_nz * support_arm_outer_length
+
+support_secondary_final_name = support_spherical_secondary_name
+support_secondary_final_z = support_spherical_secondary_z
+support_secondary_final_dist_to_spider_arm = list()
+
+if support_secondary_is_newton:
+    support_secondary_final_name = support_newton_secondary_name
+    support_secondary_final_z = support_newton_secondary_z
+
+for i in range(0, support_arm_n):
+    alpha = i * math.tau / support_arm_n
+
+    if support_secondary_is_newton:
+        support_secondary_final_dist_to_spider_arm.append(
+            math.sqrt(
+                (
+                    support_newton_secondary_rx
+                        * math.cos(alpha)
+                        * math.cos(math.pi / 4)
+                ) ** 2
+                + (
+                    support_newton_secondary_ry
+                        * math.sin(alpha)
+                ) ** 2
+            )
+        )
+    else:
+        support_secondary_final_dist_to_spider_arm.append(
+            support_spherical_secondary_r
+        )
+
+print(str(support_secondary_final_dist_to_spider_arm))
 
 support_arm_block_e = e
 support_arm_block_f = f
@@ -142,6 +168,7 @@ support_arm_block_clip_padding_z = 0
 support_arm_head_t = 0.005
 support_arm_head_p = 25
 support_arm_head_with_top_screw = False
+support_arm_head_ocular_r = 0.025
 support_arm_head_arm_dist = support_arm_rld
 support_arm_head_arm_rp = support_arm_precision
 support_arm_head_arm_outer_r = support_arm_outer_r
@@ -149,13 +176,22 @@ support_arm_head_arm_inner_r = support_arm_inner_r
 support_arm_head_arm_screw_length = support_arm_screw_length
 support_arm_head_arm_D = support_arm_D
 support_arm_head_arm_P = support_arm_P
-support_arm_spider_rp = support_spider_rp
-support_arm_spider_r = support_spider_r
-support_arm_spider_screw_length = support_spider_screw_length
-support_arm_spider_D = support_spider_D
-support_arm_spider_P = support_spider_P
-support_arm_head_z = support_secondary_final_z
+support_arm_head_arm_screw_in_end_h = 0.5 * support_arm_head_t
+support_arm_head_min_height = support_arm_head_t + support_arm_head_arm_screw_length + support_arm_head_arm_screw_in_end_h
+support_arm_head_height = support_arm_head_min_height + 2 * (support_secondary_final_z - support_secondary_z)
+support_arm_head_width = 2 * support_arm_head_arm_outer_r + support_arm_head_t
+support_arm_head_spider_rp = support_spider_rp
+support_arm_head_spider_r = support_spider_r
+support_arm_head_spider_screw_length = support_spider_screw_length
+support_arm_head_spider_screw_z = 0.5 * support_arm_head_min_height
+support_arm_head_spider_screw_z_with_ocular = support_arm_head_height - 0.5 * support_arm_head_min_height
+support_arm_head_ocular_z = 0.5 * (support_arm_head_spider_screw_z_with_ocular - 0.5 * support_arm_head_min_height) + 0.5 * support_arm_head_min_height
+support_arm_head_spider_D = support_spider_D
+support_arm_head_spider_P = support_spider_P
 
+support_arm_nz = math.ceil((support_secondary_final_z + 0.5 * support_arm_outer_length) / support_arm_outer_length)
+support_arm_z = support_secondary_final_z - support_arm_head_spider_screw_z - support_arm_nz * support_arm_outer_length
+support_arm_z_with_ocular = support_secondary_final_z - support_arm_head_spider_screw_z_with_ocular - support_arm_nz * support_arm_outer_length
 
 hex_collection = bpy.data.collections.new('hex_collection')
 bpy.context.scene.collection.children.link(hex_collection)
@@ -368,7 +404,11 @@ arm_block_mesh_r.transform(
 arm_head_mesh = support_arm_head.create_mesh(
     support_arm_head_t,
     support_arm_head_p,
+    support_arm_head_min_height,
+    support_arm_head_width,
     support_arm_head_with_top_screw,
+    0,
+    None,
     support_arm_head_arm_dist,
     support_arm_head_arm_rp,
     support_arm_head_arm_outer_r,
@@ -376,11 +416,38 @@ arm_head_mesh = support_arm_head.create_mesh(
     support_arm_head_arm_screw_length,
     support_arm_head_arm_D,
     support_arm_head_arm_P,
-    support_arm_spider_rp,
-    support_arm_spider_r,
-    support_arm_spider_screw_length,
-    support_arm_spider_D,
-    support_arm_spider_P
+    support_arm_head_arm_screw_in_end_h,
+    support_arm_head_spider_rp,
+    support_arm_head_spider_r,
+    support_arm_head_spider_screw_length,
+    support_arm_head_spider_screw_z,
+    support_arm_head_spider_D,
+    support_arm_head_spider_P
+)
+
+
+arm_head_with_ocular_mesh = support_arm_head.create_mesh(
+    support_arm_head_t,
+    support_arm_head_p,
+    support_arm_head_height,
+    support_arm_head_width,
+    support_arm_head_with_top_screw,
+    support_arm_head_ocular_r,
+    support_arm_head_ocular_z,
+    support_arm_head_arm_dist,
+    support_arm_head_arm_rp,
+    support_arm_head_arm_outer_r,
+    support_arm_head_arm_inner_r,
+    support_arm_head_arm_screw_length,
+    support_arm_head_arm_D,
+    support_arm_head_arm_P,
+    support_arm_head_arm_screw_in_end_h,
+    support_arm_head_spider_rp,
+    support_arm_head_spider_r,
+    support_arm_head_spider_screw_length,
+    support_arm_head_spider_screw_z_with_ocular,
+    support_arm_head_spider_D,
+    support_arm_head_spider_P
 )
 
 if support_secondary_is_newton:
@@ -401,13 +468,16 @@ else:
 arm_collection = bpy.data.collections.new('arm_collection')
 bpy.context.scene.collection.children.link(arm_collection)
 
+spider_collection = bpy.data.collections.new('spider_collection')
+bpy.context.scene.collection.children.link(spider_collection)
+
 for z in range(0, support_arm_nz):
     for i in range(0, len(support_arm_points)):
         alpha = i * math.tau / support_arm_n
         beta = support_arm_omega + alpha
         rot = Euler((0, 0, beta), 'XYZ')
 
-        sz = support_arm_z + z * support_arm_outer_length
+        sz = (support_arm_z if i > 0 else support_arm_z_with_ocular) + z * support_arm_outer_length
 
         if z == 0:
             arm_block_l = bpy.data.objects.new(
@@ -441,13 +511,40 @@ for z in range(0, support_arm_nz):
         if z != support_arm_nz - 1:
             continue
 
-        arm_head_object = bpy.data.objects.new('arm_head_' + str(i), arm_head_mesh)
+        arm_head_object = bpy.data.objects.new('arm_head_' + str(i), arm_head_mesh if i > 0 else arm_head_with_ocular_mesh)
         arm_collection.objects.link(arm_head_object)
 
         arm_head_object.location.x = 0.5 * (support_arm_points[i][0][0] + support_arm_points[i][1][0])
         arm_head_object.location.y = 0.5 * (support_arm_points[i][0][1] + support_arm_points[i][1][1])
-        arm_head_object.location.z = support_arm_head_z
+        arm_head_object.location.z = sz + support_arm_outer_length
         arm_head_object.rotation_euler = rot
+
+        spider_arms = bpy.data.objects.new(
+            'spider_arms_' + str(i),
+            bpy.data.meshes.new('spider_arms_' + str(i))
+        )
+        spider_collection.objects.link(spider_arms)
+        spider_arms.rotation_euler = rot
+
+        spider_arms_objs = spider_arm.create_full_arm(
+            n,
+            r,
+            support_secondary_final_z,
+            support_secondary_final_dist_to_spider_arm[i],
+            support_arm_margin_x,
+            support_arm_margin_y,
+            support_arm_head_width,
+            support_spider_r,
+            support_spider_screw_length,
+            support_spider_rp,
+            support_spider_D,
+            support_spider_P,
+            support_spider_screw_end_h
+        )
+
+        for obj in spider_arms_objs:
+            spider_collection.objects.link(obj)
+            obj.parent = spider_arms
 
 secondary_object = bpy.data.objects.new(support_secondary_final_name, secondary_mesh)
 arm_collection.objects.link(secondary_object)
