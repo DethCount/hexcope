@@ -83,18 +83,20 @@ Skirt distance: 2mm \
 - OR Primary mirror (n=1, newton): 2506g, 860m, 111h
     - 2 x center half hex: 47g, 16m, 1h30
     - 36 x half hex: 67g, 23m, 3h
-- Secondary mirror support (n=0, f=16, arm_n=2, newton): 0,732kg, 280m, 109h
+- Secondary mirror support (n=0, f=16, arm_n=2, newton): 0,791kg, 299m, 115h30
     - 4 x arm block: 22g, 8m, 1h
-    - 32 x arm: 18g, 7m, 3h (layer height: 0.1mm, support: disabled)
-    - 2 x arm head: 34g, 12m, 4h30 (orientation: little spider screw down, layer height: 0.1mm, support: touching buildplate, support X/Y dist: 1mm)
-    - 2 x spider arms: unknown
-- OR Secondary mirror support (n=1, f=16, arm_n=2, newton): 0,732kg, 280m, 109h
+    - 30 x arm: 18g, 7m, 3h (layer height: 0.1mm, support: disabled)
+    - 1 x arm head 0 with eyepiece support: 128g, 44m, 15h30 (orientation: little spider screw up, layer height: 0.1mm, support: touching buildplate)
+    - 1 x arm head: 30g, 11m, 4h30 (orientation: little spider screw down, layer height: 0.1mm, support: touching buildplate, support X/Y dist: 1mm)
+    - 1 x 2 spider arms 0: 5g, 2m, 1h30 (disable support, experimental: use adaptative layers, layer height: 0.1mm)
+- OR Secondary mirror support (n=1, f=16, arm_n=2, newton): 0,796kg, 301m, 117h
     - 4 x arm block: 22g, 8m, 1h
-    - 32 x arm: 18g, 7m, 3h (layer height: 0.1mm, support: disabled)
-    - 2 x arm head: 34g, 12m, 4h30 (orientation: little spider screw down, layer height: 0.1mm, support: touching buildplate, support X/Y dist: 1mm)
-    - 2 x spider arms: unknown
-- Secondary mirror (f=16, arm_n=2, newton): 217g, 74m, 13h (disable support)
-- Eyepiece support: unknown
+    - 30 x arm: 18g, 7m, 3h (layer height: 0.1mm, support: disabled)
+    - 1 x arm head 0 with eyepiece support: 128g, 44m, 15h30 (orientation: little spider screw up, layer height: 0.1mm, support: touching buildplate)
+    - 1 x arm head: 30g, 11m, 4h30 (orientation: little spider screw down, layer height: 0.1mm, support: touching buildplate, support X/Y dist: 1mm)
+    - 1 x 2 spider arms 0: 5g, 2m, 1h30 (disable support, experimental: use adaptative layers, layer height: 0.1mm)
+    - 1 x 2 spider arms 1: 5g, 2m, 1h30 (disable support, experimental: use adaptative layers, layer height: 0.1mm)
+- Secondary mirror (f=16, arm_n=2, newton): 177g, 60m, 16h (disable support, experimental: use adaptative layers, layer height: 0.1mm)
 
 ## Current prototype state
 ![Capture](https://github.com/Dethcount/hexcope/blob/main/img/current_prototype_state.jpg?raw=true)

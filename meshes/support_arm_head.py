@@ -25,7 +25,7 @@ support_arm_head_screw_in_name = 'arm_head_screw_in'
 def create_mesh(
     t, p, height, width, with_top_screw, ocular_r, ocular_z,
     arm_dist, arm_rp, arm_outer_r, arm_inner_r, arm_screw_length, arm_D, arm_P, arm_screw_in_end_h,
-    spider_rp, spider_r, spider_screw_length, spider_screw_z, spider_D, spider_P
+    spider_rp, spider_r, spider_screw_length, spider_screw_z, spider_D, spider_P, spider_end_h
 ):
     hw = 0.5 * arm_dist
     ro = arm_outer_r + t
@@ -115,12 +115,12 @@ def create_mesh(
 
         faces.extend([
             (8, 16, 10),
-            (9, 17, 11),
+            (9, 11, 17),
 
             (10, 16, nb_verts0),
-            (11, 17, nb_verts0 + 1),
+            (17, 11, nb_verts0 + 1),
 
-            (4, nb_verts0 + 2, nb_verts0, 10),
+            (nb_verts0 + 2, 4, 10, nb_verts0),
             (5, nb_verts0 + 3, nb_verts0 + 1, 11),
         ])
     else:
@@ -225,15 +225,19 @@ def create_mesh(
 
     nb_verts = len(vertices)
 
+    bvmid = None
     for i in range(0, spider_rp + 1):
         alpha = i * math.pi / spider_rp
         beta = -0.5 * math.pi + alpha
         y = spider_r * math.cos(beta)
         z =  zsmid + spider_r * math.sin(beta)
 
+        y2 = 0.5 * spider_D * math.cos(beta)
+        z2 =  zsmid + 0.5 * spider_D * math.sin(beta)
+
         verts = [
             (-x0, y, z),
-            (x0, y, z),
+            (x0, y2, z2),
         ]
 
         nbidx = len(verts)
@@ -254,6 +258,9 @@ def create_mesh(
                     (tv, tv - nbidx, 16),
                 ])
             else:
+                if bvmid is None:
+                    bvmid = bv - nbidx
+
                 faces.extend([
                     (bv - nbidx, bv, 15),
                     (tv, tv - nbidx, 14),
@@ -262,6 +269,8 @@ def create_mesh(
     faces.extend([
         (15, bv, 7, 9),
         (bv + 1, 14, 8, 6),
+        (15, bvmid, 17),
+        (14, bvmid + 1, 16),
     ])
 
     nb_verts2 = len(vertices)
@@ -295,7 +304,7 @@ def create_mesh(
                 ])
 
                 faces.extend([
-                    (obv - nbidx, obv, otv, otv - nbidx),
+                    (obv, obv - nbidx, otv - nbidx, otv),
                 ])
 
                 if alpha < 0.5 * math.pi:
@@ -311,9 +320,9 @@ def create_mesh(
 
         faces.extend([
             (nb_verts0, 16, nb_verts + 1, otv),
-            (nb_verts0 + 1, 17, nb_verts, obv),
+            (17, nb_verts0 + 1, obv, nb_verts),
             (nb_verts2 + 1, 0, 4, nb_verts0 + 2),
-            (nb_verts2, 1, 5, nb_verts0 + 3),
+            (1, nb_verts2, nb_verts0 + 3, 5),
         ])
     else:
         faces.extend([
@@ -396,7 +405,7 @@ def create_mesh(
         D=spider_D,
         P=spider_P,
         start_h=0,
-        end_h=spider_r
+        end_h=spider_end_h
     )
 
     bmesh.ops.rotate(ret[0], verts = ret[0].verts, matrix = Matrix.Rotation(-0.5 * math.pi, 3, 'Y'))

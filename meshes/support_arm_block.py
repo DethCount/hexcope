@@ -10,7 +10,7 @@ support_arm_block_name = 'support_arm_block'
 # todo: thicker nose part
 # wl : wing length: v4 distance from v3 along v35
 def create_mesh(
-    e, f, n, r, t, mx, my, wl, p,
+    e, f, n, r, t, wl, p,
     hex_thickness, hex_interior_thickness, hex_walls_height,
     primary_thickness,
     arm_radius,
@@ -20,7 +20,7 @@ def create_mesh(
     mesh = bpy.data.meshes.new(
         support_arm_block_name
         + '_' + str((
-            e, f, n, r, t, mx, my, wl, p,
+            e, f, n, r, t, wl, p,
             hex_thickness, hex_interior_thickness, hex_walls_height,
             primary_thickness,
             arm_radius,
@@ -28,7 +28,7 @@ def create_mesh(
         ))
     )
 
-    arm_points = get_support_arm_point(n, r, mx, my, 0)
+    arm_points = get_support_arm_point(n, r, 0)
     arm_point = arm_points[0 if is_left else 1]
 
     no_flip = n % 2 == 0 and not is_left or n % 2 != 0 and is_left

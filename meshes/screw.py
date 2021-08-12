@@ -92,7 +92,9 @@ def screw_in(
         bm = bmesh.new()
 
     d = D if D != None else get_D(2.0 * r)
+    # print('D', str(D), str(2 * r), str(d))
     step_w = (P if P != None else get_P(d))
+    # print('P', str(P), str(step_w))
     step_h = get_H(step_w)
     iterations = math.floor(length / step_w)
 

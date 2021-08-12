@@ -35,7 +35,7 @@ def create_mesh(r, length, screw_length, screw_precision = 25, screw_D = None, s
         z_top = 0,
         top_length=length,
         tip_r=0.5 * r,
-        tip_length = screw_end_h,
+        tip_length = 0,
         D=screw_D,
         P=screw_P
     )
@@ -56,12 +56,11 @@ def create_mesh(r, length, screw_length, screw_precision = 25, screw_D = None, s
     return mesh
 
 def create_full_arm(
+    arm_idx,
     n,
     hex_side_length,
     secondary_z,
     secondary_dist_to_spider_arm,
-    support_arm_mx,
-    support_arm_my,
     support_arm_head_width,
     r,
     screw_length,
@@ -76,18 +75,10 @@ def create_full_arm(
 
     for i in range(0, n + 1):
         arm_points_x.append(
-            get_support_arm_point(
-                i,
-                hex_side_length,
-                support_arm_mx,
-                support_arm_my,
-                0
-            )[0][0]
+            get_support_arm_point(i, hex_side_length, 0)[0][0]
         )
 
         length = arm_points_x[i] - (arm_points_x[i - 1] if i > 0 else (secondary_dist_to_spider_arm + hahw))
-
-        # print(str(i), str(length), str(secondary_dist_to_spider_arm), str(arm_points_x[i]), str(hahw))
 
         mesh = create_mesh(
             r,
@@ -99,7 +90,7 @@ def create_full_arm(
             screw_end_h
         )
 
-        obj = bpy.data.objects.new(spider_arm_name + '_' + str(i), mesh)
+        obj = bpy.data.objects.new(spider_arm_name + '_' + str(arm_idx) + '_' + str(i), mesh)
         obj.location.x = arm_points_x[i] - hahw
         obj.location.z = secondary_z
         objs.append(obj)

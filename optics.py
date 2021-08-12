@@ -1,5 +1,7 @@
 import math
 
+from mathutils import Vector
+
 # f : focal length
 # d : parabola height
 # r : distance from parabola center
@@ -80,13 +82,15 @@ def hex2xyz(f, r, x, y, z, w):
     # print(' => ' + str((x2, y2, z2)))
     return (x2, y2, z2)
 
-# n: hexcope iterations
-# r: hex side length
-# mx: margin over x axis between hex side and arm point
-# my: margin over y axis between hex side and arm point
-# alpha: arm position around mirror
-def get_support_arm_point(n, r, mx, my, alpha = 0):
-    support_arm_point = hex2xy(
+def get_support_arm_point_margin_x(n, r):
+    return 0.5 * (n % 2) * r
+
+def get_support_arm_point_margin_y(n, r):
+    return - 0.25 * math.sqrt(3) * r
+
+def get_right_boundary_hex_xyz(f, n, r):
+    return hex2xyz(
+        f,
         r,
         math.floor(0.5 * (n + 1)),
         1 if n % 2 == 0 else 0,
@@ -94,9 +98,23 @@ def get_support_arm_point(n, r, mx, my, alpha = 0):
         1 if n % 2 == 0 else 2
     )
 
+def get_right_boundary_hex_xy(n, r):
+    return hex2xy(
+        r,
+        math.floor(0.5 * (n + 1)),
+        1 if n % 2 == 0 else 0,
+        0,
+        1 if n % 2 == 0 else 2
+    )
+
+# n: hexcope iterations
+# r: hex side length
+# alpha: arm position around mirror
+def get_support_arm_point(n, r, alpha = 0):
+    support_arm_point = get_right_boundary_hex_xy(n, r)
     support_arm_point = (
-        support_arm_point[0] + mx,
-        support_arm_point[1] + my
+        support_arm_point[0] + get_support_arm_point_margin_x(n, r),
+        support_arm_point[1] + get_support_arm_point_margin_y(n, r)
     )
 
     ca = math.cos(alpha)
@@ -119,20 +137,39 @@ def get_support_arm_point(n, r, mx, my, alpha = 0):
 
 # n: hexcope iterations
 # r: hex side length
-# m: margin between hex side and arm point
 # arm_n: number of pairs of arm
 # arm_omega: position starting angle
-def get_support_arm_points(n, r, mx, my, arm_n, arm_omega):
+def get_support_arm_points(n, r, arm_n, arm_omega):
     points = []
     for i in range(0, arm_n):
         points.append(
             get_support_arm_point(
                 n,
                 r,
-                mx,
-                my,
                 arm_omega + i * math.tau / arm_n
             )
         )
 
     return points
+
+def get_newton_dist_to_spider_arm(arm_n, rx, ry):
+    dists = list()
+
+    cpi4m = math.cos(-0.25 * math.pi)
+    for i in range(0, arm_n):
+        alpha = 0.5 * math.pi + i * math.tau / arm_n
+        a = rx * cpi4m
+        e = math.sqrt(1 - (a / ry) ** 2)
+
+        dists.append(
+            math.sqrt(a ** 2 / (1 - e ** 2 * math.cos(alpha) ** 2))
+        )
+
+    return dists
+
+def get_spherical_dist_to_spider_arm(arm_n, r):
+    dists = list()
+    for i in range(0, arm_n):
+        dists.append(r)
+
+    return dists
