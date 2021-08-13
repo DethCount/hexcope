@@ -336,48 +336,6 @@ def create_mesh(
     bm = bmesh.new()
     bm.from_mesh(mesh)
 
-    ret = screw.screw_in(
-        arm_inner_r,
-        arm_screw_length,
-        arm_rp,
-        bm = None,
-        z_start = 0,
-        z_scale = -1,
-        fill_end=True,
-        D=arm_D,
-        P=arm_P,
-        start_h=0,
-        end_h=arm_screw_in_end_h
-    )
-
-    bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((0, hw, 0)))
-    mesh_screw_in = bpy.data.meshes.new('tmp_arm_head_screw_in')
-    ret[0].to_mesh(mesh_screw_in)
-    bm.from_mesh(mesh_screw_in)
-    del mesh_screw_in
-
-    if with_top_screw:
-        ret = screw.screw(
-            arm_inner_r,
-            arm_screw_length,
-            arm_rp,
-            bm = None,
-            # z_top = 0,
-            # top_length = 0,
-            tip_r = 0.5 * arm_inner_r,
-            #tip_length = 0,
-            fill_tip = True,
-            D=arm_D,
-            P=arm_P,
-            # max_screw_bottom_precision = 10
-        )
-
-        bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((0, hw, height)))
-        mesh_screw = bpy.data.meshes.new('tmp_arm_head_top_screw')
-        ret[0].to_mesh(mesh_screw)
-        bm.from_mesh(mesh_screw)
-        del mesh_screw
-
     # mirror x
     ret = bmesh.ops.mirror(
         bm,
@@ -393,6 +351,49 @@ def create_mesh(
             if isinstance(geom, bmesh.types.BMFace)
         ))
     )
+
+    for i in [-1, 1]:
+        ret = screw.screw_in(
+            arm_inner_r,
+            arm_screw_length,
+            arm_rp,
+            bm = None,
+            z_start = 0,
+            z_scale = -1,
+            fill_end=True,
+            D=arm_D,
+            P=arm_P,
+            start_h=0,
+            end_h=arm_screw_in_end_h
+        )
+
+        bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((0, i * hw, 0)))
+        mesh_screw_in = bpy.data.meshes.new('tmp_arm_head_screw_in')
+        ret[0].to_mesh(mesh_screw_in)
+        bm.from_mesh(mesh_screw_in)
+        del mesh_screw_in
+
+        if with_top_screw:
+            ret = screw.screw(
+                arm_inner_r,
+                arm_screw_length,
+                arm_rp,
+                bm = None,
+                # z_top = 0,
+                # top_length = 0,
+                tip_r = 0.5 * arm_inner_r,
+                #tip_length = 0,
+                fill_tip = True,
+                D=arm_D,
+                P=arm_P,
+                # max_screw_bottom_precision = 10
+            )
+
+            bmesh.ops.translate(ret[0], verts = ret[0].verts, vec = Vector((0, i * hw, height)))
+            mesh_screw = bpy.data.meshes.new('tmp_arm_head_top_screw')
+            ret[0].to_mesh(mesh_screw)
+            bm.from_mesh(mesh_screw)
+            del mesh_screw
 
     ret = screw.screw_in(
         spider_r,
