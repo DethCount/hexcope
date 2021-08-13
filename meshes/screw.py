@@ -493,7 +493,8 @@ def screw(
     fill_tip = True,
     D = None,
     P = None,
-    max_screw_bottom_precision = 10
+    max_screw_bottom_precision = 10,
+    e = 0.001
 ):
     if bm == None:
         bm = bmesh.new()
@@ -503,11 +504,14 @@ def screw(
     step_h = get_H(step_w)
     iterations = math.floor(length / step_w)
 
-    r0 = 0.5 * d
+    e = min(e, 0.5 * step_h)
+
+    r0 = 0.5 * ((d - e) if d > e else d)
     r1 = r0 - (1 - 0.125 - 0.25) * step_h
     screw_top_r = 0.0625 * step_w
     screw_bottom_r = 0.125 * step_w
     r2 = r1 - math.sqrt(3) * screw_bottom_r
+    tip_r_final = min(tip_r, r1 - 0.5 * e)
 
     z_be = screw_bottom_r
     z_ts = 0.5 * step_w - screw_top_r
@@ -699,7 +703,7 @@ def screw(
     tip = bmesh.ops.create_circle(
         bm,
         segments = precision,
-        radius = tip_r
+        radius = tip_r_final
     )
 
     tip_edges = list(set(
