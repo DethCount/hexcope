@@ -70,7 +70,7 @@ def get_D(d):
 def get_P(D):
     d = get_D(D)
     if d != None:
-        return 1.75 * DEFAULT_P[str(d)]
+        return math.sqrt(3) * DEFAULT_P[str(d)]
 
     return None
 
@@ -81,12 +81,14 @@ def screw_in(
     bm = None,
     z_start = 0,
     z_scale = 1,
+    fill_start = False,
     fill_end = False,
     D = None,
     P = None,
     start_h = 0,
     end_h = 0,
-    max_screw_top_precision = 5
+    max_screw_top_precision = 5,
+    ccw = False
 ):
     if bm == None:
         bm = bmesh.new()
@@ -104,7 +106,7 @@ def screw_in(
     screw_bottom_r = 0.125 * step_w
     r2 = r0 + math.sqrt(3) * screw_top_r
 
-    z_rot_scale = -z_scale
+    z_rot_scale = z_scale if ccw else -z_scale
 
     z_te = z_scale * screw_top_r
     z_bs = z_scale * (0.5 * step_w - screw_bottom_r)
@@ -278,7 +280,8 @@ def screw_in(
                 vec = Vector((
                     -stop_last_loop['verts'][i].co[0] + r0 * ca,
                     -stop_last_loop['verts'][i].co[1] + r0 * sa,
-                    z_last
+                    max(z_end, z_last) if z_scale >= 0
+                        else min(z_end, z_last)
                 )),
                 verts = [stop_last_loop['verts'][i]]
             )
@@ -318,26 +321,46 @@ def screw_in(
 
                 ret = bmesh.ops.create_vert(
                     bm,
-                    co = (dca, dsa, z - z_te)
+                    co = (
+                        dca,
+                        dsa,
+                        max(z_end, z - z_te) if z_scale >= 0
+                            else min(z_end, z - z_te)
+                    )
                 )
                 tev = ret['vert'][0]
                 screw_top_end.append(tev)
 
                 ret = bmesh.ops.create_vert(
                     bm,
-                    co = (d1ca, d1sa, z - z_bs)
+                    co = (
+                        d1ca,
+                        d1sa,
+                        max(z_end, z - z_bs) if z_scale >= 0
+                            else min(z_end, z - z_bs)
+                    )
                 )
                 bsv = ret['vert'][0]
                 screw_bottom_start.append(bsv)
 
                 ret = bmesh.ops.create_vert(
                     bm,
-                    co = (d1ca, d1sa, z - z_be)
+                    co = (
+                        d1ca,
+                        d1sa,
+                        max(z_end, z - z_be) if z_scale >= 0
+                            else min(z_end, z - z_be)
+                    )
                 )
                 bev = ret['vert'][0]
                 screw_bottom_end.append(bev)
 
-                tsco = (dca, dsa, z - z_ts)
+                tsco = (
+                    dca,
+                    dsa,
+                    max(z_end, z - z_ts) if z_scale >= 0
+                        else min(z_end, z - z_ts)
+                )
                 ret = bmesh.ops.create_vert(
                     bm,
                     co = tsco
@@ -369,6 +392,7 @@ def screw_in(
                     beta = (kmstp if z_scale < 0 else (1 - kmstp)) * math.pi
                     sb = math.sin(beta)
                     rk = r0 + screw_top_r * sb
+                    z_st = tsco[2] - 2 * z_scale * screw_top_r * kmstp
 
                     if j == 0:
                         screw_top_circle.append(list())
@@ -379,7 +403,8 @@ def screw_in(
                         co = (
                             rk * ca,
                             rk * sa,
-                            tsco[2] - 2 * z_scale * screw_top_r * kmstp
+                            max(z_end, z_st) if z_scale >= 0
+                                else min(z_end, z_st)
                         )
                     )
 
@@ -447,13 +472,20 @@ def screw_in(
             + end_edges
     )
 
+    if fill_start == True:
+        print(str(ccw), str(fill_start))
+        bmesh.ops.edgeloop_fill(
+            bm,
+            edges = start_edges
+        )
+
     if fill_end == True:
         bmesh.ops.edgeloop_fill(
             bm,
             edges = end_edges
         )
 
-    if z_scale < 0:
+    if (z_scale < 0 and not ccw) or (ccw and z_scale >= 0):
         bmesh.ops.reverse_faces(bm, faces = list(set(
             f
             for edg in start_edges
@@ -472,6 +504,17 @@ def screw_in(
         first_face.normal_flip()
     else:
         last_face.normal_flip()
+
+    if ccw:
+        bmesh.ops.reverse_faces(bm, faces = list(set(
+            f
+            for edg in start_edges
+                + start_first_loop_edges
+                + start_first_loop_b_edges
+                + start_first_loop_c_edges
+                + end_edges
+            for f in edg.link_faces
+        )))
 
     return [
         bm,
@@ -494,7 +537,8 @@ def screw(
     D = None,
     P = None,
     max_screw_bottom_precision = 10,
-    e = 0.001
+    e = 0.002,
+    ccw = False
 ):
     if bm == None:
         bm = bmesh.new()
@@ -503,6 +547,7 @@ def screw(
     step_w = P if P != None else get_P(d)
     step_h = get_H(step_w)
     iterations = math.floor(length / step_w)
+    rot_sign = -1 if ccw else 1
 
     e = min(e, 0.5 * step_h)
 
@@ -628,7 +673,7 @@ def screw(
 
     for i in range(0, len(start_first_loop['verts'])):
         ip = i / precision
-        alpha = ip * math.tau
+        alpha = rot_sign * ip * math.tau
         ca = math.cos(alpha)
         sa = math.sin(alpha)
         z = z_start + ip * step_w
@@ -755,7 +800,7 @@ def screw(
         for i in range(0, iterations):
             for j in range(0, precision + 1):
                 jp = j / precision
-                alpha = jp * math.tau
+                alpha = rot_sign * jp * math.tau
                 ca = math.cos(alpha)
                 sa = math.sin(alpha)
 
@@ -804,7 +849,7 @@ def screw(
                 bcv = list()
                 for k in range(0, max_screw_bottom_precision + 1):
                     kmsbp = k / max_screw_bottom_precision
-                    beta = (1 - kmsbp) * math.pi
+                    beta = (1 - rot_sign * kmsbp) * math.pi
                     sb = math.sin(beta)
                     rk = r1 - screw_bottom_r * sb
 
@@ -852,7 +897,10 @@ def screw(
                 prev_bsv = bsv
                 prev_bcv = bcv
 
+        screw_bottom_circles_edges = list()
         for k in range(0, max_screw_bottom_precision + 1):
+            screw_bottom_circles_edges.extend(screw_bottom_circle_edges[k])
+
             if k != 0:
                 bmesh.ops.bridge_loops(
                     bm,
@@ -876,9 +924,12 @@ def screw(
                 + screw_bottom_start_edges
         )
 
-        bm.faces.new(first_verts)
+        first_face = bm.faces.new(first_verts)
         last_face = bm.faces.new(last_verts)
-        last_face.normal_flip()
+        if not ccw:
+            last_face.normal_flip()
+        else:
+            first_face.normal_flip()
 
     if top_length > 0:
         bmesh.ops.bridge_loops(
@@ -934,5 +985,16 @@ def screw(
             bm,
             edges = tip_edges
         )
+
+    if ccw:
+        bmesh.ops.reverse_faces(bm, faces = list(set(
+            f
+            for edg in screw_bottom_end_edges
+                + screw_top_start_edges
+                + screw_top_end_edges
+                + screw_bottom_start_edges
+                + screw_bottom_circles_edges
+            for f in edg.link_faces
+        )))
 
     return [bm, top, top_edges, tip, tip_edges]

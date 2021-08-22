@@ -21,7 +21,8 @@ def create_mesh(
     precision,
     bm = None,
     D = None,
-    P = None
+    P = None,
+    ccw_bottom = False
 ):
     if bm == None:
         bm = bmesh.new()
@@ -31,19 +32,19 @@ def create_mesh(
     outer_r_e = outer_r - e
 
     screw_in_length = screw_length + 2 * step_w
-    screw_in_z_start = 0
 
     screw_in_ret = screw.screw_in(
         inner_r,
         screw_in_length,
         precision,
         bm,
-        z_start = screw_in_z_start,
+        z_start = 0,
         z_scale = -1,
         fill_end=True,
         D = d,
         P = step_w,
-        end_h = 2 * step_w
+        end_h = 2 * step_w,
+        ccw = ccw_bottom
     )
 
     screw_ret = screw.screw(

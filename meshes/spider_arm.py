@@ -14,7 +14,7 @@ spider_arm_name = 'spider_arm'
 def create_mesh(r, length, screw_length, screw_precision = 25, screw_D = None, screw_P = None, screw_end_h = 0):
     bm = bmesh.new()
 
-    screw.screw_in(
+    screw_in_ret = screw.screw_in(
         r,
         screw_length,
         screw_precision,
@@ -27,7 +27,7 @@ def create_mesh(r, length, screw_length, screw_precision = 25, screw_D = None, s
         end_h=screw_end_h
     )
 
-    screw.screw(
+    screw_ret = screw.screw(
         r,
         screw_length,
         screw_precision,
@@ -38,6 +38,12 @@ def create_mesh(r, length, screw_length, screw_precision = 25, screw_D = None, s
         tip_length = 0,
         D=screw_D,
         P=screw_P
+    )
+
+    bmesh.ops.bridge_loops(
+        bm,
+        edges = screw_in_ret[2]
+            + screw_ret[2]
     )
 
     bmesh.ops.rotate(
