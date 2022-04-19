@@ -14,36 +14,137 @@ spider_arm_name = 'spider_arm'
 def create_mesh(r, length, screw_length, screw_precision = 25, screw_D = None, screw_P = None, screw_end_h = 0):
     bm = bmesh.new()
 
-    screw_in_ret = screw.screw_in(
-        r,
-        screw_length,
-        screw_precision,
+    bottom_inner_circle_end = bmesh.ops.create_circle(
         bm,
-        z_start=0,
-        z_scale=-1,
-        fill_end=True,
-        D=screw_D,
-        P=screw_P,
-        end_h=screw_end_h
+        segments = screw_precision,
+        radius = 0.5 * screw_D
     )
 
-    screw_ret = screw.screw(
-        r,
-        screw_length,
-        screw_precision,
+    bottom_inner_circle_end_edges = list(set(
+        edg
+        for v in bottom_inner_circle_end['verts']
+        for edg in v.link_edges
+    ))
+
+    bmesh.ops.edgeloop_fill(
         bm,
-        z_top = 0,
-        top_length=length,
-        tip_r=0.5 * r,
-        tip_length = 0,
-        D=screw_D,
-        P=screw_P
+        edges = bottom_inner_circle_end_edges
     )
+
+    ret = bmesh.ops.extrude_edge_only(
+        bm,
+        edges = bottom_inner_circle_end_edges
+    )
+
+    bottom_inner_circle = list(set(
+        geom
+        for geom in ret['geom']
+        if isinstance(geom, bmesh.types.BMVert)
+    ))
+
+    bottom_inner_circle_edges = list(set(
+        geom
+        for geom in ret['geom']
+        if isinstance(geom, bmesh.types.BMEdge)
+    ))
+
+    bottom_outer_circle = bmesh.ops.create_circle(
+        bm,
+        segments=screw_precision,
+        radius = r
+    )
+
+    bottom_outer_circle_edges = list(set(
+        edg
+        for v in bottom_outer_circle['verts']
+        for edg in v.link_edges
+    ))
 
     bmesh.ops.bridge_loops(
         bm,
-        edges = screw_in_ret[2]
-            + screw_ret[2]
+        edges = bottom_inner_circle_edges
+            + bottom_outer_circle_edges
+    )
+
+    ret = bmesh.ops.extrude_edge_only(
+        bm,
+        edges = bottom_outer_circle_edges
+    )
+
+    bottom_outer_circle_end = list(set(
+        geom
+        for geom in ret['geom']
+        if isinstance(geom, bmesh.types.BMVert)
+    ))
+
+    bottom_outer_circle_end_edges = list(set(
+        edg
+        for v in bottom_outer_circle_end
+        for edg in v.link_edges
+    ))
+
+    top_inner_circle = bmesh.ops.create_circle(
+        bm,
+        segments=screw_precision,
+        radius = 0.5 * screw_D
+    )
+
+    top_inner_circle_edges = list(set(
+        edg
+        for v in top_inner_circle['verts']
+        for edg in v.link_edges
+    ))
+
+    # bmesh.ops.bridge_loops(
+    #     bm,
+    #     edges = top_inner_circle_edges
+    #         + bottom_outer_circle_end_edges
+    # )
+
+    ret = bmesh.ops.extrude_edge_only(
+        bm,
+        edges = top_inner_circle_edges
+    )
+
+    top_inner_circle_end = list(set(
+        geom
+        for geom in ret['geom']
+        if isinstance(geom, bmesh.types.BMVert)
+    ))
+
+    top_inner_circle_end_edges = list(set(
+        edg
+        for v in top_inner_circle_end
+        for edg in v.link_edges
+    ))
+
+    bmesh.ops.edgeloop_fill(
+        bm,
+        edges = top_inner_circle_end_edges
+    )
+
+    bmesh.ops.translate(
+        bm,
+        verts = bottom_inner_circle_end['verts'],
+        vec = (0, 0, screw_length + screw_end_h)
+    )
+
+    bmesh.ops.translate(
+        bm,
+        verts = bottom_outer_circle_end,
+        vec = (0, 0, length - screw_length)
+    )
+
+    bmesh.ops.translate(
+        bm,
+        verts = top_inner_circle['verts'],
+        vec = (0, 0, length - screw_length)
+    )
+
+    bmesh.ops.translate(
+        bm,
+        verts = top_inner_circle_end,
+        vec = (0, 0, length)
     )
 
     bmesh.ops.rotate(

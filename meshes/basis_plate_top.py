@@ -9,7 +9,10 @@ def create_mesh(
     large_tooth_width, large_tooth_height, large_tooth_thickness,
     small_teeth_width, small_teeth_height, small_teeth_thickness,
     leg_width,
-    foot_w1, foot_w2, foot_thickness
+    foot_w1, foot_w2, foot_thickness,
+    basis_plate_top_stator_side,
+    basis_plate_top_stator_wall_thickness,
+    basis_plate_top_stator_wall_height,
 ):
     mesh = bpy.data.meshes.new(
         basis_plate_top_name
@@ -30,6 +33,8 @@ def create_mesh(
     hstt = 0.5 * small_teeth_thickness
     hstw = 0.5 * small_teeth_width
     hft = 0.5 * foot_thickness
+
+    hss = 0.5 * basis_plate_top_stator_side
 
     cx = -(math.sqrt(3) / 2) * hex_side
 
@@ -54,6 +59,8 @@ def create_mesh(
     zow = 0.5 * zo
     zop = 0.5 * zow
     zo = 0.25 * rz
+    zswt = z + basis_plate_top_stator_wall_height
+    zswte = zswt - basis_plate_top_stator_wall_thickness
 
 
     vertices = [
@@ -98,6 +105,25 @@ def create_mesh(
 
         (x - (hft - hstt) - hstt - e - fh, -fy, z - small_teeth_height),
         (x - (hft - hstt) + hstt + e - fh, -fy, z - small_teeth_height),
+
+        # stator walls
+        (cx, hss, z),
+        (cx + hss, hss, z),
+        (cx + hss, -hss, z),
+        (cx, -hss, z),
+        (cx, -hss - basis_plate_top_stator_wall_thickness, z),
+        (cx + hss + basis_plate_top_stator_wall_thickness, -hss - basis_plate_top_stator_wall_thickness, z),
+        (cx + hss + basis_plate_top_stator_wall_thickness, hss + basis_plate_top_stator_wall_thickness, z),
+        (cx, hss + basis_plate_top_stator_wall_thickness, z),
+
+        (cx, hss, zswt),
+        (cx + hss, hss, zswt),
+        (cx + hss, -hss, zswt),
+        (cx, -hss, zswt),
+        (cx, -hss - basis_plate_top_stator_wall_thickness, zswte),
+        (cx + hss + basis_plate_top_stator_wall_thickness, -hss - basis_plate_top_stator_wall_thickness, zswte),
+        (cx + hss + basis_plate_top_stator_wall_thickness, hss + basis_plate_top_stator_wall_thickness, zswte),
+        (cx, hss + basis_plate_top_stator_wall_thickness, zswte),
     ]
     edges = [
         (2, 3), (3, 5), (5, 4), (4, 2),
@@ -111,6 +137,10 @@ def create_mesh(
         (18, 19), (19, 21), (21, 20), (20, 18),
         (22, 23), (23, 25), (25, 24), (24, 22),
         (18, 22), (19, 23), (20, 24), (21, 25),
+
+        (26, 27), (27, 28), (28, 29), (29, 30), (30, 31), (31, 32), (32, 33), (33, 26),
+        (34, 35), (35, 36), (36, 37), (37, 38), (38, 39), (39, 40), (40, 41), (41, 34),
+        (26, 34), (27, 35), (28, 36), (29, 37), (30, 38), (31, 39), (32, 40), (33, 41),
     ]
     faces = [
         (3, 2, 6, 7),
@@ -132,6 +162,20 @@ def create_mesh(
 
         (2, 3, 11, 10),
         (5, 4, 18, 19),
+
+        (26, 27, 35, 34),
+        (27, 28, 36, 35),
+        (28, 29, 37, 36),
+
+        (30, 31, 39, 38),
+        (31, 32, 40, 39),
+        (32, 33, 41, 40),
+
+        (26, 34, 41, 33),
+        (34, 35, 40, 41),
+        (35, 36, 39, 40),
+        (36, 37, 38, 39),
+        (38, 37, 29, 30),
     ]
 
     nb_verts2 = len(vertices)
@@ -221,10 +265,7 @@ def create_mesh(
 
             if alpha < math.pi / 6:
                 faces.extend([
-                    #(tv - nbidx, tv, 23),
                     (stv, stv - nbidx, nb_verts2 + 5),
-
-                    #(bv, bv - nbidx, 9),
                     (sbv - nbidx, sbv, 8),
                 ])
 
@@ -276,11 +317,7 @@ def create_mesh(
                     i4 = tv - nbidx
             else:
                 faces.extend([
-                    #(tv - nbidx, tv, 15),
-                    #(stv, stv - nbidx, 14),
                     (stv, stv - nbidx, 10),
-
-                    #(bv, bv - nbidx, 7),
                     (sbv - nbidx, sbv, 6),
                 ])
 
@@ -293,15 +330,15 @@ def create_mesh(
 
     nb_verts3 = len(vertices)
 
+    cp6 = math.cos(math.pi / 6)
     vertices.extend([
-        (cx, r * math.cos(math.pi / 6), z),
-        (cx, r * math.cos(math.pi / 6), z - t),
-        (cx, -r * math.cos(math.pi / 6), z),
-        (cx, -r * math.cos(math.pi / 6), z - t),
+        (cx, r * cp6, z),
+        (cx, r * cp6, z - t),
+        (cx, -r * cp6, z),
+        (cx, -r * cp6, z - t),
     ])
 
     faces.extend([
-        #(i0 + 2, i0, 22),
         (nb_verts3 + 2, 23, 22),
         (i1, 19, 23),
         (i1 + 2, 22, 18),
@@ -316,7 +353,6 @@ def create_mesh(
         (nb_verts3, 14, 15),
         (nb_verts3, i6 + 2, 14),
 
-        #(i0 + 1, i0 + 3, 8),
         (nb_verts3 + 3, 8, 9),
         (i3 + 1, 9, 7),
         (i3 + 3, 6, 8),

@@ -1,7 +1,7 @@
 import bpy
 import bmesh
 import math
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 DEFAULT_P = {
     "0.001": 0.00025,
@@ -38,24 +38,6 @@ DEFAULT_P = {
     "0.064": 0.006
 }
 
-def get_d1(D, P):
-    return D - 1.8025 * P
-
-def get_d2(D, P):
-    return D - 0.6495 * P
-
-def get_d3(D, P):
-    return D - 1.2268 * P
-
-def get_r0(D, P):
-    return 0.5 * get_d1(D, P)
-
-def get_r1(D, P):
-    return
-
-def get_H(P):
-    return 0.5 * math.sqrt(3) * P
-
 def get_D(d):
     final_d = None
     for normalized_d in DEFAULT_P:
@@ -73,6 +55,9 @@ def get_P(D):
         return math.sqrt(3) * DEFAULT_P[str(d)]
 
     return None
+
+def get_H(P):
+    return 0.5 * math.sqrt(3) * P
 
 def screw_in(
     r,
@@ -285,7 +270,6 @@ def screw_in(
                 )),
                 verts = [stop_last_loop['verts'][i]]
             )
-
 
         first_verts = list()
         last_verts = list()
@@ -998,3 +982,237 @@ def screw(
         )))
 
     return [bm, top, top_edges, tip, tip_edges]
+
+def capped_screw(
+    r,
+    t,
+    h,
+    cap_h,
+    rp,
+    screw_length,
+    screw_D = None,
+    screw_P = None,
+    screw_tip_r = 0,
+    screw_tip_length = None,
+    z_screw_start = 0,
+    bm = None,
+    head_r = None
+):
+    if bm == None:
+        bm = bmesh.new()
+
+    zz_top = -h
+    zz_head_end = zz_top - cap_h
+    zz_butt = -0.01
+
+    outer_r = r + t
+
+    if head_r == None:
+        head_r = outer_r + t
+
+    circle_top = bmesh.ops.create_circle(
+        bm,
+        segments = rp,
+        radius = outer_r
+    )
+
+    circle_top_edges = list(set(
+        edg
+        for vec in circle_top['verts']
+        for edg in vec.link_edges)
+    )
+
+    circle_head_start = bmesh.ops.create_circle(
+        bm,
+        segments = rp,
+        radius = head_r
+    )
+
+    circle_head_start_edges = list(set(
+        edg
+        for vec in circle_head_start['verts']
+        for edg in vec.link_edges)
+    )
+
+    circle_head_end = bmesh.ops.create_circle(
+        bm,
+        segments = rp,
+        radius = head_r
+    )
+
+    circle_head_end_edges = list(set(
+        edg
+        for vec in circle_head_end['verts']
+        for edg in vec.link_edges)
+    )
+
+    circle_head_end_bottom = bmesh.ops.create_circle(
+        bm,
+        segments = rp,
+        radius = outer_r
+    )
+
+    circle_head_end_bottom_edges = list(set(
+        edg
+        for vec in circle_head_end_bottom['verts']
+        for edg in vec.link_edges)
+    )
+
+    circle_bottom = bmesh.ops.create_circle(
+        bm,
+        segments = rp,
+        radius = outer_r
+    )
+
+    circle_bottom_edges = list(set(
+        edg
+        for vec in circle_bottom['verts']
+        for edg in vec.link_edges)
+    )
+
+    bmesh.ops.bridge_loops(
+        bm,
+        edges = circle_top_edges
+            + circle_head_start_edges
+    )
+
+    bmesh.ops.bridge_loops(
+        bm,
+        edges = circle_head_start_edges
+            + circle_head_end_edges
+    )
+
+    bmesh.ops.bridge_loops(
+        bm,
+        edges = circle_head_end_edges
+            + circle_head_end_bottom_edges
+    )
+
+    bmesh.ops.bridge_loops(
+        bm,
+        edges = circle_head_end_bottom_edges
+            + circle_bottom_edges
+    )
+
+    bmesh.ops.translate(
+        bm,
+        vec = Vector((0, 0, zz_top)),
+        verts = circle_top['verts']
+    )
+
+    bmesh.ops.translate(
+        bm,
+        vec = Vector((0, 0, zz_top)),
+        verts = circle_head_start['verts']
+    )
+
+    bmesh.ops.translate(
+        bm,
+        vec = Vector((0, 0, zz_head_end)),
+        verts = circle_head_end['verts']
+    )
+
+    bmesh.ops.translate(
+        bm,
+        vec = Vector((0, 0, zz_head_end)),
+        verts = circle_head_end_bottom['verts']
+    )
+
+    bmesh.ops.translate(
+        bm,
+        vec = Vector((0, 0, zz_butt)),
+        verts = circle_bottom['verts']
+    )
+
+    for i in range(0, rp):
+        alpha = i * 6 * math.tau / rp
+        x = t * math.cos(alpha)
+        y = t * math.sin(alpha)
+
+        bmesh.ops.translate(
+            bm,
+            vec = Vector((x, y, 0)),
+            verts = [
+                circle_head_start['verts'][i],
+                circle_head_end['verts'][i]
+            ]
+        )
+
+    circle_inner_butt = bmesh.ops.create_circle(
+        bm,
+        segments = rp,
+        radius = r
+    )
+
+    circle_inner_butt_edges = list(set(
+        edg
+        for vec in circle_inner_butt['verts']
+        for edg in vec.link_edges)
+    )
+
+    screw_ret = screw(
+        r,
+        screw_length,
+        rp,
+        bm,
+        top_length = -z_screw_start,
+        tip_r = screw_tip_r,
+        tip_length = screw_tip_length,
+        fill_tip=True,
+        D = screw_D,
+        P = screw_P
+    )
+
+    bmesh.ops.bridge_loops(
+        bm,
+        edges = circle_bottom_edges
+            + circle_inner_butt_edges
+    )
+
+    bmesh.ops.edgeloop_fill(
+        bm,
+        edges = circle_top_edges
+    )
+
+    bmesh.ops.reverse_faces(bm, faces = bm.faces)
+
+    bmesh.ops.bridge_loops(
+        bm,
+        edges = circle_inner_butt_edges
+            + screw_ret[2] # start_edges
+    )
+
+    bmesh.ops.translate(
+        bm,
+        vec = Vector((0, 0, -zz_butt)),
+        verts = circle_bottom['verts']
+    )
+
+    bmesh.ops.rotate(
+        bm,
+        cent = (0, 0, 0),
+        matrix = Matrix.Rotation(-math.pi / 2, 4, 'Y'),
+        verts = bm.verts
+    )
+
+    bm.normal_update()
+
+    mesh = bpy.data.meshes.new(
+        'capped_screw_' + str((
+            r,
+            t,
+            h,
+            cap_h,
+            rp,
+            screw_length,
+            screw_D,
+            screw_P,
+            z_screw_start,
+            head_r
+        ))
+    )
+
+    bm.to_mesh(mesh)
+    bm.free()
+
+    return mesh

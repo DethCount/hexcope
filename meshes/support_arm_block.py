@@ -361,7 +361,6 @@ def create_mesh(
     edges.extend(ret[1])
     faces.extend(ret[2])
 
-
     mesh.from_pydata(vertices, edges, faces)
     mesh.update()
 
@@ -426,7 +425,7 @@ def create_mesh(
     screw_in_mesh = bpy.data.meshes.new(support_arm_block_name + '_tmp_screw_in')
     # ret[0].to_mesh(screw_in_mesh)
     bm2.to_mesh(screw_in_mesh)
-    ret[0].free()
+    # ret[0].free()
 
     obj_name = support_arm_block_name + '_tmp_obj'
     support_arm_obj = bpy.data.objects.new(obj_name, mesh)
@@ -436,10 +435,13 @@ def create_mesh(
 
     screw_in_obj = bpy.data.objects.new(support_arm_block_name + '_tmp_screw_in_obj', screw_in_mesh)
     temp_collection.objects.link(screw_in_obj)
-    mod_bool = support_arm_obj.modifiers.new(type='BOOLEAN', name='screw_in_bool')
-    mod_bool.object = screw_in_obj
-    mod_bool.operation = 'DIFFERENCE'
-    bpy.ops.object.modifier_apply({"object": support_arm_obj}, modifier = mod_bool.name)
+    bpy.ops.object.modifier_add(type='BOOLEAN')
+    bpy.context.object.modifiers['Boolean'].operation = 'DIFFERENCE'
+    bpy.context.object.modifiers['Boolean'].object = screw_in_obj
+    # mod_bool = support_arm_obj.modifiers.new(type='BOOLEAN', name='screw_in_bool')
+    # mod_bool.object = screw_in_obj
+    # mod_bool.operation = 'DIFFERENCE'
+    bpy.ops.object.modifier_apply({"object": support_arm_obj}, modifier = 'Boolean')
 
     depsgraph = bpy.context.evaluated_depsgraph_get()
     support_arm_eval_obj = support_arm_obj.evaluated_get(depsgraph)

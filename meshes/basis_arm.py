@@ -43,8 +43,8 @@ def create_mesh(
     z0 = z + lr
     z1 = z - hwr
     z2 = z - wheel_radius - e
-    z3 = z2 - h1 # teeth top z
-    z4 = z3 - teeth_height # teeth bottom z
+    z4 = z2 - h1 # teeth bottom z
+    z3 = z4 - teeth_height # teeth top z
 
     x = -hwt
     xr = x + 0.5 * t

@@ -22,6 +22,7 @@ from optics import hex2xyz, \
 
 from meshes import \
     screw, \
+        basis_cap, \
     ray, \
     primary_mirror_normals, \
         half_hex, \
@@ -32,9 +33,10 @@ from meshes import \
     support_arm_block, \
         support_arm, \
         support_arm_head, \
-    spider_arm \
+    spider_arm
 
 importlib.reload(screw)
+importlib.reload(basis_cap)
 importlib.reload(primary_mirror_normals)
 importlib.reload(half_hex)
 importlib.reload(secondary_mirror_spherical)
@@ -72,6 +74,7 @@ support_spider_r = 0.005
 support_spider_screw_length = 0.008
 support_spider_D = 0.008
 support_spider_P = None
+# print(screw.get_P(support_spider_D))
 support_spider_screw_end_h = support_spider_D
 
 support_secondary_z = support_half_hex_t + (1.25 if n == 0 else 1.1)
@@ -166,8 +169,18 @@ support_arm_blocking_screw_length = support_arm_block_t - 0.004
 support_arm_blocking_screw_rp = support_arm_block_p
 support_arm_blocking_screw_D = None
 support_arm_blocking_screw_P = None
+support_arm_blocking_screw_tip_r = 0.5 * support_arm_blocking_screw_r
+support_arm_blocking_screw_tip_length = 0.001
 support_arm_block_z = support_primary_z
 support_arm_block_total_z = get_right_boundary_hex_xyz(support_arm_block_f, support_arm_block_n, support_arm_block_r)[2]
+
+support_arm_block_screw_cap_r = support_arm_blocking_screw_r
+support_arm_block_screw_cap_t = 0.003
+support_arm_block_screw_cap_cap_h = 0.005
+support_arm_block_screw_cap_h = support_arm_block_screw_cap_cap_h
+support_arm_block_screw_cap_rp = support_arm_blocking_screw_rp
+support_arm_block_screw_cap_z_screw_start = 0
+support_arm_block_screw_cap_head_r = support_arm_block_screw_cap_r + 0.003
 
 support_arm_head_t = 0.005
 support_arm_head_p = 25
@@ -175,7 +188,7 @@ support_arm_head_with_spider_screw = True
 support_arm_head_with_spider_screw_in = False
 support_arm_head_with_top_screw = False
 support_arm_head_with_bottom_screw = True
-support_arm_head_ocular_r = 0.025
+support_arm_head_ocular_r = 0.0255
 support_arm_head_arm_dist = support_arm_rld
 support_arm_head_arm_rp = support_arm_precision
 support_arm_head_arm_outer_r = support_arm_outer_r
@@ -186,14 +199,14 @@ support_arm_head_arm_P = support_arm_P
 support_arm_head_arm_screw_in_length = support_arm_head_arm_screw_length + 2 * support_arm_P
 support_arm_head_arm_screw_in_end_h = 2 * support_arm_P
 support_arm_head_min_height = support_arm_head_t + support_arm_head_arm_screw_in_length + support_arm_head_arm_screw_in_end_h
-support_arm_head_height = support_arm_head_min_height + 2 * (support_secondary_final_z - support_secondary_z)
+support_arm_head_height = 0.5 * support_arm_head_min_height + (support_secondary_final_z - support_secondary_z) + support_arm_head_ocular_r + 2 * support_arm_head_t
 support_arm_head_width = 2 * (support_arm_head_arm_outer_r + support_arm_head_t)
 support_arm_head_spider_rp = support_spider_rp
 support_arm_head_spider_r = support_spider_r
 support_arm_head_spider_screw_length = support_spider_screw_length
 support_arm_head_spider_screw_z = 0.5 * support_arm_head_min_height
 support_arm_head_spider_screw_z_with_ocular = support_arm_head_height - 0.5 * support_arm_head_min_height
-support_arm_head_ocular_z = 0.5 * (support_arm_head_spider_screw_z_with_ocular - 0.5 * support_arm_head_min_height) + 0.5 * support_arm_head_min_height
+support_arm_head_ocular_z = support_arm_head_spider_screw_z_with_ocular - (support_secondary_final_z - support_secondary_z)
 support_arm_head_spider_D = support_spider_D
 support_arm_head_spider_P = support_spider_P
 support_arm_head_spider_screw_end_h = support_spider_screw_end_h
@@ -402,10 +415,27 @@ arm_block_mesh_l = support_arm_block.create_mesh(
     support_arm_blocking_screw_P,
     is_left = True
 )
+
 arm_block_mesh_l.transform(
     Matrix.Translation(
         (0, 0, support_arm_block_z)
     )
+)
+
+support_arm_blocking_screw_mesh = screw.capped_screw(
+    support_arm_blocking_screw_r,
+    support_arm_block_screw_cap_t,
+    support_arm_block_screw_cap_h,
+    support_arm_block_screw_cap_cap_h,
+    support_arm_block_screw_cap_rp,
+    support_arm_blocking_screw_length,
+    screw_D = support_arm_blocking_screw_D,
+    screw_P = support_arm_blocking_screw_P,
+    screw_tip_r = support_arm_blocking_screw_tip_r,
+    screw_tip_length = support_arm_blocking_screw_tip_length,
+    z_screw_start = support_arm_block_screw_cap_z_screw_start,
+    bm = None,
+    head_r = support_arm_block_screw_cap_head_r
 )
 
 arm_block_mesh_r = support_arm_block.create_mesh(
@@ -589,6 +619,16 @@ for i in range(0, len(support_arm_points)):
             )
             arm_block_l.rotation_euler = rot
             arm_collection.objects.link(arm_block_l)
+
+            arm_block_screw_l = bpy.data.objects.new(
+                'arm_block_screw_' + str(support_arm_block_n) + '_' + str(i) + '_l',
+                support_arm_blocking_screw_mesh
+            )
+            arm_block_screw_l.location.x = support_arm_points[i][0][0] + support_arm_block_arm_radius + support_arm_blocking_screw_length
+            arm_block_screw_l.location.y = support_arm_points[i][0][1]
+            arm_block_screw_l.location.z = support_arm_block_total_z
+            arm_block_screw_l.rotation_euler = rot
+            arm_collection.objects.link(arm_block_screw_l)
 
             arm_block_r = bpy.data.objects.new(
                 'arm_block_' + str(support_arm_block_n) + '_' + str(i) + '_r',
